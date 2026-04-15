@@ -21,8 +21,8 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - [x] 01-01-PLAN.md — Provision ARM VPS and setup Docker Compose environment
 - [x] 01-02-PLAN.md — Configure PostgreSQL + PostGIS with venue schema
 - [x] 01-03-PLAN.md — Bulk import London Datastore CSVs into database
-- [ ] 01-04-PLAN.md — Gap closure: Add worker service to docker-compose.yml
-- [ ] 01-05-PLAN.md — Gap closure: Fix London Datastore URLs and verify data import
+- [x] 01-04-PLAN.md — Gap closure: Add worker service to docker-compose.yml
+- [x] 01-05-PLAN.md — Gap closure: Fix London Datastore URLs and verify data import
 
 **Success Criteria**:
 - VPS is provisioned with Docker Compose running
@@ -40,10 +40,10 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 **Goal**: Build intelligent data ingestion pipeline with LLM-powered parsing and OSM integration.
 
 **Plans**:
-- [ ] 02-01-PLAN.md — Setup BullMQ workers and Redis queue infrastructure
-- [ ] 02-02-PLAN.md — Integrate OpenRouter API for intelligent HTML parsing
-- [ ] 02-03-PLAN.md — Implement Overpass API (OSM) data import script
-- [ ] 02-04-PLAN.md — Build deduplication logic with Levenshtein distance
+- [x] 02-01-PLAN.md — Setup BullMQ workers and Redis queue infrastructure
+- [x] 02-02-PLAN.md — Integrate OpenRouter API for intelligent HTML parsing
+- [x] 02-03-PLAN.md — Implement Overpass API (OSM) data import script
+- [x] 02-04-PLAN.md — Build deduplication logic with Levenshtein distance
 
 **Success Criteria**:
 - BullMQ workers process scraping jobs
@@ -61,10 +61,12 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 **Goal**: Build REST API with spatial queries, caching, and "never zero" fallback engine.
 
 **Plans**:
-- [ ] 03-01-PLAN.md — Create Express API with PostGIS spatial search endpoint
-- [ ] 03-02-PLAN.md — Implement Redis caching layer for search results
-- [ ] 03-03-PLAN.md — Integrate Brave Search API as fallback mechanism
-- [ ] 03-04-PLAN.md — Add rate limiting and security headers (Helmet.js)
+- [x] 03-01-PLAN.md — Create Express API with PostGIS spatial search endpoint
+- [x] 03-02-PLAN.md — Implement Redis caching layer for search results
+- [x] 03-03-PLAN.md — (deferred - FALLBACK-01 not implemented)
+- [x] 03-04-PLAN.md — Add rate limiting and security headers (Helmet.js)
+- [x] 03-05-PLAN.md — Gap closure: Security hardening
+- [ ] 03-06-PLAN.md — Gap closure: Brave Search API fallback (FALLBACK-01)
 
 **Success Criteria**:
 - `/api/search` endpoint returns venues within radius
