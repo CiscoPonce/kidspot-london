@@ -17,10 +17,12 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 **Goal**: Provision infrastructure and establish the data foundation with initial venue imports.
 
-**Plans**: 3 plans
+**Plans**: 5 plans (3 completed, 2 gap closure)
 - [x] 01-01-PLAN.md — Provision ARM VPS and setup Docker Compose environment
 - [x] 01-02-PLAN.md — Configure PostgreSQL + PostGIS with venue schema
 - [x] 01-03-PLAN.md — Bulk import London Datastore CSVs into database
+- [ ] 01-04-PLAN.md — Gap closure: Add worker service to docker-compose.yml
+- [ ] 01-05-PLAN.md — Gap closure: Fix London Datastore URLs and verify data import
 
 **Success Criteria**:
 - VPS is provisioned with Docker Compose running
