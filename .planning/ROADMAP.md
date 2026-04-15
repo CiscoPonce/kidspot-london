@@ -66,7 +66,7 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - [x] 03-03-PLAN.md — (deferred - FALLBACK-01 not implemented)
 - [x] 03-04-PLAN.md — Add rate limiting and security headers (Helmet.js)
 - [x] 03-05-PLAN.md — Gap closure: Security hardening
-- [ ] 03-06-PLAN.md — Gap closure: Brave Search API fallback (FALLBACK-01)
+- [x] 03-06-PLAN.md — Gap closure: Brave Search API fallback (FALLBACK-01)
 
 **Success Criteria**:
 - `/api/search` endpoint returns venues within radius
@@ -78,17 +78,17 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 ---
 
 ## Phase 4: Frontend Core (Weeks 7-8)
-**Status**: Not Started
+**Status**: Planned
 **Requirements**: [UI-01, UI-02, UI-03, MAP-01, STATE-01]
 
 **Goal**: Build mobile-first UI with map integration and real-time search.
 
-**Plans**:
-- [ ] 04-01-PLAN.md — Setup Next.js project with TailwindCSS and React Query
-- [ ] 04-02-PLAN.md — Create search bar with location detection and radius slider
-- [ ] 04-03-PLAN.md — Integrate MapLibre GL JS with dynamic venue pins
-- [ ] 04-04-PLAN.md — Build venue list view with distance sorting
-- [ ] 04-05-PLAN.md — Implement venue detail modal with map snippet
+**Plans**: 5 plans
+- [x] 04-01-PLAN.md — Setup Next.js project with TailwindCSS and React Query
+- [x] 04-02-PLAN.md — Create search bar with location detection and radius slider
+- [x] 04-03-PLAN.md — Integrate MapLibre GL JS with dynamic venue pins
+- [x] 04-04-PLAN.md — Build venue list view with distance sorting
+- [x] 04-05-PLAN.md — Implement venue detail modal with map snippet
 
 **Success Criteria**:
 - Next.js app runs on mobile and desktop
