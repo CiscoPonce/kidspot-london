@@ -12,6 +12,30 @@ const pool = new Pool({
 // Overpass API configuration
 const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
 
+// Map OSM tags to our venue types
+function mapVenueType(tags) {
+  const typeMap = {
+    'leisure=fitness_centre': 'softplay',
+    'amenity=community_centre': 'community_hall',
+    'leisure=park': 'park',
+    'leisure=playground': 'park',
+    'leisure=stadium': 'other',
+    'amenity=gym': 'other'
+  };
+  
+  // Check each tag combination
+  for (const [tagKey, venueType] of Object.entries(typeMap)) {
+    const [key, value] = tagKey.split('=');
+    if (tags[key] === value) {
+      return venueType;
+    }
+  }
+  
+  // Log unmapped tags for review
+  console.warn(`Unmapped OSM tags: ${JSON.stringify(tags)}`);
+  return 'other';
+}
+
 // OSM tags for child-friendly venues
 const OSM_QUERIES = [
   {
@@ -149,10 +173,14 @@ async function discoverVenuesFromOSM() {
           id: element.id.toString(),
           name: element.tags?.name || `OSM ${element.id}`,
           lat: lat,
-          lon: lon
+          lon: lon,
+          tags: element.tags || {}
         };
         
-        const result = await insertVenue(venue, queryConfig.name);
+        // Map OSM tags to venue type
+        const venueType = mapVenueType(venue.tags);
+        
+        const result = await insertVenue(venue, venueType);
         
         if (result.status === 'inserted') {
           totalInserted++;
