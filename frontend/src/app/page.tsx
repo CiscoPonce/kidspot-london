@@ -3,7 +3,62 @@
 import { useState } from 'react';
 import { SearchBar } from '@/components/search/search-bar';
 import { VenueList } from '@/components/venues/venue-list';
-import type { Venue } from '@/lib/api';
+import { VenueMap } from '@/components/map/venue-map';
+import { useSearch } from '@/hooks/use-search';
+import { fetchVenues, type Venue } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
+
+function VenueMapSection() {
+  const { lat, lon, radius } = useSearch();
+
+  const {
+    data: venues = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['venues', lat, lon, radius],
+    queryFn: () => {
+      if (lat === null || lon === null) return Promise.resolve([]);
+      return fetchVenues(lat, lon, radius);
+    },
+    enabled: lat !== null && lon !== null,
+  });
+
+  const handleVenueSelect = (venue: Venue) => {
+    console.log('Selected venue:', venue);
+  };
+
+  if (lat === null || lon === null) {
+    return (
+      <div className="flex h-64 items-center justify-center bg-secondary-100">
+        <p className="text-secondary-600">
+          Search for a location to see venues on the map
+        </p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center bg-secondary-100">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
+          <p className="text-sm text-secondary-600">Finding venues...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-64 items-center justify-center bg-secondary-100">
+        <p className="text-red-600">Error loading venues</p>
+      </div>
+    );
+  }
+
+  return <VenueMap venues={venues} onVenueSelect={handleVenueSelect} />;
+}
 
 export default function HomePage() {
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
@@ -33,8 +88,18 @@ export default function HomePage() {
       </div>
 
       {/* Search Section */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-6">
         <SearchBar />
+      </div>
+
+      {/* Map Section */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-6">
+        <h2 className="text-lg font-semibold text-secondary-900 mb-4">
+          Map View
+        </h2>
+        <div className="overflow-hidden rounded-lg shadow-md">
+          <VenueMapSection />
+        </div>
       </div>
 
       {/* Venue List Section */}

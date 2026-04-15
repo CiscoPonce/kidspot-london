@@ -56,3 +56,75 @@ html {
     scroll-behavior: smooth;
   }
 }
+
+/* MapLibre GL CSS - imported in venue-map.tsx for client-side loading */
+
+/* Map control styles */
+.maplibregl-map {
+  touch-action: none;
+}
+
+.maplibregl-ctrl-group {
+  background: white !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.maplibregl-ctrl-group button {
+  width: 36px !important;
+  height: 36px !important;
+}
+
+.maplibregl-ctrl-group button:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+
+/* Popup styles */
+.maplibregl-popup-content {
+  padding: 10px 14px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  font-family: system-ui, sans-serif !important;
+  min-width: 100px;
+}
+
+.maplibregl-popup-content strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+/* Cluster marker styles */
+.cluster-marker {
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+
+.cluster-marker:hover {
+  transform: scale(1.1);
+}
+
+/* Venue marker styles */
+.venue-marker {
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+
+.venue-marker:hover {
+  transform: scale(1.2);
+}
+
+/* Mobile map height */
+@media (max-width: 768px) {
+  .map-container {
+    height: 50vh !important;
+    min-height: 300px;
+  }
+}
+
+@media (min-width: 769px) {
+  .map-container {
+    height: calc(100vh - 200px) !important;
+  }
+}

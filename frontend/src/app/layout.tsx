@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { QueryProvider } from '@/providers/query-provider';
 import { SearchProvider } from '@/hooks/use-search';
+import { MapProvider } from '@/components/map/map-context';
 import './globals.css';
 
 const inter = Inter({
@@ -29,8 +30,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased`}>
         <QueryProvider>
-        <SearchProvider>{children}</SearchProvider>
-      </QueryProvider>
+          <SearchProvider>
+            <MapProvider>{children}</MapProvider>
+          </SearchProvider>
+        </QueryProvider>
       </body>
     </html>
   );
