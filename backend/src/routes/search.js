@@ -16,8 +16,13 @@ const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 // Cache TTLs
 const CACHE_TTL = {
   SEARCH: 3600,      // 1 hour for search results
-  VENUE_DETAILS: 3600 // 1 hour for venue details
+  VENUE_DETAILS: 3600, // 1 hour for venue details
+  BRAVE_FALLBACK: 3600 // 1 hour for Brave Search fallback results
 };
+
+// Brave Search rate limit: 1 request per second
+const BRAVE_SEARCH_RATE_LIMIT = 1000;
+let lastBraveSearchTime = 0;
 
 // Helper to generate cache keys
 function getSearchCacheKey(lat, lon, radiusMiles, type) {
@@ -26,6 +31,86 @@ function getSearchCacheKey(lat, lon, radiusMiles, type) {
 
 function getVenueDetailsCacheKey(id) {
   return `venue:${id}:details`;
+}
+
+// Helper to sleep for rate limiting
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Fetch Brave Search results as fallback when local DB returns 0 results
+async function fetchBraveSearchResults(lat, lon, radiusMiles, type, limit) {
+  const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
+
+  // Graceful degradation: if no API key, return null
+  if (!BRAVE_API_KEY) {
+    console.log('Brave Search fallback skipped: BRAVE_API_KEY not configured');
+    return null;
+  }
+
+  // Client-side rate limiting: wait if less than 1 second since last request
+  const now = Date.now();
+  const elapsed = now - lastBraveSearchTime;
+  if (elapsed < BRAVE_SEARCH_RATE_LIMIT) {
+    await sleep(BRAVE_SEARCH_RATE_LIMIT - elapsed);
+  }
+  lastBraveSearchTime = Date.now();
+
+  // Build search query
+  const typeQuery = type ? `${type} venues` : 'venues';
+  const searchQuery = `${typeQuery} near ${lat},${lon} within ${radiusMiles} miles London UK`;
+
+  console.log(`Brave Search fallback triggered for lat=${lat}, lon=${lon}`);
+
+  try {
+    const response = await axios.get('https://api.search.brave.com/res/v1/web/search', {
+      params: {
+        q: searchQuery,
+        count: limit
+      },
+      headers: {
+        'Accept': 'application/json',
+        'X-Subscription-Token': BRAVE_API_KEY
+      },
+      timeout: 10000
+    });
+
+    // Handle rate limit response
+    if (response.status === 429) {
+      const retryAfter = response.headers['retry-after'];
+      console.warn(`Brave Search rate limit exceeded${retryAfter ? `, Retry-After: ${retryAfter}s` : ''}`);
+      return null;
+    }
+
+    // Parse and transform results
+    const results = response.data?.web?.results || [];
+    console.log(`Brave Search fallback returned ${results.length} results`);
+
+    const fallbackVenues = results.map(result => ({
+      id: `brave_${Buffer.from(result.url).toString('base64').slice(0, 12)}`,
+      name: result.title,
+      type: type || 'other',
+      lat: lat,
+      lon: lon,
+      source: 'brave',
+      source_id: result.url,
+      sponsor_tier: null,
+      description: result.description,
+      website: result.url,
+      domain: result.meta_url?.domain || new URL(result.url).hostname,
+      meta_url: result.meta_url
+    }));
+
+    return fallbackVenues;
+  } catch (error) {
+    // Graceful degradation: log error and return null without breaking search flow
+    if (error.response?.status === 429) {
+      console.warn('Brave Search rate limit exceeded, skipping fallback');
+      return null;
+    }
+    console.error('Brave Search fallback error:', error.message);
+    return null;
+  }
 }
 
 // Search venues by location and radius
@@ -121,12 +206,21 @@ router.get('/venues', async (req, res) => {
 
     // Separate sponsored and non-sponsored results
     const sponsored = result.rows.filter(v => v.sponsor_tier);
-    const regular = result.rows.filter(v => !v.sponsor_tier);
+    let regular = result.rows.filter(v => !v.sponsor_tier);
+
+    // Brave Search fallback: only trigger when local results are empty
+    let fallbackVenues = null;
+    if (result.rows.length === 0 && process.env.BRAVE_API_KEY) {
+      fallbackVenues = await fetchBraveSearchResults(lat, lon, radiusMilesVal, venueType, limitCount);
+      if (fallbackVenues && fallbackVenues.length > 0) {
+        regular = fallbackVenues;
+      }
+    }
 
     const response = {
       success: true,
       data: {
-        total: result.rows.length,
+        total: sponsored.length + regular.length,
         sponsored: {
           count: sponsored.length,
           venues: sponsored
@@ -135,7 +229,7 @@ router.get('/venues', async (req, res) => {
           count: regular.length,
           venues: regular
         },
-        all: result.rows
+        all: [...sponsored, ...regular]
       },
       meta: {
         search: {
@@ -150,7 +244,10 @@ router.get('/venues', async (req, res) => {
           silver_count: sponsored.filter(v => v.sponsor_tier === 'silver').length,
           bronze_count: sponsored.filter(v => v.sponsor_tier === 'bronze').length
         },
-        cache_hit: false
+        cache_hit: false,
+        fallback_source: fallbackVenues ? 'brave_search' : null,
+        fallback_count: fallbackVenues?.length || 0,
+        fallback_triggered: !!fallbackVenues
       }
     };
 
