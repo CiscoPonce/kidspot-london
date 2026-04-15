@@ -218,4 +218,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { runCronAgent, processStaleVenues };
+module.exports = { runCronAgent, processStaleVenues, mapVenueType };

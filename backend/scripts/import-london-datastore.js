@@ -307,4 +307,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { importAllData, importVenues, geocodePostcode };
+module.exports = { importAllData, importVenues, geocodePostcode, mapVenueType };
