@@ -2,7 +2,8 @@
 
 ## Current Position
 **Phase**: 01 - Data Foundation
-**Status**: Planning
+**Plan**: 05 (executing)
+**Status**: Plan 01-05 complete - Gap G-02 closed
 **Last Updated**: April 15, 2026
 
 ## Completed Phases
@@ -20,7 +21,9 @@ Provision infrastructure and establish the data foundation with initial venue im
 - INFRA-01: Setup Docker Compose environment
 
 ### Decisions
-No decisions made yet - this is the initial planning phase.
+- **2026-04-15**: GiGL open data withdrawn Oct 2025 - pivoted to Cultural Infrastructure Map 2019 for venue CSV data
+- **2026-04-15**: Updated download-datastore.js with working URLs (Arts centres, Community centres, Sports participation)
+- **2026-04-15**: All 3 CSV downloads now succeed with valid venue point location data
 
 ### Pending Tasks
 - Create PLAN.md files for Phase 1
@@ -28,13 +31,14 @@ No decisions made yet - this is the initial planning phase.
 - Verify Phase 1 completion
 
 ### Blockers
-None identified.
+- **GiGL Data Withdrawal**: GiGL Spaces to Visit and Open Space Friends Group withdrawn Oct 2025 - resolved by using Cultural Infrastructure Map alternatives
 
 ### Notes
 - Project is starting from scratch
 - All infrastructure needs to be provisioned
 - Initial data import from London Datastore CSVs
 - ARM VPS optimization required
+- DATA-03 (bulk import): Now uses Cultural Infrastructure Map venue CSVs (Arts centres, Community centres) instead of GiGL data
 
 ---
 
