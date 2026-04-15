@@ -1,12 +1,53 @@
 const express = require('express');
 const router = express.Router();
 const { Pool } = require('pg');
+const Redis = require('ioredis');
 require('dotenv').config();
 
 // Database connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgres://kidspot_admin:password@localhost:5432/kidspot'
 });
+
+// Redis client for caching
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+
+// Cache TTLs
+const CACHE_TTL = {
+  SPONSOR_STATS: 300,     // 5 minutes for sponsor statistics
+  SPONSOR_PRICING: 86400  // 24 hours for sponsor pricing
+};
+
+// Helper to generate cache keys
+function getSponsorStatsCacheKey() {
+  return 'sponsors:stats';
+}
+
+function getSponsorPricingCacheKey() {
+  return 'sponsors:pricing';
+}
+
+// Cache invalidation helpers
+async function invalidateSearchCaches() {
+  try {
+    const keys = await redis.keys('search:*');
+    if (keys.length > 0) {
+      await redis.del(...keys);
+      console.log(`Invalidated ${keys.length} search cache keys`);
+    }
+  } catch (error) {
+    console.warn('Error invalidating search caches:', error.message);
+  }
+}
+
+async function invalidateSponsorStatsCache() {
+  try {
+    await redis.del(getSponsorStatsCacheKey());
+    console.log('Invalidated sponsor stats cache');
+  } catch (error) {
+    console.warn('Error invalidating sponsor stats cache:', error.message);
+  }
+}
 
 // Middleware to check if user is admin (simplified for now)
 const requireAdmin = (req, res, next) => {
@@ -22,11 +63,45 @@ const requireAdmin = (req, res, next) => {
 // Get sponsor statistics
 router.get('/stats', async (req, res) => {
   try {
+    const cacheKey = getSponsorStatsCacheKey();
+
+    // Check cache first
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        console.log(`Cache hit for sponsor stats: ${cacheKey}`);
+        const parsedCache = JSON.parse(cached);
+        return res.json({
+          ...parsedCache,
+          meta: {
+            ...(parsedCache.meta || {}),
+            cache_hit: true
+          }
+        });
+      }
+    } catch (cacheError) {
+      console.warn('Cache read error (continuing without cache):', cacheError.message);
+    }
+
     const result = await pool.query('SELECT * FROM get_sponsor_stats()');
-    res.json({
+
+    const response = {
       success: true,
-      data: result.rows
-    });
+      data: result.rows,
+      meta: {
+        cache_hit: false
+      }
+    };
+
+    // Cache the response
+    try {
+      await redis.set(cacheKey, JSON.stringify(response), 'EX', CACHE_TTL.SPONSOR_STATS);
+      console.log(`Cached sponsor stats with key: ${cacheKey}`);
+    } catch (cacheError) {
+      console.warn('Cache write error (continuing without cache):', cacheError.message);
+    }
+
+    res.json(response);
   } catch (error) {
     console.error('Error fetching sponsor stats:', error);
     res.status(500).json({
@@ -77,7 +152,7 @@ router.put('/venues/:id/tier', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { tier, priority } = req.body;
-    
+
     // Validate tier
     const validTiers = ['bronze', 'silver', 'gold', null];
     if (!validTiers.includes(tier)) {
@@ -86,7 +161,7 @@ router.put('/venues/:id/tier', requireAdmin, async (req, res) => {
         error: 'Invalid sponsor tier. Must be bronze, silver, gold, or null'
       });
     }
-    
+
     // Validate priority
     if (priority !== undefined && (typeof priority !== 'number' || priority < 0)) {
       return res.status(400).json({
@@ -94,9 +169,13 @@ router.put('/venues/:id/tier', requireAdmin, async (req, res) => {
         error: 'Invalid priority. Must be a non-negative number'
       });
     }
-    
+
     await pool.query('SELECT update_sponsor_tier($1, $2, $3)', [id, tier, priority]);
-    
+
+    // Invalidate caches after tier update
+    await invalidateSearchCaches();
+    await invalidateSponsorStatsCache();
+
     res.json({
       success: true,
       message: 'Sponsor tier updated successfully'
@@ -146,24 +225,24 @@ router.get('/venues/:id', async (req, res) => {
 router.post('/venues/bulk/tier', requireAdmin, async (req, res) => {
   try {
     const { venues } = req.body; // Array of { id, tier, priority }
-    
+
     if (!Array.isArray(venues) || venues.length === 0) {
       return res.status(400).json({
         success: false,
         error: 'venues must be a non-empty array'
       });
     }
-    
+
     const validTiers = ['bronze', 'silver', 'gold', null];
     let updated = 0;
     let errors = 0;
-    
+
     for (const venue of venues) {
       if (!validTiers.includes(venue.tier)) {
         errors++;
         continue;
       }
-      
+
       try {
         await pool.query('SELECT update_sponsor_tier($1, $2, $3)', [
           venue.id,
@@ -175,7 +254,11 @@ router.post('/venues/bulk/tier', requireAdmin, async (req, res) => {
         errors++;
       }
     }
-    
+
+    // Invalidate caches after bulk tier update
+    await invalidateSearchCaches();
+    await invalidateSponsorStatsCache();
+
     res.json({
       success: true,
       data: {
@@ -194,58 +277,98 @@ router.post('/venues/bulk/tier', requireAdmin, async (req, res) => {
 });
 
 // Get sponsor pricing information
-router.get('/pricing', (req, res) => {
-  // This would typically come from a database or config
-  // For now, return static pricing information
-  res.json({
-    success: true,
-    data: {
-      tiers: {
-        bronze: {
-          name: 'Bronze',
-          description: 'Appear in top 10 results with subtle badge',
-          features: [
-            'Top 10 placement',
-            'Subtle badge',
-            'Basic analytics'
-          ],
-          pricing: {
-            monthly: 99,
-            yearly: 990
+router.get('/pricing', async (req, res) => {
+  try {
+    const cacheKey = getSponsorPricingCacheKey();
+
+    // Check cache first
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        console.log(`Cache hit for sponsor pricing: ${cacheKey}`);
+        const parsedCache = JSON.parse(cached);
+        return res.json({
+          ...parsedCache,
+          meta: {
+            ...(parsedCache.meta || {}),
+            cache_hit: true
           }
-        },
-        silver: {
-          name: 'Silver',
-          description: 'Appear in top 5 results with prominent badge',
-          features: [
-            'Top 5 placement',
-            'Prominent badge',
-            'Advanced analytics',
-            'Priority support'
-          ],
-          pricing: {
-            monthly: 199,
-            yearly: 1990
-          }
-        },
-        gold: {
-          name: 'Gold',
-          description: 'Appear in top 3 results with featured styling',
-          features: [
-            'Top 3 placement',
-            'Featured styling',
-            'Premium analytics',
-            'Dedicated support',
-            'Custom branding'
-          ],
-          pricing: {
-            monthly: 499,
-            yearly: 4990
+        });
+      }
+    } catch (cacheError) {
+      console.warn('Cache read error (continuing without cache):', cacheError.message);
+    }
+
+    // Static pricing information (cached for 24 hours)
+    const response = {
+      success: true,
+      data: {
+        tiers: {
+          bronze: {
+            name: 'Bronze',
+            description: 'Appear in top 10 results with subtle badge',
+            features: [
+              'Top 10 placement',
+              'Subtle badge',
+              'Basic analytics'
+            ],
+            pricing: {
+              monthly: 99,
+              yearly: 990
+            }
+          },
+          silver: {
+            name: 'Silver',
+            description: 'Appear in top 5 results with prominent badge',
+            features: [
+              'Top 5 placement',
+              'Prominent badge',
+              'Advanced analytics',
+              'Priority support'
+            ],
+            pricing: {
+              monthly: 199,
+              yearly: 1990
+            }
+          },
+          gold: {
+            name: 'Gold',
+            description: 'Appear in top 3 results with featured styling',
+            features: [
+              'Top 3 placement',
+              'Featured styling',
+              'Premium analytics',
+              'Dedicated support',
+              'Custom branding'
+            ],
+            pricing: {
+              monthly: 499,
+              yearly: 4990
+            }
           }
         }
+      },
+      meta: {
+        cache_hit: false
       }
+    };
+
+    // Cache the response
+    try {
+      await redis.set(cacheKey, JSON.stringify(response), 'EX', CACHE_TTL.SPONSOR_PRICING);
+      console.log(`Cached sponsor pricing with key: ${cacheKey}`);
+    } catch (cacheError) {
+      console.warn('Cache write error (continuing without cache):', cacheError.message);
     }
-  });
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error fetching sponsor pricing:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch sponsor pricing'
+    });
+  }
 });
 
 module.exports = router;
