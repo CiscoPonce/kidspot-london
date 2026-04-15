@@ -1,0 +1,93 @@
+'use client';
+
+import { Trees, Building, Joystick, Dumbbell, MapPin } from 'lucide-react';
+import type { Venue } from '@/lib/api';
+
+interface VenueCardProps {
+  venue: Venue;
+  distance: number;
+  onSelect: () => void;
+  isSelected?: boolean;
+}
+
+const TYPE_ICONS = {
+  park: Trees,
+  community_hall: Building,
+  softplay: Joystick,
+  sports_centre: Dumbbell,
+  other: MapPin,
+} as const;
+
+type VenueType = keyof typeof TYPE_ICONS;
+
+const SPONSOR_BADGE_COLORS = {
+  gold: 'bg-amber-400 text-amber-900',
+  silver: 'bg-slate-300 text-slate-700',
+  bronze: 'bg-orange-600 text-orange-100',
+} as const;
+
+function formatDistance(miles: number): string {
+  return `${miles.toFixed(1)} miles`;
+}
+
+export function VenueCard({ venue, distance, onSelect, isSelected }: VenueCardProps) {
+  const IconComponent = TYPE_ICONS[(venue.type as VenueType) || 'other'];
+  const sponsorBadge = venue.sponsor_tier
+    ? SPONSOR_BADGE_COLORS[venue.sponsor_tier as keyof typeof SPONSOR_BADGE_COLORS]
+    : null;
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`
+        w-full text-left p-4 rounded-lg border transition-all duration-150
+        min-h-[72px] touch-manipulation
+        ${
+          isSelected
+            ? 'border-primary-500 bg-primary-50 shadow-md'
+            : 'border-secondary-200 bg-white hover:border-primary-300 hover:shadow-sm active:scale-[0.98]'
+        }
+      `}
+    >
+      <div className="flex items-start gap-3">
+        {/* Type Icon */}
+        <div
+          className={`
+            flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center
+            ${isSelected ? 'bg-primary-100 text-primary-600' : 'bg-secondary-100 text-secondary-600'}
+          `}
+        >
+          <IconComponent size={20} />
+        </div>
+
+        {/* Venue Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-semibold text-secondary-900 truncate">{venue.name}</h3>
+            {sponsorBadge && (
+              <span
+                className={`
+                  inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium uppercase
+                  ${sponsorBadge}
+                `}
+              >
+                {venue.sponsor_tier}
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-secondary-500 capitalize mt-0.5">
+            {venue.type.replace('_', ' ')}
+          </p>
+        </div>
+
+        {/* Distance */}
+        <div className="flex-shrink-0 text-right">
+          <span className="text-sm font-medium text-primary-600">
+            {formatDistance(distance)}
+          </span>
+        </div>
+      </div>
+    </button>
+  );
+}
