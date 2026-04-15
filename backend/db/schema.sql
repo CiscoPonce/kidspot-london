@@ -37,6 +37,20 @@ CREATE INDEX IF NOT EXISTS idx_venues_sponsor ON venues(sponsor_tier, sponsor_pr
 -- Create index for active venues only
 CREATE INDEX IF NOT EXISTS idx_venues_active ON venues(is_active) WHERE is_active = TRUE;
 
+-- Create deactivation log table for auditability
+CREATE TABLE IF NOT EXISTS deactivation_log (
+    id BIGSERIAL PRIMARY KEY,
+    venue_id BIGINT NOT NULL REFERENCES venues(id),
+    reason TEXT NOT NULL,                    -- 'permanently_closed', 'manual', 'duplicate'
+    deactivated_at TIMESTAMPTZ DEFAULT NOW(),
+    deactivated_by TEXT DEFAULT 'system',    -- 'system', 'admin', 'user_id'
+    notes TEXT
+);
+
+-- Create index for deactivation log queries
+CREATE INDEX IF NOT EXISTS idx_deactivation_log_venue ON deactivation_log(venue_id);
+CREATE INDEX IF NOT EXISTS idx_deactivation_log_date ON deactivation_log(deactivated_at);
+
 -- Create index for last_scraped (for cron agent to find stale venues)
 CREATE INDEX IF NOT EXISTS idx_venues_last_scraped ON venues(last_scraped);
 
@@ -167,13 +181,33 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to mark venue as inactive
-CREATE OR REPLACE FUNCTION deactivate_venue(venue_id BIGINT)
+-- Function to mark venue as inactive with audit logging
+CREATE OR REPLACE FUNCTION deactivate_venue(venue_id BIGINT, reason TEXT DEFAULT 'permanently_closed', notes TEXT DEFAULT NULL)
 RETURNS VOID AS $$
 BEGIN
+    -- Update venue status
     UPDATE venues
     SET is_active = FALSE
     WHERE id = venue_id;
+
+    -- Log deactivation for auditability
+    INSERT INTO deactivation_log (venue_id, reason, notes)
+    VALUES (venue_id, reason, notes);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to reactivate a venue (deactivation is reversible)
+CREATE OR REPLACE FUNCTION reactivate_venue(venue_id BIGINT, reactivated_by TEXT DEFAULT 'system', notes TEXT DEFAULT NULL)
+RETURNS VOID AS $$
+BEGIN
+    -- Reactivate venue
+    UPDATE venues
+    SET is_active = TRUE
+    WHERE id = venue_id;
+
+    -- Log reactivation
+    INSERT INTO deactivation_log (venue_id, reason, notes, deactivated_by)
+    VALUES (venue_id, 'reactivated', notes);
 END;
 $$ LANGUAGE plpgsql;
 

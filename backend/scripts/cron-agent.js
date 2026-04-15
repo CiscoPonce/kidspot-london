@@ -76,7 +76,7 @@ async function updateVenue(venueId, placeId) {
     
     // Check if venue is permanently closed
     if (details.permanently_closed) {
-      await pool.query('SELECT deactivate_venue($1)', [venueId]);
+      await pool.query('SELECT deactivate_venue($1, $2, $3)', [venueId, 'permanently_closed', 'Detected via Google Places API']);
       return { status: 'deactivated', message: 'Venue permanently closed' };
     }
     
