@@ -1,4 +1,13 @@
+'use client';
+
+import { useState } from 'react';
+import { SearchBar } from '@/components/search/search-bar';
+import { VenueList } from '@/components/venues/venue-list';
+import type { Venue } from '@/lib/api';
+
 export default function HomePage() {
+  const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
+
   return (
     <main className="min-h-screen bg-secondary-50">
       {/* Mobile breakpoint indicator - hidden in production */}
@@ -13,13 +22,30 @@ export default function HomePage() {
         <span className="text-primary-200">Desktop</span>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-bold text-secondary-900 sm:text-5xl">
+      {/* Header */}
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <h1 className="text-3xl font-bold text-secondary-900 sm:text-4xl">
           KidSpot London
         </h1>
-        <p className="mt-4 text-lg text-secondary-600">
+        <p className="mt-2 text-base text-secondary-600">
           Find child-friendly venues near you
         </p>
+      </div>
+
+      {/* Search Section */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mb-8">
+        <SearchBar />
+      </div>
+
+      {/* Venue List Section */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-8">
+        <h2 className="text-lg font-semibold text-secondary-900 mb-4">
+          Nearby Venues
+        </h2>
+        <VenueList
+          onVenueSelect={setSelectedVenue}
+          selectedId={selectedVenue?.id}
+        />
       </div>
     </main>
   );
