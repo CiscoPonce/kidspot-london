@@ -1,0 +1,61 @@
+{
+  "name": "kidspot-backend",
+  "version": "1.0.0",
+  "description": "KidSpot London Backend - API and data ingestion services",
+  "main": "src/server.js",
+  "author": "KidSpot London",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "kidspot",
+    "london",
+    "venues",
+    "children",
+    "parents",
+    "api",
+    "postgis",
+    "geospatial"
+  ],
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "worker": "node src/worker.js",
+    "worker:dev": "nodemon src/worker.js",
+    "download": "node scripts/download-datastore.js",
+    "import": "node scripts/import-london-datastore.js",
+    "verify": "node scripts/verify-import.js",
+    "discover": "node scripts/discovery/run-discovery.js",
+    "discover:google": "node scripts/discovery/google-places-discovery.js",
+    "discover:osm": "node scripts/discovery/osm-discovery.js",
+    "cron": "node scripts/cron-agent.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src scripts",
+    "lint:fix": "eslint src scripts --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "bullmq": "^5.1.5",
+    "cheerio": "^1.0.0-rc.12",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.0.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "ioredis": "^5.3.2",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.5",
+    "@types/pg": "^8.10.9",
+    "eslint": "^8.55.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "typescript": "^5.3.3"
+  }
+}
