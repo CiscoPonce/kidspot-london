@@ -8,58 +8,48 @@ require('dotenv').config();
 // Configuration
 const DATA_DIR = path.join(__dirname, '../data');
 
-// London Datastore dataset URLs
-// Research findings (April 2026) - Actual dataset availability:
-// - Direct "leisure-centres", "community-halls", "sports-facilities" CSV datasets do NOT exist on data.london.gov.uk
-// - GiGL "Spaces to Visit" (dataset 2rqo4) is available but provides polygon geospatial data, not venue CSV
-// - GiGL Open Space dataset provides parks, playing fields, open spaces as GeoPackage/SHP
-// - London Datastore does NOT host a centralized CSV listing of leisure centres, community halls, or sports facilities
-// - Individual boroughs maintain separate venue lists; no unified London-wide dataset exists
+// London Datastore dataset URLs (verified April 2026)
 //
-// ACTUAL AVAILABLE CSV DATASETS on London Datastore that could support venue discovery:
-// 1. Access to Public Open Space and Nature by Ward (e1z0p) - ward-level aggregated stats, not venue points
-// 2. London Public Realm Trees (2r45m) - tree inventory with location coordinates
-// 3. GiGL Open Space Friends Group subset (2nwly) - open space sites with boundaries
-//
-// For KIDSPOT's actual needs (softplay venues, community halls, etc.), the recommended approach
-// is OpenStreetMap Overpass API which provides real-time point data for venues.
+// WORKING DATASETS FOUND:
+// 1. Cultural Infrastructure Map (2ko88) - Contains CSV files with actual venue point locations
+//    including community centres, arts centres, pubs, music venues, theatres, museums, etc.
+//    Each venue has name, address, latitude, longitude coordinates.
+// 2. Physically Active Children (e18yk) - Sports/recreation data by borough
 //
 // URL PATTERN for London Datastore downloads:
 // https://data.london.gov.uk/download/{dataset-id}/{file-id}/{filename}
 //
-// Current URLs point to actual available datasets with similar subject matter
+// IMPORTANT NOTE: GiGL "Spaces to Visit" and "Open Space Friends Group" datasets were
+// WITHDRAWN from open data in October 2025. The URLs in the original script return 404.
+//
+// Also note: The 2019 Cultural Infrastructure Map datasets (below) are older but still
+// provide valid point-location venue data. For production use, consider the 2023/2024
+// datasets via the Cultural Infrastructure Map web app at apps.london.gov.uk/cim/
 const DATASETS = [
   {
     name: 'leisure-centres',
-    // Access to Public Open Space and Nature by Ward - closest available "leisure/open space" data
-    url: 'https://data.london.gov.uk/download/access-to-public-open-space-and-nature-by-ward-e1z0p/4c9e7f8a-3b21-4f5e-8c1d-9e5f2a3b4c6d/Access_to_POS_and_Nature_by_Ward.csv',
+    // Arts centres from Cultural Infrastructure Map 2019 - multi-use cultural venues
+    url: 'https://data.london.gov.uk/download/2ko88/bec79216-7a51-4810-89d5-da8cc44d8458/Arts_centres.csv',
     filename: 'leisure-centres.csv'
   },
   {
     name: 'community-halls',
-    // GiGL Open Space Friends Group subset - community-accessible open spaces
-    url: 'https://data.london.gov.uk/download/gigl-open-space-friends-group-subset-2nwly/2a5c3f4e-6d8a-4b9c-8e1f-3d5c7a9b2e4f/gigl-open-space-friends-group-subset.csv',
+    // Community centres from Cultural Infrastructure Map 2019 - publicly accessible community venues
+    url: 'https://data.london.gov.uk/download/2ko88/a8625bba-addb-4fae-a737-244b2281f429/2019%20publication%20-%20Community_centres%20%28Nov%202023%29.csv',
     filename: 'community-halls.csv'
   },
   {
     name: 'sports-facilities',
-    // Physically Active Children dataset - sports/recreation related data by borough
-    url: 'https://data.london.gov.uk/download/physically-active-children-borough-e18yk/682edba9-4c08-4864-85aa-5c515c982612/physically-active-children.csv',
+    // Physically Active Children dataset - sports participation data by borough
+    url: 'https://data.london.gov.uk/download/e18yk/682edba9-4c08-4864-85aa-5c515c982612/physically-active-children.csv',
     filename: 'sports-facilities.csv'
   }
 ];
 
-// IMPORTANT DATA LIMITATIONS:
-// The CSV files from these URLs will NOT contain venue-level point data (names, addresses, postcodes)
-// suitable for direct import into KidSpot's venues table.
-// 
-// - Access_to_POS_and_Nature_by_Ward.csv: Contains ward-level statistics (% with POS access, distances)
-// - GiGL Friends Group subset.csv: Contains polygon boundaries of open spaces, not addressable venues
-// - physically-active-children.csv: Contains borough-level % of active children, not venue data
-//
-// For actual venue discovery (names, addresses, geolocation), use Overpass API:
-//   https://overpass-api.de/api/interpreter?data=[out:json][timeout:180];area["name"="Greater London"]->.a;(node["leisure"](area.a););out center;
-// Or query directly: https://overpass-turbo.eu/ with "leisure=*" in Greater London bbox
+// DATA NOTES:
+// - Arts_centres.csv: Contains arts centres with name, address, lat/lon coordinates
+// - Community_centres.csv: Contains community centres with name, address, lat/lon coordinates
+// - physically-active-children.csv: Borough-level sports participation statistics (not venue locations)
 
 // Create data directory if it doesn't exist
 if (!fs.existsSync(DATA_DIR)) {
