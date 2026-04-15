@@ -1,14 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { SearchBar } from '@/components/search/search-bar';
 import { VenueList } from '@/components/venues/venue-list';
 import { VenueMap } from '@/components/map/venue-map';
+import { VenueDetailModal } from '@/components/modals/venue-detail-modal';
 import { useSearch } from '@/hooks/use-search';
 import { fetchVenues, type Venue } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 
-function VenueMapSection() {
+interface VenueMapSectionProps {
+  onVenueSelect: (venue: Venue) => void;
+}
+
+function VenueMapSection({ onVenueSelect }: VenueMapSectionProps) {
   const { lat, lon, radius } = useSearch();
 
   const {
@@ -23,10 +28,6 @@ function VenueMapSection() {
     },
     enabled: lat !== null && lon !== null,
   });
-
-  const handleVenueSelect = (venue: Venue) => {
-    console.log('Selected venue:', venue);
-  };
 
   if (lat === null || lon === null) {
     return (
@@ -57,11 +58,19 @@ function VenueMapSection() {
     );
   }
 
-  return <VenueMap venues={venues} onVenueSelect={handleVenueSelect} />;
+  return <VenueMap venues={venues} onVenueSelect={onVenueSelect} />;
 }
 
 export default function HomePage() {
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
+
+  const handleVenueSelect = useCallback((venue: Venue) => {
+    setSelectedVenue(venue);
+  }, []);
+
+  const handleModalClose = useCallback(() => {
+    setSelectedVenue(null);
+  }, []);
 
   return (
     <main className="min-h-screen bg-secondary-50">
@@ -98,7 +107,7 @@ export default function HomePage() {
           Map View
         </h2>
         <div className="overflow-hidden rounded-lg shadow-md">
-          <VenueMapSection />
+          <VenueMapSection onVenueSelect={handleVenueSelect} />
         </div>
       </div>
 
@@ -108,10 +117,19 @@ export default function HomePage() {
           Nearby Venues
         </h2>
         <VenueList
-          onVenueSelect={setSelectedVenue}
+          onVenueSelect={handleVenueSelect}
           selectedId={selectedVenue?.id}
         />
       </div>
+
+      {/* Venue Detail Modal */}
+      {selectedVenue && (
+        <VenueDetailModal
+          venue={selectedVenue}
+          isOpen={true}
+          onClose={handleModalClose}
+        />
+      )}
     </main>
   );
 }
