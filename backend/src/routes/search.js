@@ -41,11 +41,56 @@ router.get('/venues', async (req, res) => {
       });
     }
 
-    // Set defaults
-    const radiusMeters = (parseFloat(radius_miles) || 5) * 1609.34; // Default 5 miles
-    const limitCount = parseInt(limit) || 50;
+    // Validate lat parameter (must be number, between -90 and 90)
+    const latVal = parseFloat(lat);
+    if (isNaN(latVal) || latVal < -90 || latVal > 90) {
+      return res.status(400).json({
+        success: false,
+        error: 'lat must be a number between -90 and 90'
+      });
+    }
+
+    // Validate lon parameter (must be number, between -180 and 180)
+    const lonVal = parseFloat(lon);
+    if (isNaN(lonVal) || lonVal < -180 || lonVal > 180) {
+      return res.status(400).json({
+        success: false,
+        error: 'lon must be a number between -180 and 180'
+      });
+    }
+
+    // Validate radius_miles parameter (must be number, between 0.1 and 50)
+    const radiusMilesVal = radius_miles ? parseFloat(radius_miles) : 5;
+    if (isNaN(radiusMilesVal) || radiusMilesVal < 0.1 || radiusMilesVal > 50) {
+      return res.status(400).json({
+        success: false,
+        error: 'radius_miles must be a number between 0.1 and 50'
+      });
+    }
+
+    // Validate type parameter (must be one of: softplay, community_hall, park, other)
+    const validTypes = ['softplay', 'community_hall', 'park', 'other'];
+    if (type && !validTypes.includes(type)) {
+      return res.status(400).json({
+        success: false,
+        error: `type must be one of: ${validTypes.join(', ')}`
+      });
+    }
+
+    // Validate limit parameter (must be number, between 1 and 100)
+    const limitVal = parseInt(limit) || 50;
+    if (isNaN(limitVal) || limitVal < 1 || limitVal > 100) {
+      return res.status(400).json({
+        success: false,
+        error: 'limit must be a number between 1 and 100'
+      });
+    }
+
+    // Set validated values
+    const radiusMeters = radiusMilesVal * 1609.34;
+    const limitCount = limitVal;
     const venueType = type || null;
-    const radiusKey = parseFloat(radius_miles) || 5;
+    const radiusKey = radiusMilesVal;
 
     // Generate cache key
     const cacheKey = getSearchCacheKey(lat, lon, radiusKey, venueType);
@@ -131,6 +176,15 @@ router.get('/venues', async (req, res) => {
 router.get('/venues/:id/details', async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Validate id parameter (must be positive integer)
+    const idVal = parseInt(id);
+    if (isNaN(idVal) || idVal < 1) {
+      return res.status(400).json({
+        success: false,
+        error: 'id must be a positive integer'
+      });
+    }
 
     // Generate cache key
     const cacheKey = getVenueDetailsCacheKey(id);
