@@ -68,10 +68,7 @@ export function RadiusSlider({ value, onChange }: RadiusSliderProps) {
             [&::-moz-range-thumb]:shadow-md
             [&::-moz-range-thumb]:cursor-pointer
             [&::-moz-range-thumb]:active:scale-110"
-          style={{
-            // Webkit specific for thumb positioning
-            '--thumb-offset': '0px'
-          }}
+          style={{}}
         />
       </div>
 

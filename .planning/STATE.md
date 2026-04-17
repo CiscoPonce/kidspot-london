@@ -1,15 +1,19 @@
 # KidSpot London - Project State
 
 ## Current Position
-**Phase**: 01 - Data Foundation
-**Plan**: 05 (executing)
-**Status**: Plan 01-05 complete - Gap G-02 closed
-**Last Updated**: April 15, 2026
+**Phase**: 05 - SEO & Detail Pages
+**Wave**: 02 (planning)
+**Status**: Wave 01 (Backend Slug Foundation) complete
+**Last Updated**: April 17, 2026
 
 ## Completed Phases
-None - This is a fresh project.
+- 01 - Data Foundation
+- 02 - Continuous Discovery
+- 03 - Agentic Search API
+- 04 - Frontend Core
+- 05 - Wave 01: Backend Slug Foundation
 
-## Current Phase: 01 - Data Foundation
+## Current Phase: 05 - SEO & Detail Pages
 
 ### Objective
 Provision infrastructure and establish the data foundation with initial venue imports.

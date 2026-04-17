@@ -2,10 +2,13 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgis/postgis:15-3.3-arm64
+    image: kartoza/postgis:15
+    ports:
+      - "5432:5432"
+    platform: linux/arm64
     environment:
       POSTGRES_USER: kidspot_admin
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
       POSTGRES_DB: kidspot
     volumes:
       - pgdata:/var/lib/postgresql/data

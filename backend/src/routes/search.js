@@ -270,6 +270,94 @@ router.get('/venues', async (req, res) => {
 });
 
 // Get venue details (agentic search - fetches full details on demand)
+router.get('/venues/slug/:slug/details', async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    if (!slug) {
+      return res.status(400).json({
+        success: false,
+        error: 'slug is required'
+      });
+    }
+
+    // Generate cache key
+    const cacheKey = `venue:slug:${slug}:details`;
+
+    // Check cache first
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        console.log(`Cache hit for venue details by slug: ${cacheKey}`);
+        const parsedCache = JSON.parse(cached);
+        return res.json({
+          ...parsedCache,
+          meta: {
+            ...(parsedCache.meta || {}),
+            cache_hit: true
+          }
+        });
+      }
+    } catch (cacheError) {
+      console.warn('Cache read error (continuing without cache):', cacheError.message);
+    }
+
+    // Get basic venue info from database
+    const venueResult = await pool.query(
+      `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug
+       FROM venues
+       WHERE slug = $1 AND is_active = TRUE`,
+      [slug]
+    );
+
+    if (venueResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Venue not found'
+      });
+    }
+
+    const venue = venueResult.rows[0];
+
+    // Fetch full details from source (agentic search)
+    let fullDetails = null;
+
+    if (venue.source === 'google' && venue.source_id) {
+      fullDetails = await fetchGooglePlaceDetails(venue.source_id);
+    } else if (venue.source === 'osm') {
+      fullDetails = await fetchOSMDetails(venue.source_id);
+    }
+
+    const response = {
+      success: true,
+      data: {
+        basic: venue,
+        details: fullDetails
+      },
+      meta: {
+        cache_hit: false
+      }
+    };
+
+    // Cache the response
+    try {
+      await redis.set(cacheKey, JSON.stringify(response), 'EX', CACHE_TTL.VENUE_DETAILS);
+      console.log(`Cached venue details for slug with key: ${cacheKey}`);
+    } catch (cacheError) {
+      console.warn('Cache write error (continuing without cache):', cacheError.message);
+    }
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error fetching venue details by slug:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch venue details'
+    });
+  }
+});
+
+// Get venue details (agentic search - fetches full details on demand)
 router.get('/venues/:id/details', async (req, res) => {
   try {
     const { id } = req.params;
@@ -306,7 +394,7 @@ router.get('/venues/:id/details', async (req, res) => {
 
     // Get basic venue info from database
     const venueResult = await pool.query(
-      `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier
+      `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug
        FROM venues
        WHERE id = $1 AND is_active = TRUE`,
       [id]

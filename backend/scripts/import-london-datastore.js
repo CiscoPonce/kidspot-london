@@ -5,6 +5,7 @@ const path = require('path');
 const { Pool } = require('pg');
 const csv = require('csv-parser');
 const axios = require('axios');
+const { generateSlug } = require('../src/utils/slug');
 require('dotenv').config();
 
 // Configuration
@@ -94,13 +95,15 @@ async function insertVenue(venue) {
   try {
     const result = await pool.query(
       `INSERT INTO venues (
-        source, source_id, name, type, lat, lon, last_scraped
-      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        source, source_id, name, type, lat, lon, borough, slug, last_scraped
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
       ON CONFLICT (source_id) DO UPDATE SET
         name = EXCLUDED.name,
         type = EXCLUDED.type,
         lat = EXCLUDED.lat,
         lon = EXCLUDED.lon,
+        borough = EXCLUDED.borough,
+        slug = EXCLUDED.slug,
         last_scraped = NOW()
       RETURNING id`,
       [
@@ -109,12 +112,18 @@ async function insertVenue(venue) {
         venue.name,
         venue.type,
         venue.lat,
-        venue.lon
+        venue.lon,
+        venue.borough,
+        venue.slug
       ]
     );
     
     return { status: 'inserted', id: result.rows[0].id };
   } catch (error) {
+    // Check if it's a slug collision (violates unique constraint on slug)
+    if (error.code === '23505' && error.constraint === 'idx_venues_slug') {
+      return { status: 'slug_collision', id: null };
+    }
     // Check if it's a duplicate (violates unique constraint on source_id)
     if (error.code === '23505') {
       return { status: 'duplicate', id: null };
@@ -166,6 +175,7 @@ async function importVenues(csvData, source) {
       const name = row.name || row.Name || row.venue_name || '';
       const postcode = row.postcode || row.Postcode || row.post_code || '';
       const csvType = row.type || row.Type || row.venue_type || 'other';
+      const borough = row.borough_name || row.Borough || 'London';
       
       // Skip rows without required fields
       if (!name || !postcode) {
@@ -188,18 +198,26 @@ async function importVenues(csvData, source) {
         continue;
       }
       
-      // Create venue object (minimal schema - only name, location, type, source)
+      // Create venue object (minimal schema)
       const venue = {
         source: source,
         source_id: sourceId,
         name: name,
         type: type,
         lat: coords.lat,
-        lon: coords.lon
+        lon: coords.lon,
+        borough: borough,
+        slug: generateSlug(name, borough)
       };
       
-      // Insert venue
-      const result = await insertVenue(venue);
+      // Insert venue with slug collision retry
+      let result = await insertVenue(venue);
+      
+      if (result.status === 'slug_collision') {
+        // Retry with hash
+        venue.slug = generateSlug(name, borough, { appendHash: true });
+        result = await insertVenue(venue);
+      }
       
       if (result.status === 'inserted') {
         inserted++;

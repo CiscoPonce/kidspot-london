@@ -208,8 +208,7 @@ export function VenueMap({ venues, onVenueSelect }: VenueMapProps) {
       const clusterId = features[0].properties?.cluster_id;
       const source = map.getSource('venues') as maplibregl.GeoJSONSource;
 
-      source.getClusterExpansionZoom(clusterId, (err, zoom) => {
-        if (err) return;
+      source.getClusterExpansionZoom(clusterId).then((zoom) => {
         const geometry = features[0].geometry;
         if (geometry.type === 'Point') {
           map.easeTo({
@@ -217,7 +216,7 @@ export function VenueMap({ venues, onVenueSelect }: VenueMapProps) {
             zoom: zoom ?? 14,
           });
         }
-      });
+      }).catch(() => {});
     };
 
     // Click on unclustered point to show popup

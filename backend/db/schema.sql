@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS venues (
 
 -- Create spatial index for blazing fast radius queries
 CREATE INDEX IF NOT EXISTS idx_venues_location ON venues USING GIST(
-    ST_MakePoint(lon, lat)::geography
+    (ST_MakePoint(lon, lat)::geography)
 );
 
 -- Create index for quick filtering by type
