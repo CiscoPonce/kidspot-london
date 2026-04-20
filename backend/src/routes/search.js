@@ -54,9 +54,12 @@ async function fetchBraveSearchResults(lat, lon, radiusMiles, type, limit) {
   }
   lastBraveSearchTime = Date.now();
 
-  // Build search query - removed hardcoded London for fallback flexibility
-  const typeQuery = type ? `${type} venues` : 'venues';
-  const searchQuery = `${typeQuery} near ${lat},${lon} within ${radiusMiles} miles`;
+  // Build search query - intelligently add London UK if search is in London area
+  const isRoughlyLondon = lat > 51.2 && lat < 51.7 && lon > -0.5 && lon < 0.3;
+  const locationSuffix = isRoughlyLondon ? 'London UK' : 'near me';
+  const typeQuery = type ? `${type} venues` : 'child friendly venues';
+  const searchQuery = `${typeQuery} near ${lat},${lon} ${locationSuffix}`;
+  console.log(`Brave Search Query: "${searchQuery}"`);
 
   console.log(`Brave Search fallback triggered for lat=${lat}, lon=${lon}`);
 
