@@ -581,13 +581,12 @@ async function fetchOSMDetails(osmId) {
   try {
     const response = await axios.get(`https://overpass-api.de/api/interpreter`, {
       params: {
-        data: `[out:json];node(${osmId});out;`
+        data: `[out:json];(node(${osmId});way(${osmId});relation(${osmId}););out;`
       },
       timeout: 10000
     });
-    
-    if (response.data && response.data.elements && response.data.elements.length > 0) {
-      const element = response.data.elements[0];
+
+    if (response.data && response.data.elements && response.data.elements.length > 0) {      const element = response.data.elements[0];
       return {
         address: element.tags?.address,
         phone: element.tags?.phone,
