@@ -54,9 +54,9 @@ async function fetchBraveSearchResults(lat, lon, radiusMiles, type, limit) {
   }
   lastBraveSearchTime = Date.now();
 
-  // Build search query
+  // Build search query - removed hardcoded London for fallback flexibility
   const typeQuery = type ? `${type} venues` : 'venues';
-  const searchQuery = `${typeQuery} near ${lat},${lon} within ${radiusMiles} miles London UK`;
+  const searchQuery = `${typeQuery} near ${lat},${lon} within ${radiusMiles} miles`;
 
   console.log(`Brave Search fallback triggered for lat=${lat}, lon=${lon}`);
 
@@ -64,7 +64,7 @@ async function fetchBraveSearchResults(lat, lon, radiusMiles, type, limit) {
     const response = await axios.get('https://api.search.brave.com/res/v1/web/search', {
       params: {
         q: searchQuery,
-        count: limit
+        count: Math.min(limit || 20, 20) // Brave API max count is 20
       },
       headers: {
         'Accept': 'application/json',
@@ -330,7 +330,9 @@ router.get('/venues', async (req, res) => {
 
     // Brave Search fallback: only trigger when local results are empty AND we're doing location search
     let fallbackVenues = null;
+    console.log(`Fallback check: results=${result.rows.length}, borough=${!!borough}, hasKey=${!!process.env.BRAVE_API_KEY}`);
     if (result.rows.length === 0 && !borough && process.env.BRAVE_API_KEY) {
+      console.log('Triggering Brave Search fallback...');
       fallbackVenues = await fetchBraveSearchResults(lat, lon, radiusMilesVal, venueType, limitCount);
       if (fallbackVenues && fallbackVenues.length > 0) {
         regular = fallbackVenues;
@@ -515,15 +517,19 @@ router.get('/venues/:id/details', async (req, res) => {
       console.warn('Cache read error (continuing without cache):', cacheError.message);
     }
 
-    // Get basic venue info from database
-    const venueResult = await pool.query(
-      `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug
-       FROM venues
-       WHERE id = $1 AND is_active = TRUE`,
-      [id]
-    );
+    // Get basic venue info from database (only if it's a numeric ID)
+    let venueResult;
+    if (!isBraveId) {
+      venueResult = await pool.query(
+        `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug
+         FROM venues
+         WHERE id = $1 AND is_active = TRUE`,
+        [id]
+      );
+    }
 
-    if (venueResult.rows.length === 0) {
+    if (!venueResult || venueResult.rows.length === 0) {
+      // If it's a Brave ID and not in cache, it's truly not found or expired
       return res.status(404).json({
         success: false,
         error: 'Venue not found'
