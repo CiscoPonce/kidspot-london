@@ -30,10 +30,19 @@ function getSponsorPricingCacheKey() {
 // Cache invalidation helpers
 async function invalidateSearchCaches() {
   try {
-    const keys = await redis.keys('search:*');
-    if (keys.length > 0) {
-      await redis.del(...keys);
-      console.log(`Invalidated ${keys.length} search cache keys`);
+    let cursor = '0';
+    let keysCount = 0;
+    do {
+      const [newCursor, keys] = await redis.scan(cursor, 'MATCH', 'search:*', 'COUNT', 100);
+      cursor = newCursor;
+      if (keys.length > 0) {
+        keysCount += keys.length;
+        await redis.del(...keys);
+      }
+    } while (cursor !== '0');
+
+    if (keysCount > 0) {
+      console.log(`Invalidated ${keysCount} search cache keys`);
     }
   } catch (error) {
     console.warn('Error invalidating search caches:', error.message);
