@@ -112,13 +112,8 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - [x] 05-03-PLAN.md — Programmatic Landing Pages
 - [x] 05-04-PLAN.md — SEO, Sitemaps & Social Sharing
 
-**Success Criteria**:
-- Each venue has a dedicated SEO-optimized page
-- Programmatic pages capture long-tail search traffic
-- OpenGraph tags display correctly on social media
-- Share button copies unique URL to clipboard
-
 ---
+
 ## Phase 6: Polish & Launch (Weeks 11-12)
 **Status**: Completed
 **Requirements**: [PERF-01, DEPLOY-01, MONITOR-01, UAT-01]
@@ -130,14 +125,16 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - [x] 06-02-PLAN.md — Setup PM2 process management
 - [x] 06-03-PLAN.md — Configure Plausible Analytics for privacy-first telemetry
 - [x] 06-04-PLAN.md — Conduct UAT testing with beta users
-- [x] 06-05-PLAN.md — Soft launch to select Reddit/Facebook groups
+- [x] 06-05-PLAN.md — Soft launch and Brave Search verification
 
 **Success Criteria**:
 - Application loads under 2 seconds on mobile
 - PM2 manages all processes with auto-restart
 - Analytics track search density and fallback rate
+- Brave Search fallback verified with production API key
 - Beta users provide positive feedback
 - Soft launch generates initial traffic and engagement
+
 
 ---
 
