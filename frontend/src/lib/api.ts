@@ -6,7 +6,9 @@ export interface Venue {
   type: string;
   lat: number;
   lon: number;
+  slug: string;
   source: string;
+  borough?: string;
   distance_miles?: number;
   sponsor_tier?: string | null;
 }
@@ -17,7 +19,9 @@ export interface VenueDetails {
   type: string;
   lat: number;
   lon: number;
+  slug: string;
   source: string;
+  borough?: string;
   address?: string;
   phone?: string;
   website?: string;
@@ -91,4 +95,10 @@ export async function getVenueDetails(
   venueId: number
 ): Promise<VenueDetails> {
   return fetchApi<VenueDetails>(`/search/venues/${venueId}/details`);
+}
+
+export async function getVenueBySlug(
+  slug: string
+): Promise<VenueDetails> {
+  return fetchApi<VenueDetails>(`/search/venues/slug/${slug}/details`);
 }

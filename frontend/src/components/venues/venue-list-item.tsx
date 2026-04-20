@@ -1,6 +1,7 @@
 'use client';
 
-import { Trees, Building, Joystick, Dumbbell, MapPin } from 'lucide-react';
+import Link from 'next/link';
+import { Trees, Building, Joystick, Dumbbell, MapPin, ExternalLink } from 'lucide-react';
 import type { Venue } from '@/lib/api';
 
 interface VenueListItemProps {
@@ -28,18 +29,24 @@ export function VenueListItem({ venue, distance, onTap, isHighlighted }: VenueLi
   const IconComponent = TYPE_ICONS[(venue.type as VenueType) || 'other'];
 
   return (
-    <button
-      type="button"
+    <div
       onClick={onTap}
       className={`
         w-full flex items-center gap-3 px-3 py-3 rounded-lg
-        min-h-[56px] touch-manipulation transition-all duration-150
+        min-h-[56px] touch-manipulation transition-all duration-150 cursor-pointer
         ${
           isHighlighted
             ? 'bg-primary-50 border border-primary-200'
             : 'hover:bg-secondary-50 active:bg-secondary-100'
         }
       `}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          onTap();
+        }
+      }}
     >
       {/* Icon */}
       <div
@@ -61,12 +68,20 @@ export function VenueListItem({ venue, distance, onTap, isHighlighted }: VenueLi
         </p>
       </div>
 
-      {/* Distance */}
-      <div className="flex-shrink-0 text-right">
+      {/* Distance & Link */}
+      <div className="flex items-center gap-3 flex-shrink-0">
         <span className="text-xs font-medium text-primary-600">
           {formatDistance(distance)}
         </span>
+        <Link
+          href={`/venue/${venue.slug}`}
+          onClick={(e) => e.stopPropagation()}
+          className="p-1 rounded-md text-secondary-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+          title="View full details"
+        >
+          <ExternalLink size={14} />
+        </Link>
       </div>
-    </button>
+    </div>
   );
 }

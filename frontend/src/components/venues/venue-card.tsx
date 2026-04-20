@@ -1,6 +1,7 @@
 'use client';
 
-import { Trees, Building, Joystick, Dumbbell, MapPin } from 'lucide-react';
+import Link from 'next/link';
+import { Trees, Building, Joystick, Dumbbell, MapPin, ExternalLink } from 'lucide-react';
 import type { Venue } from '@/lib/api';
 
 interface VenueCardProps {
@@ -37,18 +38,24 @@ export function VenueCard({ venue, distance, onSelect, isSelected }: VenueCardPr
     : null;
 
   return (
-    <button
-      type="button"
+    <div
       onClick={onSelect}
       className={`
         w-full text-left p-4 rounded-lg border transition-all duration-150
-        min-h-[72px] touch-manipulation
+        min-h-[72px] touch-manipulation cursor-pointer group
         ${
           isSelected
             ? 'border-primary-500 bg-primary-50 shadow-md'
             : 'border-secondary-200 bg-white hover:border-primary-300 hover:shadow-sm active:scale-[0.98]'
         }
       `}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          onSelect();
+        }
+      }}
     >
       <div className="flex items-start gap-3">
         {/* Type Icon */}
@@ -81,13 +88,21 @@ export function VenueCard({ venue, distance, onSelect, isSelected }: VenueCardPr
           </p>
         </div>
 
-        {/* Distance */}
-        <div className="flex-shrink-0 text-right">
+        {/* Distance & Link */}
+        <div className="flex flex-col items-end gap-2 flex-shrink-0">
           <span className="text-sm font-medium text-primary-600">
             {formatDistance(distance)}
           </span>
+          <Link
+            href={`/venue/${venue.slug}`}
+            onClick={(e) => e.stopPropagation()}
+            className="p-1 rounded-md text-secondary-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+            title="View full details"
+          >
+            <ExternalLink size={16} />
+          </Link>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
