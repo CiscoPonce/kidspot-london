@@ -89,20 +89,54 @@ async function fetchBraveSearchResults(lat, lon, radiusMiles, type, limit) {
     const results = response.data?.web?.results || [];
     console.log(`Brave Search fallback returned ${results.length} results`);
 
-    const fallbackVenues = results.map(result => ({
-      id: `brave_${Buffer.from(result.url).toString('base64').slice(0, 12)}`,
-      name: result.title,
-      type: type || 'other',
-      lat: lat,
-      lon: lon,
-      source: 'brave',
-      source_id: result.url,
-      sponsor_tier: null,
-      description: result.description,
-      website: result.url,
-      domain: result.meta_url?.domain || new URL(result.url).hostname,
-      meta_url: result.meta_url
-    }));
+    const fallbackVenues = results.map(result => {
+      const idStr = Buffer.from(result.url).toString('base64').slice(0, 12);
+      return {
+        id: `brave_${idStr}`,
+        name: result.title,
+        type: type || 'other',
+        lat: lat,
+        lon: lon,
+        source: 'brave',
+        source_id: result.url,
+        slug: `fallback-${idStr}`,
+        sponsor_tier: null,
+        description: result.description,
+        website: result.url,
+        domain: result.meta_url?.domain || new URL(result.url).hostname,
+        meta_url: result.meta_url
+      };
+    });
+
+    // Cache individual Brave results for the details endpoints
+    try {
+      for (const venue of fallbackVenues) {
+        const detailResponse = {
+          success: true,
+          data: {
+            basic: venue,
+            details: {
+              address: venue.description,
+              website: venue.website,
+              source: 'brave_search'
+            }
+          },
+          meta: {
+            is_fallback: true
+          }
+        };
+
+        // Cache by ID
+        const idCacheKey = getVenueDetailsCacheKey(venue.id);
+        await redis.set(idCacheKey, JSON.stringify(detailResponse), 'EX', CACHE_TTL.BRAVE_FALLBACK);
+
+        // Cache by Slug
+        const slugCacheKey = `venue:slug:${venue.slug}:details`;
+        await redis.set(slugCacheKey, JSON.stringify(detailResponse), 'EX', CACHE_TTL.BRAVE_FALLBACK);
+      }
+    } catch (cacheError) {
+      console.warn('Error caching individual Brave results:', cacheError.message);
+    }
 
     return fallbackVenues;
   } catch (error) {
@@ -454,12 +488,14 @@ router.get('/venues/:id/details', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate id parameter (must be positive integer)
+    // Validate id parameter (must be positive integer OR start with brave_)
+    const isBraveId = typeof id === 'string' && id.startsWith('brave_');
     const idVal = parseInt(id);
-    if (isNaN(idVal) || idVal < 1) {
+    
+    if (!isBraveId && (isNaN(idVal) || idVal < 1)) {
       return res.status(400).json({
         success: false,
-        error: 'id must be a positive integer'
+        error: 'id must be a positive integer or a valid fallback ID'
       });
     }
 
