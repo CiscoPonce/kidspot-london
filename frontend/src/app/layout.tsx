@@ -34,7 +34,6 @@ export default function RootLayout({
         <PlausibleProvider
           domain="kidspot.london"
           trackOutboundLinks={true}
-          proxy={true}
         />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
