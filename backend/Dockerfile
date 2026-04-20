@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 
 RUN npm ci --only=production && \
+    npm install -g pm2 && \
     npm cache clean --force
 
 COPY . .
