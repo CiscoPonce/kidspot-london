@@ -13,9 +13,32 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const venue = await getVenueBySlug(params.slug);
+    const title = `${venue.name} | KidSpot London`;
+    const description = `Details, location, and contact information for ${venue.name} in ${venue.borough || 'London'}.`;
+    
     return {
-      title: `${venue.name} | KidSpot London`,
-      description: `Details, location, and contact information for ${venue.name} in ${venue.borough || 'London'}.`,
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        type: 'website',
+        url: `https://kidspot.london/venue/${venue.slug}`,
+        images: [
+          {
+            url: '/og-image.png',
+            width: 1200,
+            height: 630,
+            alt: 'KidSpot London - Child-friendly venues',
+          },
+        ],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: ['/og-image.png'],
+      },
     };
   } catch (error) {
     return {
@@ -37,8 +60,31 @@ export default async function VenuePage({ params }: Props) {
     return notFound();
   }
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    name: venue.name,
+    description: venue.description || `Child-friendly venue in ${venue.borough || 'London'}`,
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: venue.borough || 'London',
+      addressCountry: 'GB',
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: venue.lat,
+      longitude: venue.lon,
+    },
+    url: `https://kidspot.london/venue/${venue.slug}`,
+    image: 'https://kidspot.london/og-image.png',
+  };
+
   return (
     <div className="min-h-screen bg-secondary-50 pb-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Navigation Header */}
       <header className="sticky top-0 z-30 flex h-14 items-center border-b bg-white/80 px-4 backdrop-blur-md">
         <Link

@@ -17,9 +17,25 @@ export async function generateMetadata({ params }: { params: { borough: string }
     };
   }
 
+  const title = `Best child-friendly venues in ${boroughName} | KidSpot London`;
+  const description = `Discover the top-rated child-friendly venues, soft play areas, and community halls in ${boroughName}, London.`;
+
   return {
-    title: `Best child-friendly venues in ${boroughName} | KidSpot London`,
-    description: `Discover the top-rated child-friendly venues, soft play areas, and community halls in ${boroughName}, London.`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      url: `https://kidspot.london/venues-in/${encodeURIComponent(boroughName.toLowerCase())}`,
+      images: ['/og-image.png'],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/og-image.png'],
+    },
   };
 }
 

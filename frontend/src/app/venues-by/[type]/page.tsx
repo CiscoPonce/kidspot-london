@@ -15,9 +15,25 @@ export async function generateMetadata({ params }: { params: { type: string } })
     };
   }
 
+  const title = `Best ${venueType.label} for kids in London | KidSpot London`;
+  const description = `Discover the top-rated ${venueType.label.toLowerCase()} for children and families across London. Find the perfect venue for your next outing or party.`;
+
   return {
-    title: `Best ${venueType.label} for kids in London | KidSpot London`,
-    description: `Discover the top-rated ${venueType.label.toLowerCase()} for children and families across London. Find the perfect venue for your next outing or party.`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      url: `https://kidspot.london/venues-by/${venueType.id}`,
+      images: ['/og-image.png'],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/og-image.png'],
+    },
   };
 }
 
