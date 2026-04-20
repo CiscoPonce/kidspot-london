@@ -15,7 +15,7 @@ interface VenueMapSectionProps {
 }
 
 function VenueMapSection({ onVenueSelect }: VenueMapSectionProps) {
-  const { lat, lon, radius } = useSearch();
+  const { lat, lon, radius, venueType } = useSearch();
   const plausible = usePlausible();
 
   const {
@@ -23,8 +23,8 @@ function VenueMapSection({ onVenueSelect }: VenueMapSectionProps) {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['venues', lat, lon, radius],
-    queryFn: () => fetchVenues(lat!, lon!, radius),
+    queryKey: ['venues', lat, lon, radius, venueType],
+    queryFn: () => fetchVenues(lat!, lon!, radius, venueType || undefined),
     enabled: lat !== null && lon !== null,
   });
 

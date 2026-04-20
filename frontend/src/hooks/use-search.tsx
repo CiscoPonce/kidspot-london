@@ -8,12 +8,14 @@ export interface SearchState {
   lon: number | null;
   radius: number;
   postcode: string;
+  venueType: string | null;
 }
 
 interface SearchContextValue extends SearchState {
   setSearchLocation: (lat: number, lon: number) => void;
   setPostcode: (postcode: string) => void;
   setRadius: (radius: number) => void;
+  setVenueType: (type: string | null) => void;
   clearSearch: () => void;
 }
 
@@ -27,6 +29,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   const [lon, setLon] = useState<number | null>(null);
   const [radius, setRadiusState] = useState(DEFAULT_RADIUS);
   const [postcode, setPostcodeState] = useState('');
+  const [venueType, setVenueTypeState] = useState<string | null>(null);
 
   const setSearchLocation = useCallback((newLat: number, newLon: number) => {
     setLat(newLat);
@@ -43,11 +46,17 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     plausible('RadiusChange', { props: { radius: newRadius } });
   }, [plausible]);
 
+  const setVenueType = useCallback((newType: string | null) => {
+    setVenueTypeState(newType);
+    plausible('TypeChange', { props: { type: newType } });
+  }, [plausible]);
+
   const clearSearch = useCallback(() => {
     setLat(null);
     setLon(null);
     setPostcodeState('');
     setRadiusState(DEFAULT_RADIUS);
+    setVenueTypeState(null);
   }, []);
 
   return (
@@ -57,9 +66,11 @@ export function SearchProvider({ children }: { children: ReactNode }) {
         lon,
         radius,
         postcode,
+        venueType,
         setSearchLocation,
         setPostcode,
         setRadius,
+        setVenueType,
         clearSearch,
       }}
     >

@@ -112,37 +112,52 @@ async function processStaleVenues() {
     let updated = 0;
     let deactivated = 0;
     let errors = 0;
+
+    const CONCURRENCY = 5;
+    const queue = [...venues.entries()];
     
-    // Process venues in batches
-    for (const venue of venues) {
-      processed++;
+    // Function to process a single venue
+    const processVenue = async (venue, index) => {
+      const currentProcessed = ++processed;
+      console.log(`[${currentProcessed}/${venues.length}] Processing: ${venue.name} (${venue.source})`);
       
-      console.log(`[${processed}/${venues.length}] Processing: ${venue.name} (${venue.source})`);
-      
-      let result;
+      let res;
       
       if (venue.source === 'google') {
-        result = await updateVenue(venue.id, venue.source_id);
+        res = await updateVenue(venue.id, venue.source_id);
       } else {
         // For non-Google sources, just update the scrape timestamp
         await pool.query('SELECT update_venue_scrape_time($1)', [venue.id]);
-        result = { status: 'updated', message: 'Timestamp updated' };
+        res = { status: 'updated', message: 'Timestamp updated' };
       }
       
-      if (result.status === 'updated') {
+      if (res.status === 'updated') {
         updated++;
-        console.log(`  ✓ Updated: ${result.message || 'OK'}`);
-      } else if (result.status === 'deactivated') {
+        console.log(`  ✓ Updated: ${res.message || 'OK'}`);
+      } else if (res.status === 'deactivated') {
         deactivated++;
-        console.log(`  ⚠ Deactivated: ${result.message}`);
+        console.log(`  ⚠ Deactivated: ${res.message}`);
       } else {
         errors++;
-        console.log(`  ✗ Error: ${result.message}`);
+        console.log(`  ✗ Error: ${res.message}`);
       }
       
-      // Add delay to respect API rate limits
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
+      // Add delay to respect API rate limits (staggered)
+      await new Promise(resolve => setTimeout(resolve, 200));
+    };
+
+    // Process venues with concurrency limit
+    const workers = Array(Math.min(CONCURRENCY, venues.length)).fill(0).map(async () => {
+      while (queue.length > 0) {
+        const entry = queue.shift();
+        if (entry) {
+          const [index, venue] = entry;
+          await processVenue(venue, index);
+        }
+      }
+    });
+
+    await Promise.all(workers);
     
     // Print summary
     console.log('\n=== Processing Summary ===');
