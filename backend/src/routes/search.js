@@ -116,6 +116,37 @@ async function fetchBraveSearchResults(lat, lon, radiusMiles, type, limit) {
   }
 }
 
+// Get all venue slugs for sitemap
+router.get('/slugs', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT slug, updated_at, sponsor_tier, sponsor_priority
+       FROM venues
+       WHERE is_active = TRUE
+       ORDER BY
+           CASE
+               WHEN sponsor_tier = 'gold' THEN 1
+               WHEN sponsor_tier = 'silver' THEN 2
+               WHEN sponsor_tier = 'bronze' THEN 3
+               ELSE 4
+           END,
+           sponsor_priority DESC NULLS LAST,
+           updated_at DESC`
+    );
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    console.error('Error fetching slugs:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch slugs'
+    });
+  }
+});
+
 // Search venues by location and radius
 router.get('/venues', async (req, res) => {
   try {

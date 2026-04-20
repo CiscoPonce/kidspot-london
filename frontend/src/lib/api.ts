@@ -144,3 +144,7 @@ export async function getVenueBySlug(
 ): Promise<VenueDetails> {
   return fetchApi<VenueDetails>(`/search/venues/slug/${slug}/details`);
 }
+
+export async function fetchAllSlugs(): Promise<{ slug: string; updated_at: string }[]> {
+  return fetchApi<{ slug: string; updated_at: string }[]>('/search/slugs');
+}
