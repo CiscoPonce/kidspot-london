@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
+import { Toaster } from 'sonner';
 import { QueryProvider } from '@/providers/query-provider';
 import { SearchProvider } from '@/hooks/use-search';
 import { MapProvider } from '@/components/map/map-context';
@@ -31,7 +32,10 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <QueryProvider>
           <SearchProvider>
-            <MapProvider>{children}</MapProvider>
+            <MapProvider>
+              {children}
+              <Toaster position="bottom-center" />
+            </MapProvider>
           </SearchProvider>
         </QueryProvider>
       </body>

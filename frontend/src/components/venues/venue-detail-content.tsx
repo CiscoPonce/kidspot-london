@@ -1,6 +1,7 @@
 'use client';
 
 import { VenueMapSnippet } from '@/components/map/venue-map-snippet';
+import { ShareButton } from '@/components/venues/share-button';
 import type { Venue, VenueDetails } from '@/lib/api';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -204,36 +205,38 @@ export function VenueDetailContent({
             )}
 
             {/* Action buttons */}
-            {(isValidPhone(phone) || isValidUrl(website)) && (
-              <div className="flex gap-3">
-                {isValidPhone(phone) && (
-                  <a
-                    href={`tel:${phone!.trim()}`}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700 active:scale-[0.98] transition-all"
-                    aria-label={`Call ${venue.name}`}
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
-                    Call
-                  </a>
-                )}
-                {isValidUrl(website) && (
-                  <a
-                    href={website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700 active:scale-[0.98] transition-all"
-                    aria-label={`Visit ${venue.name} website`}
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                    </svg>
-                    Website
-                  </a>
-                )}
-              </div>
-            )}
+            <div className="flex flex-wrap gap-3">
+              {isValidPhone(phone) && (
+                <a
+                  href={`tel:${phone!.trim()}`}
+                  className="flex flex-1 min-w-[100px] items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-700 active:scale-[0.98] transition-all"
+                  aria-label={`Call ${venue.name}`}
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  Call
+                </a>
+              )}
+              {isValidUrl(website) && (
+                <a
+                  href={website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-1 min-w-[100px] items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-primary-700 active:scale-[0.98] transition-all"
+                  aria-label={`Visit ${venue.name} website`}
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                  </svg>
+                  Website
+                </a>
+              )}
+              <ShareButton 
+                title={venue.name} 
+                className="flex-1 min-w-[100px] justify-center py-2.5"
+              />
+            </div>
           </>
         )}
       </div>
