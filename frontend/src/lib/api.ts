@@ -27,6 +27,7 @@ export interface VenueDetails {
   website?: string;
   rating?: number;
   opening_hours?: Record<string, string>;
+  sponsor_tier?: string | null;
 }
 
 export interface VenueSearchParams {
@@ -48,11 +49,18 @@ export interface VenueResponse {
     venues: Venue[];
   };
   all: Venue[];
+  meta?: {
+    fallback_triggered?: boolean;
+    fallback_source?: string | null;
+    fallback_count?: number;
+    cache_hit?: boolean;
+  };
 }
 
 interface ApiResponse<T> {
   success: boolean;
   data: T;
+  meta?: any;
   error?: string;
 }
 
@@ -78,6 +86,11 @@ async function fetchApi<T>(
 
   if (!json.success) {
     throw new Error(json.error || 'Unknown API error');
+  }
+
+  // Merge meta into data if it's an object
+  if (json.meta && typeof json.data === 'object' && json.data !== null) {
+    (json.data as any).meta = json.meta;
   }
 
   return json.data;

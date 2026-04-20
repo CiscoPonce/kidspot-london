@@ -64,7 +64,7 @@ export default async function VenuePage({ params }: Props) {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     name: venue.name,
-    description: venue.description || `Child-friendly venue in ${venue.borough || 'London'}`,
+    description: `Child-friendly venue in ${venue.borough || 'London'}`,
     address: {
       '@type': 'PostalAddress',
       addressLocality: venue.borough || 'London',

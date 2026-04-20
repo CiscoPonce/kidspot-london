@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { SearchBar } from '@/components/search/search-bar';
 import { VenueList } from '@/components/venues/venue-list';
 import { VenueMap } from '@/components/map/venue-map';
@@ -8,6 +8,7 @@ import { VenueDetailModal } from '@/components/modals/venue-detail-modal';
 import { useSearch } from '@/hooks/use-search';
 import { fetchVenues, type Venue } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
+import { usePlausible } from 'next-plausible';
 
 interface VenueMapSectionProps {
   onVenueSelect: (venue: Venue) => void;
@@ -15,19 +16,31 @@ interface VenueMapSectionProps {
 
 function VenueMapSection({ onVenueSelect }: VenueMapSectionProps) {
   const { lat, lon, radius } = useSearch();
+  const plausible = usePlausible();
 
   const {
-    data: venues = [],
+    data: venuesResponse,
     isLoading,
     error,
   } = useQuery({
     queryKey: ['venues', lat, lon, radius],
-    queryFn: () => {
-      if (lat === null || lon === null) return Promise.resolve([]);
-      return fetchVenues(lat, lon, radius);
-    },
+    queryFn: () => fetchVenues(lat!, lon!, radius),
     enabled: lat !== null && lon !== null,
   });
+
+  const venues = venuesResponse?.all || [];
+
+  // Track fallback results
+  useEffect(() => {
+    if (venuesResponse?.meta?.fallback_triggered) {
+      plausible('FallbackTriggered', { 
+        props: { 
+          source: venuesResponse.meta.fallback_source,
+          count: venuesResponse.meta.fallback_count 
+        } 
+      });
+    }
+  }, [venuesResponse, plausible]);
 
   if (lat === null || lon === null) {
     return (

@@ -96,19 +96,16 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 export function VenueList({ onVenueSelect, selectedId }: VenueListProps) {
   const { lat, lon, radius } = useSearch();
 
-  const { data: venues, isLoading, error, refetch } = useQuery({
+  const { data: venuesResponse, isLoading, error, refetch } = useQuery({
     queryKey: ['venues', lat, lon, radius],
-    queryFn: () => {
-      if (lat === null || lon === null) {
-        return [];
-      }
-      return fetchVenues(lat, lon, radius);
-    },
+    queryFn: () => fetchVenues(lat!, lon!, radius),
     enabled: lat !== null && lon !== null,
   });
 
+  const venues = venuesResponse?.all || [];
+
   // Sort venues by distance (nearest first)
-  const sortedVenues = venues
+  const sortedVenues = venues.length > 0
     ? [...venues].sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
     : [];
 

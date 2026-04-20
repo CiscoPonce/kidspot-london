@@ -1,9 +1,9 @@
 # KidSpot London - Project State
 
 ## Current Position
-**Phase**: 06 - Milestone 2 Review & Optimization
-**Wave**: 01 (planning)
-**Status**: Phase 05 fully complete
+**Phase**: 06 - Polish & Launch
+**Wave**: 02 (planning)
+**Status**: Wave 01 (Performance & Operations) complete
 **Last Updated**: April 20, 2026
 
 ## Completed Phases
@@ -12,8 +12,7 @@
 - 03 - Agentic Search API
 - 04 - Frontend Core
 - 05 - SEO & Detail Pages (Weeks 9-10)
-
-## Current Phase: 06 - Milestone 2 Review & Optimization
+- 06 - Wave 01: Performance & Operations
 
 ### Objective
 Provision infrastructure and establish the data foundation with initial venue imports.
