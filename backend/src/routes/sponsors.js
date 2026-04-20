@@ -1,13 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { Pool } = require('pg');
+const { pool } = require('../utils/db');
 const Redis = require('ioredis');
 require('dotenv').config();
-
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgres://kidspot_admin:password@localhost:5432/kidspot'
-});
 
 // Redis client for caching
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');

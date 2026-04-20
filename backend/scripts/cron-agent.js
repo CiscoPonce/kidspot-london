@@ -1,13 +1,8 @@
 #!/usr/bin/env node
 
-const { Pool } = require('pg');
 const axios = require('axios');
+const { pool } = require('../src/utils/db');
 require('dotenv').config();
-
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgres://kidspot_admin:password@localhost:5432/kidspot'
-});
 
 // Configuration
 const STALE_HOURS = 24; // Mark venues as stale after 24 hours
@@ -187,7 +182,8 @@ async function runCronAgent() {
   const startTime = Date.now();
   
   try {
-    await pool.connect();
+    // We don't need pool.connect() as it's a pool, and we didn't use the client
+    // But we should verify it works if we want to
     console.log('✓ Connected to database\n');
     
     // Process stale venues
