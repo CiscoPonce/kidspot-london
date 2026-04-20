@@ -119,19 +119,18 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - Share button copies unique URL to clipboard
 
 ---
-
 ## Phase 6: Polish & Launch (Weeks 11-12)
-**Status**: Planned
+**Status**: Completed
 **Requirements**: [PERF-01, DEPLOY-01, MONITOR-01, UAT-01]
 
 **Goal**: Optimize performance, deploy to production, and conduct UAT testing.
 
-**Plans**: 5 plans
-- [ ] 06-01-PLAN.md — Performance profiling and optimization
-- [ ] 06-02-PLAN.md — Setup PM2 process management
-- [ ] 06-03-PLAN.md — Configure Plausible Analytics for privacy-first telemetry
-- [ ] 06-04-PLAN.md — Conduct UAT testing with beta users
-- [ ] 06-05-PLAN.md — Soft launch to select Reddit/Facebook groups
+**Plans**:
+- [x] 06-01-PLAN.md — Performance profiling and optimization
+- [x] 06-02-PLAN.md — Setup PM2 process management
+- [x] 06-03-PLAN.md — Configure Plausible Analytics for privacy-first telemetry
+- [x] 06-04-PLAN.md — Conduct UAT testing with beta users
+- [x] 06-05-PLAN.md — Soft launch to select Reddit/Facebook groups
 
 **Success Criteria**:
 - Application loads under 2 seconds on mobile
@@ -143,8 +142,10 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 ---
 
 ## Requirements Index
+...
+## Last Updated
+April 20, 2026
 
-### Data Foundation
 - **DATA-01**: Provision ARM VPS with Docker Compose
 - **DATA-02**: Configure PostgreSQL + PostGIS with venue schema
 - **DATA-03**: Bulk import London Datastore CSVs

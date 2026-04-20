@@ -2,8 +2,8 @@
 
 ## Current Position
 **Phase**: 06 - Polish & Launch
-**Wave**: 02 (planning)
-**Status**: Wave 01 (Performance & Operations) complete
+**Wave**: 03 (Launched)
+**Status**: KidSpot London is Launched (Soft Launch)
 **Last Updated**: April 20, 2026
 
 ## Completed Phases
@@ -12,7 +12,7 @@
 - 03 - Agentic Search API
 - 04 - Frontend Core
 - 05 - SEO & Detail Pages (Weeks 9-10)
-- 06 - Wave 01: Performance & Operations
+- 06 - Polish & Launch (Milestone 2)
 
 ### Objective
 Provision infrastructure and establish the data foundation with initial venue imports.

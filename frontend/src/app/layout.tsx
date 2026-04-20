@@ -5,6 +5,7 @@ import PlausibleProvider from 'next-plausible';
 import { QueryProvider } from '@/providers/query-provider';
 import { SearchProvider } from '@/hooks/use-search';
 import { MapProvider } from '@/components/map/map-context';
+import { FeedbackButton } from '@/components/feedback-button';
 import './globals.css';
 
 const inter = Inter({
@@ -41,6 +42,7 @@ export default function RootLayout({
           <SearchProvider>
             <MapProvider>
               {children}
+              <FeedbackButton />
               <Toaster position="bottom-center" />
             </MapProvider>
           </SearchProvider>
