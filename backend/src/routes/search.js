@@ -25,7 +25,10 @@ const BRAVE_SEARCH_RATE_LIMIT = 1000;
 let lastBraveSearchTime = 0;
 
 // Helper to generate cache keys
-function getSearchCacheKey(lat, lon, radiusMiles, type) {
+function getSearchCacheKey(lat, lon, radiusMiles, type, borough) {
+  if (borough) {
+    return `search:borough:${borough.toLowerCase().replace(/\s+/g, '_')}:${type || 'all'}`;
+  }
   return `search:${parseFloat(lat).toFixed(4)}:${parseFloat(lon).toFixed(4)}:${radiusMiles}:${type || 'all'}`;
 }
 
@@ -116,32 +119,44 @@ async function fetchBraveSearchResults(lat, lon, radiusMiles, type, limit) {
 // Search venues by location and radius
 router.get('/venues', async (req, res) => {
   try {
-    const { lat, lon, radius_miles, type, limit } = req.query;
+    const { lat, lon, radius_miles, type, limit, borough } = req.query;
 
-    // Validate required parameters
-    if (!lat || !lon) {
+    // Validate required parameters: either borough OR (lat and lon)
+    if (!borough && (!lat || !lon)) {
       return res.status(400).json({
         success: false,
-        error: 'lat and lon are required'
+        error: 'Either borough or (lat and lon) are required'
       });
     }
 
-    // Validate lat parameter (must be number, between -90 and 90)
-    const latVal = parseFloat(lat);
-    if (isNaN(latVal) || latVal < -90 || latVal > 90) {
+    // Validate borough if provided (optional but must be non-empty)
+    if (borough && typeof borough !== 'string') {
       return res.status(400).json({
         success: false,
-        error: 'lat must be a number between -90 and 90'
+        error: 'borough must be a string'
       });
     }
 
-    // Validate lon parameter (must be number, between -180 and 180)
-    const lonVal = parseFloat(lon);
-    if (isNaN(lonVal) || lonVal < -180 || lonVal > 180) {
-      return res.status(400).json({
-        success: false,
-        error: 'lon must be a number between -180 and 180'
-      });
+    // Validate lat parameter if provided
+    if (lat) {
+      const latVal = parseFloat(lat);
+      if (isNaN(latVal) || latVal < -90 || latVal > 90) {
+        return res.status(400).json({
+          success: false,
+          error: 'lat must be a number between -90 and 90'
+        });
+      }
+    }
+
+    // Validate lon parameter if provided
+    if (lon) {
+      const lonVal = parseFloat(lon);
+      if (isNaN(lonVal) || lonVal < -180 || lonVal > 180) {
+        return res.status(400).json({
+          success: false,
+          error: 'lon must be a number between -180 and 180'
+        });
+      }
     }
 
     // Validate radius_miles parameter (must be number, between 0.1 and 50)
@@ -153,8 +168,8 @@ router.get('/venues', async (req, res) => {
       });
     }
 
-    // Validate type parameter (must be one of: softplay, community_hall, park, other)
-    const validTypes = ['softplay', 'community_hall', 'park', 'other'];
+    // Validate type parameter
+    const validTypes = ['softplay', 'community_hall', 'leisure_centre', 'library', 'park', 'museum', 'cafe', 'other'];
     if (type && !validTypes.includes(type)) {
       return res.status(400).json({
         success: false,
@@ -178,7 +193,7 @@ router.get('/venues', async (req, res) => {
     const radiusKey = radiusMilesVal;
 
     // Generate cache key
-    const cacheKey = getSearchCacheKey(lat, lon, radiusKey, venueType);
+    const cacheKey = getSearchCacheKey(lat, lon, radiusKey, venueType, borough);
 
     // Check cache first
     try {
@@ -199,18 +214,43 @@ router.get('/venues', async (req, res) => {
     }
 
     // Search venues from database (includes sponsor ranking)
-    const result = await pool.query(
-      'SELECT * FROM search_venues_by_radius($1, $2, $3, $4, $5)',
-      [parseFloat(lat), parseFloat(lon), radiusMeters, venueType, limitCount]
-    );
+    let result;
+    if (borough) {
+      // Search by borough
+      result = await pool.query(
+        `SELECT id, source, source_id, name, type, lat, lon, 
+                NULL as distance_miles, sponsor_tier, sponsor_priority, slug
+         FROM venues
+         WHERE is_active = TRUE
+         AND LOWER(borough) = LOWER($1)
+         AND ($2::TEXT IS NULL OR type = $2::TEXT)
+         ORDER BY
+             CASE
+                 WHEN sponsor_tier = 'gold' THEN 1
+                 WHEN sponsor_tier = 'silver' THEN 2
+                 WHEN sponsor_tier = 'bronze' THEN 3
+                 ELSE 4
+             END,
+             sponsor_priority DESC NULLS LAST,
+             name ASC
+         LIMIT $3`,
+        [borough, venueType, limitCount]
+      );
+    } else {
+      // Search by radius
+      result = await pool.query(
+        'SELECT * FROM search_venues_by_radius($1, $2, $3, $4, $5)',
+        [parseFloat(lat), parseFloat(lon), radiusMeters, venueType, limitCount]
+      );
+    }
 
     // Separate sponsored and non-sponsored results
     const sponsored = result.rows.filter(v => v.sponsor_tier);
     let regular = result.rows.filter(v => !v.sponsor_tier);
 
-    // Brave Search fallback: only trigger when local results are empty
+    // Brave Search fallback: only trigger when local results are empty AND we're doing location search
     let fallbackVenues = null;
-    if (result.rows.length === 0 && process.env.BRAVE_API_KEY) {
+    if (result.rows.length === 0 && !borough && process.env.BRAVE_API_KEY) {
       fallbackVenues = await fetchBraveSearchResults(lat, lon, radiusMilesVal, venueType, limitCount);
       if (fallbackVenues && fallbackVenues.length > 0) {
         regular = fallbackVenues;
@@ -233,11 +273,12 @@ router.get('/venues', async (req, res) => {
       },
       meta: {
         search: {
-          lat: parseFloat(lat),
-          lon: parseFloat(lon),
+          lat: lat ? parseFloat(lat) : null,
+          lon: lon ? parseFloat(lon) : null,
           radius_miles: radiusKey,
           radius_meters: radiusMeters,
-          type: venueType
+          type: venueType,
+          borough: borough || null
         },
         sponsor_info: {
           gold_count: sponsored.filter(v => v.sponsor_tier === 'gold').length,
