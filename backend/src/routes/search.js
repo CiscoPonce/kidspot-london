@@ -121,11 +121,11 @@ router.get('/venues', async (req, res) => {
   try {
     const { lat, lon, radius_miles, type, limit, borough } = req.query;
 
-    // Validate required parameters: either borough OR (lat and lon)
-    if (!borough && (!lat || !lon)) {
+    // Validate required parameters: borough OR (lat and lon) OR type (for London-wide)
+    if (!borough && (!lat || !lon) && !type) {
       return res.status(400).json({
         success: false,
-        error: 'Either borough or (lat and lon) are required'
+        error: 'Either borough, (lat and lon), or type are required'
       });
     }
 
@@ -236,11 +236,31 @@ router.get('/venues', async (req, res) => {
          LIMIT $3`,
         [borough, venueType, limitCount]
       );
-    } else {
+    } else if (lat && lon) {
       // Search by radius
       result = await pool.query(
         'SELECT * FROM search_venues_by_radius($1, $2, $3, $4, $5)',
         [parseFloat(lat), parseFloat(lon), radiusMeters, venueType, limitCount]
+      );
+    } else {
+      // Search London-wide by type
+      result = await pool.query(
+        `SELECT id, source, source_id, name, type, lat, lon, 
+                NULL as distance_miles, sponsor_tier, sponsor_priority, slug
+         FROM venues
+         WHERE is_active = TRUE
+         AND ($1::TEXT IS NULL OR type = $1::TEXT)
+         ORDER BY
+             CASE
+                 WHEN sponsor_tier = 'gold' THEN 1
+                 WHEN sponsor_tier = 'silver' THEN 2
+                 WHEN sponsor_tier = 'bronze' THEN 3
+                 ELSE 4
+             END,
+             sponsor_priority DESC NULLS LAST,
+             name ASC
+         LIMIT $2`,
+        [venueType, limitCount]
       );
     }
 

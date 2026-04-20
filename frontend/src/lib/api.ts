@@ -130,15 +130,6 @@ export async function fetchVenuesByType(
     limit: limit.toString(),
   });
 
-  // Use a default location (London center) for type search if we want to reuse the same endpoint
-  // Or if we just want it to be London-wide, we might need a separate endpoint or allow search without location
-  // Given our backend change, we can't search ONLY by type without borough or lat/lon yet.
-  // Wait, I should probably allow searching by type only in the backend too.
-
-  params.set('lat', '51.5074');
-  params.set('lon', '-0.1278');
-  params.set('radius_miles', '50'); // All of London
-
   return fetchApi<VenueResponse>(`/search/venues?${params.toString()}`);
 }
 
