@@ -101,14 +101,14 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 ---
 
 ## Phase 5: SEO & Detail Pages (Weeks 9-10)
-**Status**: Planned
+**Status**: In Progress
 **Requirements**: [SEO-01, SEO-02, SEO-03, ROUTING-01]
 
 **Goal**: Implement programmatic SEO and dynamic routing for venue pages.
 
 **Plans**: 4 plans
-- [ ] 05-01-PLAN.md — Backend Slug Foundation & Migration
-- [ ] 05-02-PLAN.md — Venue Detail Standalone Pages
+- [x] 05-01-PLAN.md — Backend Slug Foundation & Migration
+- [x] 05-02-PLAN.md — Venue Detail Standalone Pages
 - [ ] 05-03-PLAN.md — Programmatic Landing Pages
 - [ ] 05-04-PLAN.md — SEO, Sitemaps & Social Sharing
 
