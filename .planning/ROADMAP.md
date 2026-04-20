@@ -24,13 +24,6 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - [x] 01-04-PLAN.md — Gap closure: Add worker service to docker-compose.yml
 - [x] 01-05-PLAN.md — Gap closure: Fix London Datastore URLs and verify data import
 
-**Success Criteria**:
-- VPS is provisioned with Docker Compose running
-- PostgreSQL + PostGIS extensions are active
-- Venue table with spatial index is created
-- Initial venue data from London Datastore is imported
-- Spatial queries (ST_DWithin) work correctly
-
 ---
 
 ## Phase 2: Ingestion Engine (Weeks 3-4)
@@ -45,13 +38,6 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - [x] 02-03-PLAN.md — Implement Overpass API (OSM) data import script
 - [x] 02-04-PLAN.md — Build deduplication logic with Levenshtein distance
 
-**Success Criteria**:
-- BullMQ workers process scraping jobs
-- OpenRouter successfully extracts structured data from unstructured HTML
-- OSM venue data is imported and geocoded
-- Duplicate venues are detected and prevented
-- All data sources converge into unified venue table
-
 ---
 
 ## Phase 3: Backend API & Fallback (Weeks 5-6)
@@ -63,17 +49,9 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 **Plans**:
 - [x] 03-01-PLAN.md — Create Express API with PostGIS spatial search endpoint
 - [x] 03-02-PLAN.md — Implement Redis caching layer for search results
-- [x] 03-03-PLAN.md — (deferred - FALLBACK-01 not implemented)
 - [x] 03-04-PLAN.md — Add rate limiting and security headers (Helmet.js)
 - [x] 03-05-PLAN.md — Gap closure: Security hardening
 - [x] 03-06-PLAN.md — Gap closure: Brave Search API fallback (FALLBACK-01)
-
-**Success Criteria**:
-- `/api/search` endpoint returns venues within radius
-- Results are cached in Redis for 1 hour
-- Fallback to Brave Search when no local results exist
-- Rate limiting prevents abuse (60 req/min per IP)
-- Security headers are properly configured
 
 ---
 
@@ -83,20 +61,12 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 **Goal**: Build mobile-first UI with map integration and real-time search.
 
-**Plans**: 5 plans
+**Plans**:
 - [x] 04-01-PLAN.md — Setup Next.js project with TailwindCSS and React Query
 - [x] 04-02-PLAN.md — Create search bar with location detection and radius slider
 - [x] 04-03-PLAN.md — Integrate MapLibre GL JS with dynamic venue pins
 - [x] 04-04-PLAN.md — Build venue list view with distance sorting
 - [x] 04-05-PLAN.md — Implement venue detail modal with map snippet
-
-**Success Criteria**:
-- Next.js app runs on mobile and desktop
-- Search bar accepts postcode or "Use My Location"
-- Radius slider adjusts search area (1-10 miles)
-- Map displays venue pins with clustering
-- List view shows venues sorted by distance
-- Detail modal shows venue info with call/website buttons
 
 ---
 
@@ -106,7 +76,7 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 **Goal**: Implement programmatic SEO and dynamic routing for venue pages.
 
-**Plans**: 4 plans
+**Plans**:
 - [x] 05-01-PLAN.md — Backend Slug Foundation & Migration
 - [x] 05-02-PLAN.md — Venue Detail Standalone Pages
 - [x] 05-03-PLAN.md — Programmatic Landing Pages
@@ -127,22 +97,40 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - [x] 06-04-PLAN.md — Conduct UAT testing with beta users
 - [x] 06-05-PLAN.md — Soft launch and Brave Search verification
 
-**Success Criteria**:
-- Application loads under 2 seconds on mobile
-- PM2 manages all processes with auto-restart
-- Analytics track search density and fallback rate
-- Brave Search fallback verified with production API key
-- Beta users provide positive feedback
-- Soft launch generates initial traffic and engagement
+---
 
+## Phase 7: The Improvement Phase (Weeks 13+)
+**Status**: In Progress
+**Requirements**: [FIX-01, FIX-02, FIX-03, SEC-01, PERF-02, ARCH-01, ARCH-02, TEST-01, RANK-01, DATA-04, PIPE-01, SEO-04, REV-01, UPGRADE-01]
+
+**Goal**: Transition from soft-launch prototype to production-hardened platform with improved ranking, SEO, and revenue features.
+
+**Plans**: 11 plans
+- [ ] 07-01-PLAN.md — P0: Correctness & Critical Fixes
+- [ ] 07-02-PLAN.md — P0: Security Hardening & Health Monitoring
+- [ ] 07-03-PLAN.md — P0: Core API Client & Redis Refactor
+- [ ] 07-04-PLAN.md — P1: Layered Backend Architecture & Shared Types
+- [ ] 07-05-PLAN.md — P1: Quality Baseline (Testing & CI)
+- [ ] 07-06-PLAN.md — P2: Data Model Enrichment & Scoring Engine
+- [ ] 07-07-PLAN.md — P2: Search Optimization & Data Backfill
+- [ ] 07-08-PLAN.md — P3: GitHub Actions Discovery Pipeline
+- [ ] 07-09-PLAN.md — P4: Advanced SEO & SSR Optimization
+- [ ] 07-10-PLAN.md — P4: Revenue Loop (Venue Claims & Stripe)
+- [ ] 07-11-PLAN.md — P5: Framework Upgrades (Node 22, Next 16, React 19)
+
+**Success Criteria**:
+- Worker service stable without crash loops
+- "Kid Score" ranking engine driving search results
+- GitHub Actions successfully automating discovery
+- 100% SEO coverage with valid JSON-LD
+- Stripe claim flow operational
+- App running on Node 22, Next 16, React 19, Tailwind 4
 
 ---
 
 ## Requirements Index
-...
-## Last Updated
-April 20, 2026
 
+### Data Foundation
 - **DATA-01**: Provision ARM VPS with Docker Compose
 - **DATA-02**: Configure PostgreSQL + PostGIS with venue schema
 - **DATA-03**: Bulk import London Datastore CSVs
@@ -180,6 +168,22 @@ April 20, 2026
 - **MONITOR-01**: Configure Plausible Analytics
 - **UAT-01**: Conduct UAT testing
 
+### Phase 7: Improvement
+- **FIX-01**: Fix worker crash loop and service config
+- **FIX-02**: Fix Brave search coordinate bug
+- **FIX-03**: Fix Google Places API implementation (v1/FieldMask)
+- **SEC-01**: Security hardening (HMAC, timing-safe, CSP)
+- **PERF-02**: Redis-backed rate limiting and caching refactor
+- **ARCH-01**: Layered backend refactor (Controllers/Services/Clients)
+- **ARCH-02**: TypeScript migration and unified types
+- **TEST-01**: Unit and route testing (Vitest)
+- **RANK-01**: Kid Score ranking engine (TS port)
+- **DATA-04**: Enriched data model (Kid Score, ratings, types)
+- **PIPE-01**: GitHub Actions discovery pipeline
+- **SEO-04**: Advanced SEO (Sitemaps index, SSR/ISR optimization)
+- **REV-01**: Venue claim and Stripe sponsorship flow
+- **UPGRADE-01**: Framework upgrades (Node 22, Next 16, React 19)
+
 ---
 
 ## Milestones
@@ -190,8 +194,9 @@ April 20, 2026
 - **Milestone 4 (Week 8)**: Frontend Complete - Full UI with map integration working
 - **Milestone 5 (Week 10)**: SEO Complete - Programmatic pages generating traffic
 - **Milestone 6 (Week 12)**: Launch - Production deployment with initial users
+- **Milestone 7 (Week 16)**: Improvement - Production-hardened with ranking and revenue
 
 ---
 
 ## Last Updated
-April 20, 2026
+May 15, 2026
