@@ -36,13 +36,15 @@ function mapVenueType(googleTypes) {
   return 'other';
 }
 
+const { calculateKidScore } = require('../src/scoring/kidScore.ts');
+
 // Get venue details from Google Places API
 async function getVenueDetails(placeId) {
   try {
     const response = await axios.get(`${BASE_URL}/details/json`, {
       params: {
         place_id: placeId,
-        fields: 'name,types,permanently_closed',
+        fields: 'name,types,permanently_closed,rating,user_ratings_total',
         key: GOOGLE_PLACES_API_KEY
       },
       timeout: 10000
@@ -61,7 +63,8 @@ async function getVenueDetails(placeId) {
 }
 
 // Update venue information
-async function updateVenue(venueId, placeId) {
+async function updateVenue(venue) {
+  const { id: venueId, source_id: placeId, name: venueName } = venue;
   try {
     const details = await getVenueDetails(placeId);
     
@@ -75,17 +78,26 @@ async function updateVenue(venueId, placeId) {
       return { status: 'deactivated', message: 'Venue permanently closed' };
     }
     
-    // Update venue type
-    const newType = mapVenueType(details.types);
+    // Update venue type and kid_score
+    const newType = mapVenueType(details.types || []);
+    
+    const kidScoreInput = {
+      name: details.name || venueName,
+      types: [newType], // Use mapped type or raw types? calculateKidScore expects our mapped types or raw? The test used 'softplay', 'park'. So mapped type.
+      rating: details.rating,
+      user_ratings_total: details.user_ratings_total
+    };
+    
+    const kidScore = calculateKidScore(kidScoreInput);
     
     await pool.query(
       `UPDATE venues 
-       SET type = $1, last_scraped = NOW()
-       WHERE id = $2`,
-      [newType, venueId]
+       SET type = $1, rating = $2, user_ratings_total = $3, kid_score = $4, enriched_at = NOW(), last_scraped = NOW()
+       WHERE id = $5`,
+      [newType, details.rating || null, details.user_ratings_total || null, kidScore, venueId]
     );
     
-    return { status: 'updated', type: newType };
+    return { status: 'updated', type: newType, kidScore };
   } catch (error) {
     console.error(`Error updating venue ${venueId}:`, error.message);
     return { status: 'error', message: error.message };
@@ -124,7 +136,7 @@ async function processStaleVenues() {
       let res;
       
       if (venue.source === 'google') {
-        res = await updateVenue(venue.id, venue.source_id);
+        res = await updateVenue(venue);
       } else {
         // For non-Google sources, just update the scrape timestamp
         await pool.query('SELECT update_venue_scrape_time($1)', [venue.id]);
