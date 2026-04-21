@@ -126,20 +126,41 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ---
 
+## Phase 7.5: Cleanup Sprint (Weeks 15-16)
+**Status**: Not Started
+**Requirements**: [TS-01, TEST-02, DB-01, API-04, VERIFY-01]
+
+**Goal**: Address lingering technical debt, expand test coverage, prepare the database schema for the revenue loop, and swap Google Places for zero-cost Yelp Fusion waterfall before framework upgrades.
+
+**Plans**:
+- [ ] 07.5-01-PLAN.md — Convert worker.js to TypeScript and fix missing environment variables
+- [ ] 07.5-02-PLAN.md — Expand backend test coverage to 40-50%
+- [ ] 07.5-03-PLAN.md — Create database migrations for Phase 8 features
+- [ ] 07.5-04-PLAN.md — Implement zero-cost Yelp Fusion waterfall API replacing Google Places
+- [ ] 07.5-05-PLAN.md — Complete Phase 7.5 verification
+
+**Success Criteria**:
+- `worker.ts` compiled and integrated safely
+- 40-50% test coverage achieved across services/routes
+- Phase 8 database schema active (Stripe, Claim statuses)
+- Yelp Fusion waterfall operational with Redis caching
+- 100% Phase 7.5 verification complete
+
+---
+
 ## Phase 8: Revenue & Framework Modernization (Weeks 17+)
 **Status**: Not Started
 **Requirements**: [REV-01, UPGRADE-01, CI-01, ANALYTICS-01, POLISH-01]
 
 **Goal**: Complete the revenue loop with Stripe integration and modernize the framework stack to current stable versions.
 
-**Plans**: 7 plans
+**Plans**: 6 plans
 - [ ] 08-01-PLAN.md — Revenue Loop: Claim Your Listing Flow
 - [ ] 08-02-PLAN.md — Admin Audit Log and Fraud Prevention
 - [ ] 08-03-PLAN.md — Framework Upgrades: Node 22, Express 5, Next 16, React 19, Tailwind 4
-- [ ] 08-04-PLAN.md — Google Places API v1 Migration
-- [ ] 08-05-PLAN.md — Quality Baseline: CI Pipeline, ESLint Flat Config, Zod Schemas
-- [ ] 08-06-PLAN.md — Analytics and Observability: Plausible Events, Prom-Client Metrics
-- [ ] 08-07-PLAN.md — Product Surface Polish: Server Components, Map Clustering
+- [ ] 08-04-PLAN.md — Quality Baseline: CI Pipeline, ESLint Flat Config, Zod Schemas
+- [ ] 08-05-PLAN.md — Analytics and Observability: Plausible Events, Prom-Client Metrics
+- [ ] 08-06-PLAN.md — Product Surface Polish: Server Components, Map Clustering
 
 **Success Criteria**:
 - Venue owners can claim listings and upgrade to paid tiers via Stripe

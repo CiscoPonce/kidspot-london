@@ -10,7 +10,6 @@ Complete the revenue loop with Stripe integration and modernize the framework st
 - Implement claim your listing flow with Stripe sponsorship tiers
 - Add admin audit log for fraud prevention
 - Upgrade to Node 22, Express 5, Next 16, React 19, Tailwind 4
-- Migrate to Google Places API v1
 - Establish CI pipeline with lint, typecheck, and tests
 - Add analytics events and observability metrics
 - Polish product surface with Server Components and map clustering
@@ -21,7 +20,7 @@ Complete the revenue loop with Stripe integration and modernize the framework st
 
 ### Framework Upgrade Strategy
 - **D-01**: Use sequential phased approach - each upgrade ships behind its own feature branch with CI gate. This minimizes blast radius and makes rollbacks easier to debug.
-- **D-02**: Follow proposal order for upgrades: Node 22 → Express 5 → Frontend coordinated (Next 16 + React 19 + Tailwind 4 + MapLibre 5) → Google Places v1. This isolates breaking changes and follows a proven path.
+- **D-02**: Follow proposal order for upgrades: Node 22 → Express 5 → Frontend coordinated (Next 16 + React 19 + Tailwind 4 + MapLibre 5). This isolates breaking changes and follows a proven path.
 - **D-03**: Full coverage testing before each upgrade - aim for 80%+ coverage on services and routes, add E2E tests with Playwright for user flows. This is thorough but time-intensive.
 - **D-04**: Fix-forward only for rollbacks - if an upgrade causes issues, we'll fix it forward rather than reverting. This is the fastest approach but highest risk.
 
