@@ -96,8 +96,8 @@ async function testRateLimiting() {
   
   // Make 60 requests quickly to trigger rate limit
   let rateLimited = false;
-  let requests Made = 0;
-  
+  let requestsMade = 0;
+
   for (let i = 0; i < 65; i++) {
     try {
       const res = await makeRequest({
@@ -106,15 +106,16 @@ async function testRateLimiting() {
         method: 'GET'
       });
       requestsMade++;
-      
+
       if (res.status === 429) {
         rateLimited = true;
         break;
       }
-    } catch (error) {
-      // Ignore errors during rate limit test
+    } catch (e) {
+      // Ignore errors for individual requests
     }
   }
+
 
   logTest('Rate limiting triggers after 60 requests', rateLimited,
     rateLimited ? 'Got 429 after 60 requests' : `Made ${requestsMade} requests without rate limit`);
