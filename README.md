@@ -18,15 +18,15 @@
 ## 🛠️ Technical Stack
 
 ### Frontend
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 16.2 (App Router)
 - **Styling**: Tailwind CSS
 - **Maps**: MapLibre GL JS
 - **State Management**: React Query
 - **Analytics**: Plausible (Privacy-first)
 
 ### Backend
-- **Runtime**: Node.js 20 (Express)
-- **Database**: PostgreSQL 15 + PostGIS (Spatial queries)
+- **Runtime**: Node.js 22 (Express)
+- **Database**: PostgreSQL 15 + PostGIS (Official arm64 supported image)
 - **Caching**: Redis
 - **Task Queue**: BullMQ (for background discovery)
 - **Process Manager**: PM2
