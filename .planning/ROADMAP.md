@@ -105,18 +105,16 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 **Goal**: Transition from soft-launch prototype to production-hardened platform with improved ranking, SEO, and revenue features.
 
-**Plans**: 11 plans
-- [ ] 07-01-PLAN.md — P0: Correctness & Critical Fixes
-- [ ] 07-02-PLAN.md — P0: Security Hardening & Health Monitoring
-- [ ] 07-03-PLAN.md — P0: Core API Client & Redis Refactor
-- [ ] 07-04-PLAN.md — P1: Layered Backend Architecture & Shared Types
-- [ ] 07-05-PLAN.md — P1: Quality Baseline (Testing & CI)
-- [ ] 07-06-PLAN.md — P2: Data Model Enrichment & Scoring Engine
-- [ ] 07-07-PLAN.md — P2: Search Optimization & Data Backfill
-- [ ] 07-08-PLAN.md — P3: GitHub Actions Discovery Pipeline
-- [ ] 07-09-PLAN.md — P4: Advanced SEO & SSR Optimization
-- [ ] 07-10-PLAN.md — P4: Revenue Loop (Venue Claims & Stripe)
-- [ ] 07-11-PLAN.md — P5: Framework Upgrades (Node 22, Next 16, React 19)
+**Plans**: 9 plans
+- [x] 07-01-PLAN.md — P0: Correctness & Critical Fixes
+- [x] 07-02-PLAN.md — P0: Security Hardening & Health Monitoring
+- [x] 07-03-PLAN.md — P0: Core API Client & Redis Refactor
+- [x] 07-04-PLAN.md — P1: Layered Backend Architecture & Shared Types
+- [x] 07-05-PLAN.md — P1: Quality Baseline (Testing & CI)
+- [x] 07-06-PLAN.md — P2: Data Model Enrichment, Scoring Engine & Backfill
+- [x] 07-07-PLAN.md — P2: Search Optimization & Data Backfill
+- [x] 07-08-PLAN.md — P3: GitHub Actions Discovery Pipeline
+- [x] 07-09-PLAN.md — P4: Advanced SEO & SSR Optimization
 
 **Success Criteria**:
 - Worker service stable without crash loops
