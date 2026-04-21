@@ -135,7 +135,7 @@ async function setupTestData() {
       await pool.query(`
         INSERT INTO venues (name, lat, lon, type, source, source_id, sponsor_tier, sponsor_priority, is_active)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
-        ON CONFLICT (source_id) DO UPDATE SET
+        ON CONFLICT (source, source_id) DO UPDATE SET
           name = EXCLUDED.name,
           sponsor_tier = EXCLUDED.sponsor_tier,
           sponsor_priority = EXCLUDED.sponsor_priority

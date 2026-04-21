@@ -26,6 +26,7 @@ export interface VenueDetails {
   phone?: string;
   website?: string;
   rating?: number;
+  user_ratings_total?: number;
   opening_hours?: Record<string, string>;
   sponsor_tier?: string | null;
 }

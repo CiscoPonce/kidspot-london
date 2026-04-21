@@ -1,11 +1,10 @@
-const express = require('express');
-const router = express.Router();
-const { pool } = require('../utils/db');
-const Redis = require('ioredis');
-require('dotenv').config();
+import express from 'express';
+import { db } from '../clients/db.js';
+import { redis } from '../clients/redis.js';
+import { adminAuth } from '../middleware/admin.js';
+import { logger } from '../config/logger.js';
 
-// Redis client for caching
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+const router = express.Router();
 
 // Cache TTLs
 const CACHE_TTL = {
@@ -37,32 +36,21 @@ async function invalidateSearchCaches() {
     } while (cursor !== '0');
 
     if (keysCount > 0) {
-      console.log(`Invalidated ${keysCount} search cache keys`);
+      logger.info({ keysCount }, 'Invalidated search cache keys');
     }
   } catch (error) {
-    console.warn('Error invalidating search caches:', error.message);
+    logger.warn({ err: error }, 'Error invalidating search caches');
   }
 }
 
 async function invalidateSponsorStatsCache() {
   try {
     await redis.del(getSponsorStatsCacheKey());
-    console.log('Invalidated sponsor stats cache');
+    logger.info('Invalidated sponsor stats cache');
   } catch (error) {
-    console.warn('Error invalidating sponsor stats cache:', error.message);
+    logger.warn({ err: error }, 'Error invalidating sponsor stats cache');
   }
 }
-
-// Middleware to check if user is admin (simplified for now)
-const requireAdmin = (req, res, next) => {
-  // In production, implement proper authentication
-  // For now, just check for an admin header
-  if (req.headers['x-admin-key'] === process.env.ADMIN_KEY) {
-    next();
-  } else {
-    res.status(403).json({ error: 'Admin access required' });
-  }
-};
 
 // Get sponsor statistics
 router.get('/stats', async (req, res) => {
@@ -73,7 +61,7 @@ router.get('/stats', async (req, res) => {
     try {
       const cached = await redis.get(cacheKey);
       if (cached) {
-        console.log(`Cache hit for sponsor stats: ${cacheKey}`);
+        logger.info({ cacheKey }, 'Cache hit for sponsor stats');
         const parsedCache = JSON.parse(cached);
         return res.json({
           ...parsedCache,
@@ -84,10 +72,10 @@ router.get('/stats', async (req, res) => {
         });
       }
     } catch (cacheError) {
-      console.warn('Cache read error (continuing without cache):', cacheError.message);
+      logger.warn({ err: cacheError }, 'Cache read error (continuing without cache)');
     }
 
-    const result = await pool.query('SELECT * FROM get_sponsor_stats()');
+    const result = await db.query('SELECT * FROM get_sponsor_stats()');
 
     const response = {
       success: true,
@@ -100,14 +88,14 @@ router.get('/stats', async (req, res) => {
     // Cache the response
     try {
       await redis.set(cacheKey, JSON.stringify(response), 'EX', CACHE_TTL.SPONSOR_STATS);
-      console.log(`Cached sponsor stats with key: ${cacheKey}`);
+      logger.info({ cacheKey }, 'Cached sponsor stats');
     } catch (cacheError) {
-      console.warn('Cache write error (continuing without cache):', cacheError.message);
+      logger.warn({ err: cacheError }, 'Cache write error (continuing without cache)');
     }
 
     res.json(response);
   } catch (error) {
-    console.error('Error fetching sponsor stats:', error);
+    logger.error({ err: error }, 'Error fetching sponsor stats');
     res.status(500).json({
       success: false,
       error: 'Failed to fetch sponsor statistics'
@@ -131,19 +119,19 @@ router.get('/venues', async (req, res) => {
     
     if (tier) {
       query += ' AND sponsor_tier = $1';
-      params.push(tier);
+      params.push(tier as string);
     }
     
     query += ' ORDER BY sponsor_tier, sponsor_priority DESC NULLS LAST';
     
-    const result = await pool.query(query, params);
+    const result = await db.query(query, params);
     
     res.json({
       success: true,
       data: result.rows
     });
   } catch (error) {
-    console.error('Error fetching sponsored venues:', error);
+    logger.error({ err: error }, 'Error fetching sponsored venues');
     res.status(500).json({
       success: false,
       error: 'Failed to fetch sponsored venues'
@@ -152,7 +140,7 @@ router.get('/venues', async (req, res) => {
 });
 
 // Update venue sponsor tier (admin only)
-router.put('/venues/:id/tier', requireAdmin, async (req, res) => {
+router.put('/venues/:id/tier', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { tier, priority } = req.body;
@@ -174,7 +162,7 @@ router.put('/venues/:id/tier', requireAdmin, async (req, res) => {
       });
     }
 
-    await pool.query('SELECT update_sponsor_tier($1, $2, $3)', [id, tier, priority]);
+    await db.query('SELECT update_sponsor_tier($1, $2, $3)', [id, tier, priority]);
 
     // Invalidate caches after tier update
     await invalidateSearchCaches();
@@ -185,7 +173,7 @@ router.put('/venues/:id/tier', requireAdmin, async (req, res) => {
       message: 'Sponsor tier updated successfully'
     });
   } catch (error) {
-    console.error('Error updating sponsor tier:', error);
+    logger.error({ err: error }, 'Error updating sponsor tier');
     res.status(500).json({
       success: false,
       error: 'Failed to update sponsor tier'
@@ -198,7 +186,7 @@ router.get('/venues/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
-    const result = await pool.query(
+    const result = await db.query(
       `SELECT id, name, type, lat, lon, sponsor_tier, sponsor_priority, source, last_scraped
        FROM venues
        WHERE id = $1`,
@@ -217,7 +205,7 @@ router.get('/venues/:id', async (req, res) => {
       data: result.rows[0]
     });
   } catch (error) {
-    console.error('Error fetching venue sponsor details:', error);
+    logger.error({ err: error }, 'Error fetching venue sponsor details');
     res.status(500).json({
       success: false,
       error: 'Failed to fetch venue sponsor details'
@@ -226,7 +214,7 @@ router.get('/venues/:id', async (req, res) => {
 });
 
 // Bulk update sponsor tiers (admin only)
-router.post('/venues/bulk/tier', requireAdmin, async (req, res) => {
+router.post('/venues/bulk/tier', adminAuth, async (req, res) => {
   try {
     const { venues } = req.body; // Array of { id, tier, priority }
 
@@ -248,7 +236,7 @@ router.post('/venues/bulk/tier', requireAdmin, async (req, res) => {
       }
 
       try {
-        await pool.query('SELECT update_sponsor_tier($1, $2, $3)', [
+        await db.query('SELECT update_sponsor_tier($1, $2, $3)', [
           venue.id,
           venue.tier,
           venue.priority
@@ -271,8 +259,8 @@ router.post('/venues/bulk/tier', requireAdmin, async (req, res) => {
         total: venues.length
       }
     });
-  } catch (error) {
-    console.error('Error bulk updating sponsor tiers:', error);
+  } catch (error: any) {
+    logger.error({ err: error }, 'Error bulk updating sponsor tiers');
     res.status(500).json({
       success: false,
       error: 'Failed to bulk update sponsor tiers'
@@ -289,7 +277,7 @@ router.get('/pricing', async (req, res) => {
     try {
       const cached = await redis.get(cacheKey);
       if (cached) {
-        console.log(`Cache hit for sponsor pricing: ${cacheKey}`);
+        logger.info({ cacheKey }, 'Cache hit for sponsor pricing');
         const parsedCache = JSON.parse(cached);
         return res.json({
           ...parsedCache,
@@ -299,8 +287,8 @@ router.get('/pricing', async (req, res) => {
           }
         });
       }
-    } catch (cacheError) {
-      console.warn('Cache read error (continuing without cache):', cacheError.message);
+    } catch (cacheError: any) {
+      logger.warn({ err: cacheError }, 'Cache read error (continuing without cache)');
     }
 
     // Static pricing information (cached for 24 hours)
@@ -360,14 +348,14 @@ router.get('/pricing', async (req, res) => {
     // Cache the response
     try {
       await redis.set(cacheKey, JSON.stringify(response), 'EX', CACHE_TTL.SPONSOR_PRICING);
-      console.log(`Cached sponsor pricing with key: ${cacheKey}`);
-    } catch (cacheError) {
-      console.warn('Cache write error (continuing without cache):', cacheError.message);
+      logger.info({ cacheKey }, 'Cached sponsor pricing');
+    } catch (cacheError: any) {
+      logger.warn({ err: cacheError }, 'Cache write error (continuing without cache)');
     }
 
     res.json(response);
-  } catch (error) {
-    console.error('Error fetching sponsor pricing:', error);
+  } catch (error: any) {
+    logger.error({ err: error }, 'Error fetching sponsor pricing');
     res.status(500).json({
       success: false,
       error: 'Failed to fetch sponsor pricing'
@@ -375,4 +363,4 @@ router.get('/pricing', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

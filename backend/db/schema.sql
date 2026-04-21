@@ -146,7 +146,8 @@ RETURNS TABLE (
     lon DOUBLE PRECISION,
     distance_miles DOUBLE PRECISION,
     sponsor_tier TEXT,
-    sponsor_priority INTEGER
+    sponsor_priority INTEGER,
+    kid_score NUMERIC
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -160,7 +161,8 @@ BEGIN
         v.lon,
         ST_Distance(ST_MakePoint(v.lon, v.lat)::geography, ST_MakePoint(search_lon, search_lat)::geography) / 1609.34 AS distance_miles,
         v.sponsor_tier,
-        v.sponsor_priority
+        v.sponsor_priority,
+        v.kid_score
     FROM venues v
     WHERE v.is_active = TRUE
     AND ST_DWithin(ST_MakePoint(v.lon, v.lat)::geography, ST_MakePoint(search_lon, search_lat)::geography, radius_meters)
@@ -175,6 +177,8 @@ BEGIN
         END,
         -- Within same tier, higher priority first
         v.sponsor_priority DESC NULLS LAST,
+        -- Secondary ranking: Kid Score
+        v.kid_score DESC NULLS LAST,
         -- Then by distance
         ST_Distance(ST_MakePoint(v.lon, v.lat)::geography, ST_MakePoint(search_lon, search_lat)::geography) ASC
     LIMIT limit_count;

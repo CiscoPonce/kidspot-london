@@ -1,0 +1,45 @@
+name: Discovery Pipeline
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Ingestion
+        env:
+          INGEST_SIGNING_SECRET: ${{ secrets.INGEST_SIGNING_SECRET }}
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          if [ -z "$INGEST_SIGNING_SECRET" ]; then
+            echo "Error: INGEST_SIGNING_SECRET is not set."
+            exit 1
+          fi
+          if [ -z "$API_URL" ]; then
+            echo "Error: API_URL is not set."
+            exit 1
+          fi
+          
+          TIMESTAMP=$(date +%s)
+          PAYLOAD="${TIMESTAMP}."
+          
+          # Generate HMAC-SHA256 signature
+          SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$INGEST_SIGNING_SECRET" -r | awk '{print $1}')
+          
+          echo "Sending ingestion request to ${API_URL}/api/admin/ingest/stale..."
+          
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${API_URL}/api/admin/ingest/stale" \
+            -H "x-ingest-timestamp: ${TIMESTAMP}" \
+            -H "x-ingest-signature: sha256=${SIGNATURE}" \
+            -H "Content-Type: application/json" \
+            -d "")
+            
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Error: Received HTTP status $HTTP_STATUS"
+            exit 1
+          fi
+          
+          echo "Ingestion triggered successfully."
