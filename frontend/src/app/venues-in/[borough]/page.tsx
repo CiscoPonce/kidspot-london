@@ -5,6 +5,8 @@ import { fetchVenuesByBorough } from '@/lib/api';
 import { LONDON_AREAS } from '@/lib/constants';
 import { notFound } from 'next/navigation';
 
+export const revalidate = 86400;
+
 export async function generateMetadata({ params }: { params: { borough: string } }): Promise<Metadata> {
   const boroughParam = decodeURIComponent(params.borough);
   const boroughName = LONDON_AREAS.find(
@@ -59,8 +61,26 @@ export default async function BoroughPage({ params }: { params: { borough: strin
   const centerLat = venues.length > 0 ? venues[0].lat : 51.5074;
   const centerLon = venues.length > 0 ? venues[0].lon : -0.1278;
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    itemListElement: venues.map((venue, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      item: {
+        '@type': 'LocalBusiness',
+        name: venue.name,
+        url: `https://kidspot.london/venue/${venue.slug}`,
+      }
+    }))
+  };
+
   return (
     <main className="min-h-screen bg-secondary-50 pb-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Header */}
       <div className="bg-white border-b border-secondary-200">
         <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">

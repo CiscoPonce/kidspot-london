@@ -10,6 +10,8 @@ interface Props {
   };
 }
 
+export const revalidate = 3600;
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const venue = await getVenueBySlug(params.slug);
@@ -60,7 +62,7 @@ export default async function VenuePage({ params }: Props) {
     return notFound();
   }
 
-  const jsonLd = {
+  const jsonLd: any = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     name: venue.name,
@@ -77,7 +79,22 @@ export default async function VenuePage({ params }: Props) {
     },
     url: `https://kidspot.london/venue/${venue.slug}`,
     image: 'https://kidspot.london/og-image.png',
+    amenityFeature: [
+      {
+        '@type': 'LocationFeatureSpecification',
+        name: 'Child Friendly',
+        value: true,
+      }
+    ]
   };
+
+  if (venue.rating && venue.user_ratings_total) {
+    jsonLd.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: venue.rating,
+      reviewCount: venue.user_ratings_total,
+    };
+  }
 
   return (
     <div className="min-h-screen bg-secondary-50 pb-12">
