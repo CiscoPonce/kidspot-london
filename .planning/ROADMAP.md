@@ -126,6 +126,31 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ---
 
+## Phase 8: Revenue & Framework Modernization (Weeks 17+)
+**Status**: Not Started
+**Requirements**: [REV-01, UPGRADE-01, CI-01, ANALYTICS-01, POLISH-01]
+
+**Goal**: Complete the revenue loop with Stripe integration and modernize the framework stack to current stable versions.
+
+**Plans**: 7 plans
+- [ ] 08-01-PLAN.md — Revenue Loop: Claim Your Listing Flow
+- [ ] 08-02-PLAN.md — Admin Audit Log and Fraud Prevention
+- [ ] 08-03-PLAN.md — Framework Upgrades: Node 22, Express 5, Next 16, React 19, Tailwind 4
+- [ ] 08-04-PLAN.md — Google Places API v1 Migration
+- [ ] 08-05-PLAN.md — Quality Baseline: CI Pipeline, ESLint Flat Config, Zod Schemas
+- [ ] 08-06-PLAN.md — Analytics and Observability: Plausible Events, Prom-Client Metrics
+- [ ] 08-07-PLAN.md — Product Surface Polish: Server Components, Map Clustering
+
+**Success Criteria**:
+- Venue owners can claim listings and upgrade to paid tiers via Stripe
+- Admin audit log tracks all revenue-related actions
+- App running on Node 22, Next 16, React 19, Tailwind 4
+- CI pipeline with lint, typecheck, and tests on every PR
+- Analytics events track key user behaviors
+- Map clustering prevents overlapping pins at high density
+
+---
+
 ## Requirements Index
 
 ### Data Foundation
@@ -181,6 +206,13 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - **SEO-04**: Advanced SEO (Sitemaps index, SSR/ISR optimization)
 - **REV-01**: Venue claim and Stripe sponsorship flow
 - **UPGRADE-01**: Framework upgrades (Node 22, Next 16, React 19)
+
+### Phase 8: Revenue & Framework Modernization
+- **REV-01**: Venue claim and Stripe sponsorship flow
+- **UPGRADE-01**: Framework upgrades (Node 22, Next 16, React 19, Tailwind 4)
+- **CI-01**: CI pipeline with lint, typecheck, and tests
+- **ANALYTICS-01**: Plausible events and prom-client metrics
+- **POLISH-01**: Server Components and map clustering
 
 ---
 
