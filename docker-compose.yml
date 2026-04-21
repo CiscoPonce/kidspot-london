@@ -5,7 +5,6 @@ services:
     image: kartoza/postgis:15
     ports:
       - "5432:5432"
-    platform: linux/arm64
     environment:
       POSTGRES_USER: kidspot_admin
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
@@ -21,6 +20,8 @@ services:
 
   redis:
     image: redis:7-alpine
+    ports:
+      - "6379:6379"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]

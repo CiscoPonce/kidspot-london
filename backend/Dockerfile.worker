@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci --only=production && \
+RUN npm install --omit=dev && \
     npm install -g pm2 && \
     npm cache clean --force
 
