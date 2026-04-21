@@ -7,8 +7,9 @@ import { notFound } from 'next/navigation';
 
 export const revalidate = 86400;
 
-export async function generateMetadata({ params }: { params: { type: string } }): Promise<Metadata> {
-  const typeParam = decodeURIComponent(params.type);
+export async function generateMetadata({ params }: { params: Promise<{ type: string }> }): Promise<Metadata> {
+  const resolvedParams = await params;
+  const typeParam = decodeURIComponent(resolvedParams.type);
   const venueType = VENUE_TYPES.find(t => t.id === typeParam);
 
   if (!venueType) {
@@ -39,8 +40,9 @@ export async function generateMetadata({ params }: { params: { type: string } })
   };
 }
 
-export default async function CategoryPage({ params }: { params: { type: string } }) {
-  const typeParam = decodeURIComponent(params.type);
+export default async function CategoryPage({ params }: { params: Promise<{ type: string }> }) {
+  const resolvedParams = await params;
+  const typeParam = decodeURIComponent(resolvedParams.type);
   const venueType = VENUE_TYPES.find(t => t.id === typeParam);
 
   if (!venueType) {
@@ -95,7 +97,7 @@ export default async function CategoryPage({ params }: { params: { type: string 
           <div className="bg-white rounded-xl border border-secondary-200 p-12 text-center">
             <h2 className="text-xl font-semibold text-secondary-900 mb-2">No venues found yet</h2>
             <p className="text-secondary-600">
-              We haven't indexed any {venueType.label.toLowerCase()} yet. Check back soon.
+              We haven&apos;t indexed any {venueType.label.toLowerCase()} yet. Check back soon.
             </p>
           </div>
         ) : (

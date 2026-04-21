@@ -4,6 +4,8 @@ import { redis } from '../clients/redis.js';
 import { braveSearchLimiter } from '../middleware/rateLimit.js';
 import { logger } from '../config/logger.js';
 import { Venue, SearchQuery, SearchResponse, VenueDetailsResponse } from '../types/venue.js';
+import { yelpService } from './yelpService.js';
+import env from '../config/env.js';
 
 // Cache TTLs
 const CACHE_TTL = {
@@ -126,43 +128,55 @@ const fetchBraveSearchResults = async (lat: number, lon: number, radiusMiles: nu
 };
 
 /**
- * Fetch Google Place details using Places API (v1)
+ * Fetch Yelp details using Yelp Fusion API
+ * If it's a Google venue, we try to match it first.
  */
-const fetchGooglePlaceDetails = async (placeId: string) => {
+const fetchYelpDetails = async (venue: Venue) => {
   try {
-    const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
-    
-    if (!GOOGLE_PLACES_API_KEY) {
-      logger.info('Google Places details skipped: GOOGLE_PLACES_API_KEY not configured');
+    if (!env.YELP_API_KEY) {
+      logger.info('Yelp details skipped: YELP_API_KEY not configured');
       return null;
     }
-    
-    const response = await axios.get(`https://places.googleapis.com/v1/places/${placeId}`, {
-      headers: {
-        'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-        'X-Goog-FieldMask': 'id,displayName,formattedAddress,nationalPhoneNumber,websiteUri,rating,userRatingCount,regularOpeningHours,photos,reviews'
-      },
-      timeout: 10000
-    });
-    
-    if (response.data) {
-      const result = response.data;
+
+    let yelpId = venue.source === 'yelp' ? venue.source_id : null;
+
+    // If it's not a Yelp source, we need to find a match
+    if (!yelpId) {
+      // For now, we use a simple match based on name and lat/lon if available
+      // In a real scenario, we'd want address info from the DB
+      if (venue.lat && venue.lon) {
+        const matches = await yelpService.searchBusinesses({
+          term: venue.name,
+          latitude: venue.lat,
+          longitude: venue.lon,
+          limit: 1
+        });
+        if (matches && matches.length > 0) {
+          yelpId = matches[0].id;
+        }
+      }
+    }
+
+    if (!yelpId) return null;
+
+    const details = await yelpService.getBusinessDetails(yelpId);
+    if (details) {
       return {
-        name: result.displayName?.text,
-        address: result.formattedAddress,
-        phone: result.nationalPhoneNumber,
-        website: result.websiteUri,
-        rating: result.rating,
-        user_ratings_total: result.userRatingCount,
-        reviews: result.reviews,
-        opening_hours: result.regularOpeningHours,
-        photos: result.photos
+        name: details.name,
+        address: details.location.display_address.join(', '),
+        phone: details.display_phone,
+        website: details.url,
+        rating: details.rating,
+        user_ratings_total: details.review_count,
+        reviews: [], // Yelp Fusion free tier doesn't give full reviews in details, need separate endpoint
+        opening_hours: details.hours?.[0] || null,
+        photos: details.photos || [details.image_url]
       };
     }
     
     return null;
   } catch (error: any) {
-    console.error('Error fetching Google Place details:', error.response?.data?.error?.message || error.message);
+    logger.error({ err: error, venueId: venue.id }, 'Error fetching Yelp details');
     return null;
   }
 };
@@ -362,8 +376,8 @@ export const venueService = {
     const venue = venueResult.rows[0];
     let fullDetails = null;
 
-    if (venue.source === 'google' && venue.source_id) {
-      fullDetails = await fetchGooglePlaceDetails(venue.source_id);
+    if (venue.source === 'google' || venue.source === 'yelp' || venue.source === 'manual') {
+      fullDetails = await fetchYelpDetails(venue);
     } else if (venue.source === 'osm') {
       fullDetails = await fetchOSMDetails(venue.source_id);
     }
@@ -424,8 +438,8 @@ export const venueService = {
     const venue = venueResult.rows[0];
     let fullDetails = null;
 
-    if (venue.source === 'google' && venue.source_id) {
-      fullDetails = await fetchGooglePlaceDetails(venue.source_id);
+    if (venue.source === 'google' || venue.source === 'yelp' || venue.source === 'manual') {
+      fullDetails = await fetchYelpDetails(venue);
     } else if (venue.source === 'osm') {
       fullDetails = await fetchOSMDetails(venue.source_id);
     }

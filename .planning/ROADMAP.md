@@ -127,17 +127,17 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 ---
 
 ## Phase 7.5: Cleanup Sprint (Weeks 15-16)
-**Status**: Not Started
+**Status**: Completed
 **Requirements**: [TS-01, TEST-02, DB-01, API-04, VERIFY-01]
 
 **Goal**: Address lingering technical debt, expand test coverage, prepare the database schema for the revenue loop, and swap Google Places for zero-cost Yelp Fusion waterfall before framework upgrades.
 
 **Plans**:
-- [ ] 07.5-01-PLAN.md — Convert worker.js to TypeScript and fix missing environment variables
-- [ ] 07.5-02-PLAN.md — Expand backend test coverage to 40-50%
-- [ ] 07.5-03-PLAN.md — Create database migrations for Phase 8 features
-- [ ] 07.5-04-PLAN.md — Implement zero-cost Yelp Fusion waterfall API replacing Google Places
-- [ ] 07.5-05-PLAN.md — Complete Phase 7.5 verification
+- [x] 07.5-01-PLAN.md — Convert worker.js to TypeScript and fix missing environment variables
+- [x] 07.5-02-PLAN.md — Expand backend test coverage to 40-50%
+- [x] 07.5-03-PLAN.md — Create database migrations for Phase 8 features
+- [x] 07.5-04-PLAN.md — Implement zero-cost Yelp Fusion waterfall API replacing Google Places
+- [x] 07.5-05-PLAN.md — Complete Phase 7.5 verification
 
 **Success Criteria**:
 - `worker.ts` compiled and integrated safely
@@ -148,27 +148,39 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ---
 
-## Phase 8: Revenue & Framework Modernization (Weeks 17+)
-**Status**: Not Started
-**Requirements**: [REV-01, UPGRADE-01, CI-01, ANALYTICS-01, POLISH-01]
+## Phase 8: Framework Modernization & Polish (Weeks 17+)
+**Status**: Completed
+**Requirements**: [UPGRADE-01, CI-01, ANALYTICS-01, POLISH-01]
 
-**Goal**: Complete the revenue loop with Stripe integration and modernize the framework stack to current stable versions.
+**Goal**: Modernize the framework stack to current stable versions (Node 22, Next 15/16, React 19, Tailwind 4), implement CI/CD, and apply product polish.
 
-**Plans**: 6 plans
-- [ ] 08-01-PLAN.md — Revenue Loop: Claim Your Listing Flow
-- [ ] 08-02-PLAN.md — Admin Audit Log and Fraud Prevention
-- [ ] 08-03-PLAN.md — Framework Upgrades: Node 22, Express 5, Next 16, React 19, Tailwind 4
-- [ ] 08-04-PLAN.md — Quality Baseline: CI Pipeline, ESLint Flat Config, Zod Schemas
-- [ ] 08-05-PLAN.md — Analytics and Observability: Plausible Events, Prom-Client Metrics
-- [ ] 08-06-PLAN.md — Product Surface Polish: Server Components, Map Clustering
+**Plans**: 4 plans
+- [x] 08-01-PLAN.md — Framework Upgrades: Node 22, Express 5, Latest Next.js, React 19, Tailwind 4
+- [x] 08-02-PLAN.md — Quality Baseline: CI Pipeline, ESLint Flat Config, Zod Schemas
+- [x] 08-03-PLAN.md — Analytics and Observability: Plausible Events, Prom-Client Metrics
+- [x] 08-04-PLAN.md — Product Surface Polish: Server Components, Map Clustering
+
+**Success Criteria**:
+- App running smoothly on Node 22, Latest Next.js, React 19, Tailwind 4
+- CI pipeline with lint, typecheck, and tests on every PR
+- Analytics events track key user behaviors
+- Map clustering prevents overlapping pins at high density
+
+---
+
+## Phase 9: Revenue Loop (Future)
+**Status**: Deferred
+**Requirements**: [REV-01]
+
+**Goal**: Complete the revenue loop with Stripe integration for venue claims and sponsorships.
+
+**Plans**:
+- [ ] 09-01-PLAN.md — Revenue Loop: Claim Your Listing Flow
+- [ ] 09-02-PLAN.md — Admin Audit Log and Fraud Prevention
 
 **Success Criteria**:
 - Venue owners can claim listings and upgrade to paid tiers via Stripe
 - Admin audit log tracks all revenue-related actions
-- App running on Node 22, Next 16, React 19, Tailwind 4
-- CI pipeline with lint, typecheck, and tests on every PR
-- Analytics events track key user behaviors
-- Map clustering prevents overlapping pins at high density
 
 ---
 

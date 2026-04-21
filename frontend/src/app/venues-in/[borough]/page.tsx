@@ -7,8 +7,9 @@ import { notFound } from 'next/navigation';
 
 export const revalidate = 86400;
 
-export async function generateMetadata({ params }: { params: { borough: string } }): Promise<Metadata> {
-  const boroughParam = decodeURIComponent(params.borough);
+export async function generateMetadata({ params }: { params: Promise<{ borough: string }> }): Promise<Metadata> {
+  const resolvedParams = await params;
+  const boroughParam = decodeURIComponent(resolvedParams.borough);
   const boroughName = LONDON_AREAS.find(
     (b) => b.toLowerCase() === boroughParam.toLowerCase()
   );
@@ -41,8 +42,9 @@ export async function generateMetadata({ params }: { params: { borough: string }
   };
 }
 
-export default async function BoroughPage({ params }: { params: { borough: string } }) {
-  const boroughParam = decodeURIComponent(params.borough);
+export default async function BoroughPage({ params }: { params: Promise<{ borough: string }> }) {
+  const resolvedParams = await params;
+  const boroughParam = decodeURIComponent(resolvedParams.borough);
   
   // Find the canonical name from our list
   const boroughName = LONDON_AREAS.find(
@@ -116,7 +118,7 @@ export default async function BoroughPage({ params }: { params: { borough: strin
           <div className="bg-white rounded-xl border border-secondary-200 p-12 text-center">
             <h2 className="text-xl font-semibold text-secondary-900 mb-2">No venues found yet</h2>
             <p className="text-secondary-600">
-              We haven't indexed any venues in {boroughName} yet. Check back soon or try a nearby borough.
+              We haven&apos;t indexed any venues in {boroughName} yet. Check back soon or try a nearby borough.
             </p>
           </div>
         ) : (

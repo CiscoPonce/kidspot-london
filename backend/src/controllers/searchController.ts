@@ -38,7 +38,7 @@ export const searchController = {
    */
   async getVenueDetailsBySlug(req: Request, res: Response) {
     try {
-      const { slug } = req.params;
+      const slug = req.params.slug as string;
       if (!slug) {
         return res.status(400).json({
           success: false,
@@ -69,7 +69,7 @@ export const searchController = {
    */
   async getVenueDetailsById(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       if (!id) {
         return res.status(400).json({
           success: false,

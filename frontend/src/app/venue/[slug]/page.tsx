@@ -5,16 +5,17 @@ import { getVenueBySlug } from '@/lib/api';
 import { VenueDetailContent } from '@/components/venues/venue-detail-content';
 
 interface Props {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export const revalidate = 3600;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
-    const venue = await getVenueBySlug(params.slug);
+    const resolvedParams = await params;
+    const venue = await getVenueBySlug(resolvedParams.slug);
     const title = `${venue.name} | KidSpot London`;
     const description = `Details, location, and contact information for ${venue.name} in ${venue.borough || 'London'}.`;
     
@@ -52,7 +53,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function VenuePage({ params }: Props) {
   let venue;
   try {
-    venue = await getVenueBySlug(params.slug);
+    const resolvedParams = await params;
+    venue = await getVenueBySlug(resolvedParams.slug);
   } catch (error) {
     console.error('Error fetching venue:', error);
     return notFound();

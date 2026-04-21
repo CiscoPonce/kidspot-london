@@ -1,9 +1,9 @@
 # KidSpot London - Project State
 
 ## Current Position
-**Phase**: 07 - Improvement
-**Wave**: Complete
-**Status**: Phase completed - production-hardened platform with improved ranking, SEO, and observability
+**Phase**: 09.0 - Revenue Loop
+**Wave**: Future
+**Status**: Phase 08.0 Framework Modernization complete - Stack upgraded to Node 22, Express 5, Next 15, React 19.
 **Last Updated**: April 21, 2026
 
 ## Completed Phases
@@ -14,6 +14,8 @@
 - 05 - SEO & Detail Pages
 - 06 - Polish & Launch
 - 07 - Improvement
+- 07.5 - Cleanup Sprint
+- 08.0 - Framework Modernization & Polish
 
 ## Active Phase: 07.5 - Cleanup Sprint
 ### Objective
@@ -43,11 +45,12 @@ All requirements completed except deferred items:
 - **2026-05-20**: Replacing Google Places API with a zero-cost Yelp Fusion waterfall approach to maintain zero-cost operations (D-07.5-01)
 
 ### Pending Tasks
-- [ ] Execute Phase 07.5 (Cleanup Sprint + Yelp Fusion Waterfall)
-- [ ] Deploy Phase 7/7.5 changes to production
+- [x] Initialize Phase 08.0 (Framework Modernization & Polish)
+- [x] Upgrade Frontend & Backend Frameworks (Next.js, Node, React)
+- [x] Setup CI/CD Pipeline
+- [ ] Initialize Phase 09.0 (Revenue Loop)
 - [ ] Monitor system stability and performance metrics
 - [ ] Validate Kid Score ranking effectiveness
-- [ ] Consider REV-01 and UPGRADE-01 in Phase 8
 
 ### Blockers
 - None

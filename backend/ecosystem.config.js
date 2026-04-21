@@ -2,7 +2,9 @@ module.exports = {
   apps: [
     {
       name: 'kidspot-api',
-      script: './src/server.js',
+      script: './src/server.ts',
+      interpreter: 'node',
+      node_args: '--import tsx',
       instances: 'max',
       exec_mode: 'cluster',
       env: {
@@ -13,7 +15,9 @@ module.exports = {
     },
     {
       name: 'kidspot-worker',
-      script: './scripts/discovery/run-discovery.js',
+      script: './src/worker.ts',
+      interpreter: 'node',
+      node_args: '--import tsx',
       instances: 1,
       exec_mode: 'fork',
       env: {

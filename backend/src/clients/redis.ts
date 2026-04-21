@@ -1,9 +1,8 @@
 import Redis from 'ioredis';
-import { logger } from '../config/logger';
+import { logger } from '../config/logger.js';
+import env from '../config/env.js';
 
-const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-
-const redis = new Redis(redisUrl, {
+const redis = new Redis(env.REDIS_URL, {
   maxRetriesPerRequest: null, // Required for BullMQ
   retryStrategy: (times: number) => {
     const delay = Math.min(times * 50, 2000);

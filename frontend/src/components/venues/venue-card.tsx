@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Trees, Building, Joystick, Dumbbell, MapPin, ExternalLink } from 'lucide-react';
 import type { Venue } from '@/lib/api';
+import { usePlausible } from 'next-plausible';
 
 interface VenueCardProps {
   venue: Venue;
@@ -36,10 +37,21 @@ export function VenueCard({ venue, distance, onSelect, isSelected }: VenueCardPr
   const sponsorBadge = venue.sponsor_tier
     ? SPONSOR_BADGE_COLORS[venue.sponsor_tier as keyof typeof SPONSOR_BADGE_COLORS]
     : null;
+  const plausible = usePlausible();
+
+  const handleCardClick = () => {
+    plausible('VenueSelected', { props: { venueId: venue.id, source: 'card_click' } });
+    onSelect();
+  };
+
+  const handleLinkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    plausible('VenueViewed', { props: { venueId: venue.id, source: 'external_link' } });
+  };
 
   return (
     <div
-      onClick={onSelect}
+      onClick={handleCardClick}
       className={`
         w-full text-left p-4 rounded-lg border transition-all duration-150
         min-h-[72px] touch-manipulation cursor-pointer group
@@ -53,7 +65,7 @@ export function VenueCard({ venue, distance, onSelect, isSelected }: VenueCardPr
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
-          onSelect();
+          handleCardClick();
         }
       }}
     >
@@ -95,7 +107,7 @@ export function VenueCard({ venue, distance, onSelect, isSelected }: VenueCardPr
           </span>
           <Link
             href={`/venue/${venue.slug}`}
-            onClick={(e) => e.stopPropagation()}
+            onClick={handleLinkClick}
             className="p-1 rounded-md text-secondary-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
             title="View full details"
           >

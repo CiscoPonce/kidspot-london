@@ -6,6 +6,7 @@ import { LocationButton } from './location-button';
 import { RadiusSlider } from './radius-slider';
 import { useSearch } from '@/hooks/use-search';
 import { geocodePostcode } from '@/hooks/use-location';
+import { usePlausible } from 'next-plausible';
 
 interface SearchBarProps {
   onSearch?: (lat: number, lon: number, radius: number, type?: string | null) => void;
@@ -28,6 +29,7 @@ export function SearchBar({ onSearch }: SearchBarProps) {
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [debouncedPostcode, setDebouncedPostcode] = useState('');
   const { lat, lon, radius, venueType, setSearchLocation, setPostcode, setRadius, setVenueType } = useSearch();
+  const plausible = usePlausible();
 
   // Debounce postcode input (500ms)
   useEffect(() => {
@@ -42,10 +44,13 @@ export function SearchBar({ onSearch }: SearchBarProps) {
   const handleLocationReceived = useCallback((newLat: number, newLon: number) => {
     setSearchLocation(newLat, newLon);
     setPostcode('');
+    plausible('SearchPerformed', { 
+      props: { type: venueType || 'all', radius, method: 'geolocation' } 
+    });
     if (onSearch) {
       onSearch(newLat, newLon, radius, venueType);
     }
-  }, [setSearchLocation, setPostcode, onSearch, radius, venueType]);
+  }, [setSearchLocation, setPostcode, onSearch, radius, venueType, plausible]);
 
   // Handle search submission
   const handleSearch = async () => {
@@ -62,6 +67,9 @@ export function SearchBar({ onSearch }: SearchBarProps) {
       const result = await geocodePostcode(debouncedPostcode);
       setSearchLocation(result.lat, result.lon);
       setPostcode(debouncedPostcode);
+      plausible('SearchPerformed', { 
+        props: { type: venueType || 'all', radius, method: 'postcode' } 
+      });
       if (onSearch) {
         onSearch(result.lat, result.lon, radius, venueType);
       }

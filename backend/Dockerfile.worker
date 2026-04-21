@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM node:22-slim
 
 WORKDIR /app
 
@@ -16,4 +16,4 @@ RUN groupadd -g 1001 nodejs && \
 
 USER nodejs
 
-CMD ["node", "src/worker.js"]
+CMD ["npm", "run", "worker"]

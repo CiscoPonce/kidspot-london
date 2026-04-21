@@ -1,8 +1,9 @@
 import { Pool } from 'pg';
-import { logger } from '../config/logger';
+import { logger } from '../config/logger.js';
+import env from '../config/env.js';
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgres://kidspot_admin:password@localhost:5432/kidspot',
+  connectionString: env.DATABASE_URL,
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,

@@ -57,7 +57,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.worker
-    command: node src/worker.js
+    command: npm run worker
     environment:
       - DATABASE_URL=postgres://kidspot_admin:${DB_PASSWORD}@postgres:5432/kidspot
       - REDIS_URL=redis://redis:6379
@@ -71,7 +71,7 @@ services:
     # Worker healthcheck should probably be different since it's not a web server.
     # Using node process check instead.
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f src/worker.js || exit 1"]
+      test: ["CMD-SHELL", "pgrep -f src/worker.ts || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
