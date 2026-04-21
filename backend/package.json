@@ -30,8 +30,9 @@
     "discover:google": "tsx scripts/discovery/google-places-discovery.js",
     "discover:osm": "tsx scripts/discovery/osm-discovery.js",
     "cron": "tsx scripts/cron-agent.js",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint src scripts",
     "lint:fix": "eslint src scripts --fix",
     "typecheck": "tsc --noEmit",
@@ -63,12 +64,15 @@
     "@types/express-rate-limit": "^6.0.0",
     "@types/node": "^20.10.5",
     "@types/pg": "^8.10.9",
+    "@types/supertest": "^7.2.0",
+    "@vitest/coverage-v8": "^4.1.4",
     "autocannon": "^8.0.0",
     "clinic": "^13.0.0",
     "eslint": "^8.55.0",
-    "jest": "^29.7.0",
     "nodemon": "^3.0.2",
+    "supertest": "^7.2.2",
     "tsx": "^4.21.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.4"
   }
 }
