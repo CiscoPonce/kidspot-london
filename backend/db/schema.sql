@@ -17,7 +17,11 @@ CREATE TABLE IF NOT EXISTS venues (
     sponsor_tier TEXT,            -- NULL, 'bronze', 'silver', 'gold' (future monetization)
     sponsor_priority INTEGER,      -- For ranking sponsored results (higher = more prominent)
     is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    kid_score NUMERIC DEFAULT 0,
+    rating NUMERIC,
+    user_ratings_total INTEGER,
+    enriched_at TIMESTAMPTZ
 );
 
 -- Create spatial index for blazing fast radius queries
@@ -36,6 +40,12 @@ CREATE INDEX IF NOT EXISTS idx_venues_sponsor ON venues(sponsor_tier, sponsor_pr
 
 -- Create index for active venues only
 CREATE INDEX IF NOT EXISTS idx_venues_active ON venues(is_active) WHERE is_active = TRUE;
+
+-- Create index for kid_score to allow fast sorting
+CREATE INDEX IF NOT EXISTS idx_venues_kid_score ON venues(kid_score);
+
+-- Create index for enriched_at to track discovery progress
+CREATE INDEX IF NOT EXISTS idx_venues_enriched_at ON venues(enriched_at);
 
 -- Create deactivation log table for auditability
 CREATE TABLE IF NOT EXISTS deactivation_log (
