@@ -37,6 +37,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - GOOGLE_PLACES_API_KEY=${GOOGLE_PLACES_API_KEY}
       - ADMIN_KEY=${ADMIN_KEY}
+      - CORS_ORIGIN=${CORS_ORIGIN}
       - NODE_ENV=production
     ports:
       - "4000:4000"
