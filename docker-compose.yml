@@ -36,6 +36,7 @@ services:
       - DATABASE_URL=postgres://kidspot_admin:${DB_PASSWORD:-password}@postgres:5432/kidspot
       - REDIS_URL=redis://redis:6379
       - GOOGLE_PLACES_API_KEY=${GOOGLE_PLACES_API_KEY}
+      - BRAVE_API_KEY=${BRAVE_API_KEY}
       - ADMIN_KEY=${ADMIN_KEY}
       - CORS_ORIGIN=${CORS_ORIGIN}
       - NODE_ENV=production
@@ -61,6 +62,7 @@ services:
     environment:
       - DATABASE_URL=postgres://kidspot_admin:${DB_PASSWORD:-password}@postgres:5432/kidspot
       - REDIS_URL=redis://redis:6379
+      - BRAVE_API_KEY=${BRAVE_API_KEY}
       - NODE_ENV=production
     depends_on:
       postgres:
@@ -78,8 +80,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://79.72.92.195:4000/api}
     environment:
-      - NEXT_PUBLIC_API_URL=http://api:4000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://79.72.92.195:4000/api}
       - NODE_ENV=production
     ports:
       - "3005:3000"
