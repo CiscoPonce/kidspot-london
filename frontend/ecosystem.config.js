@@ -2,8 +2,9 @@ module.exports = {
   apps: [
     {
       name: 'kidspot-web',
-      script: 'node_modules/next/dist/bin/next',
+      script: 'npm',
       args: 'start',
+      cwd: '/app',
       instances: 'max',
       exec_mode: 'cluster',
       env: {

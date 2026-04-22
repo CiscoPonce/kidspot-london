@@ -13,6 +13,7 @@ FROM node:22-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV production
+ENV PM2_HOME /app/.pm2
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
@@ -30,4 +31,4 @@ USER nodejs
 
 EXPOSE 3000
 
-CMD ["pm2-runtime", "start", "ecosystem.config.js"]
+CMD ["npm", "start"]
