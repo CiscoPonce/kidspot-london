@@ -24,12 +24,8 @@ export function isValidPhone(phone?: string): boolean {
 // ─── Badges ───────────────────────────────────────────────────────────────────
 
 export function SponsorBadge({ tier }: { tier: string }) {
-  const styles = tier === 'gold' 
-    ? 'bg-renault-yellow text-absolute-black' 
-    : 'bg-absolute-black text-pure-white';
-    
   return (
-    <span className={`inline-flex items-center px-3 py-1 text-xs font-body-bold uppercase ${styles}`}>
+    <span className="bg-tertiary-container text-on-tertiary-container px-3 py-1 rounded-[8px] text-xs font-bold uppercase">
       {tier}
     </span>
   );
@@ -44,7 +40,7 @@ export function TypeBadge({ type }: { type: string }) {
   };
   
   return (
-    <span className="inline-flex items-center bg-pure-white border border-absolute-black px-3 py-1 text-xs font-body-bold text-absolute-black uppercase">
+    <span className="bg-surface-variant text-on-surface-variant px-3 py-1 rounded-[8px] text-xs font-bold uppercase">
       {labels[type] ?? type.replace('_', ' ')}
     </span>
   );
@@ -55,11 +51,11 @@ export function TypeBadge({ type }: { type: string }) {
 export function VenueLoadingSkeleton() {
   return (
     <div className="animate-pulse space-y-6 p-4">
-      <div className="h-8 w-3/4 bg-secondary-fixed-dim" />
-      <div className="h-[200px] w-full bg-secondary-fixed-dim border-2 border-absolute-black" />
+      <div className="h-8 w-3/4 bg-surface-variant rounded-lg" />
+      <div className="h-[200px] w-full bg-surface-variant rounded-[16px]" />
       <div className="space-y-3">
-        <div className="h-4 w-full bg-secondary-fixed-dim" />
-        <div className="h-4 w-5/6 bg-secondary-fixed-dim" />
+        <div className="h-4 w-full bg-surface-variant rounded" />
+        <div className="h-4 w-5/6 bg-surface-variant rounded" />
       </div>
     </div>
   );
@@ -67,13 +63,13 @@ export function VenueLoadingSkeleton() {
 
 export function VenueErrorState({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center py-10 px-4 text-center border-2 border-error bg-error-container">
+    <div className="flex flex-col items-center justify-center py-10 px-4 text-center border-2 border-error bg-error-container rounded-[24px]">
       <span className="material-symbols-outlined text-4xl text-error mb-4">warning</span>
-      <p className="font-section-heading text-lg text-error uppercase mb-2">LINK INTERRUPTED</p>
+      <p className="font-title-sm text-error uppercase mb-2">Sync Interrupted</p>
       <button
         type="button"
         onClick={onRetry}
-        className="bg-absolute-black text-pure-white px-6 py-2 font-button-label text-button-label uppercase hover:bg-error transition-colors"
+        className="bg-on-error-container text-white px-6 py-2 rounded-full font-label-caps text-label-caps uppercase hover:opacity-90 transition-opacity"
       >
         RETRY
       </button>
@@ -108,30 +104,34 @@ export function VenueDetailContent({
   const address = mergedDetails.address;
 
   return (
-    <div className="bg-pure-white border-2 border-absolute-black">
-      {/* Mobile drag handle placeholder */}
+    <div className="bg-surface-container-lowest rounded-t-[32px] sm:rounded-[32px] overflow-hidden">
+      {/* Mobile drag handle */}
       {showCloseButton && (
-        <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="h-1.5 w-12 bg-absolute-black opacity-20" />
+        <div className="flex justify-center pt-4 pb-2 sm:hidden">
+          <div className="h-1.5 w-12 bg-on-surface opacity-10 rounded-full" />
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 px-6 py-6 border-b border-absolute-black">
+      <div className="flex items-start justify-between gap-4 px-6 py-6">
         <div className="min-w-0 flex-1">
-          <h2 className="font-card-heading text-card-heading text-absolute-black uppercase tracking-tighter leading-none">
+          <h2 className="font-headline-md text-headline-md text-on-surface leading-tight">
             {venue.name}
           </h2>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <TypeBadge type={venue.type} />
             {venue.sponsor_tier && <SponsorBadge tier={venue.sponsor_tier} />}
+            <span className="bg-primary-container text-on-primary-container px-3 py-1 rounded-[8px] text-xs font-bold uppercase flex items-center gap-1">
+              <span className="material-symbols-outlined text-xs">star</span>
+              {venue.sponsor_tier === 'gold' ? '4.9' : '4.5'}
+            </span>
           </div>
         </div>
         {showCloseButton && onClose && (
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center border-2 border-absolute-black text-absolute-black hover:bg-absolute-black hover:text-pure-white transition-all"
+            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-surface text-on-surface-variant hover:bg-surface-variant transition-colors"
           >
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -139,12 +139,12 @@ export function VenueDetailContent({
       </div>
 
       {/* Body */}
-      <div className="overflow-y-auto px-6 py-6 max-h-[70vh]">
+      <div className="overflow-y-auto px-6 pb-8 max-h-[70vh]">
         {isLoading ? (
           <VenueLoadingSkeleton />
         ) : isError ? (
           <>
-            <div className="mb-6 border-2 border-absolute-black">
+            <div className="mb-6 rounded-[24px] overflow-hidden border border-outline-variant">
               <VenueMapSnippet lat={venue.lat} lon={venue.lon} name={venue.name} />
             </div>
             {onRetry && <VenueErrorState onRetry={onRetry} />}
@@ -152,55 +152,55 @@ export function VenueDetailContent({
         ) : (
           <>
             {/* Map */}
-            <div className="mb-6 border-2 border-absolute-black">
+            <div className="mb-6 rounded-[24px] overflow-hidden border border-outline-variant">
               <VenueMapSnippet lat={venue.lat} lon={venue.lon} name={venue.name} />
             </div>
 
-            {/* Address & Distance */}
-            {(address || (venue as Venue).distance_miles !== undefined) && (
-              <div className="mb-8 p-4 bg-surface-container border border-absolute-black">
-                {address && (
-                  <div className="flex items-start gap-3 mb-3">
-                    <span className="material-symbols-outlined text-absolute-black">location_on</span>
-                    <span className="font-body-text text-absolute-black uppercase">{address}</span>
-                  </div>
-                )}
-                {(venue as Venue).distance_miles !== undefined && (
-                  <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-absolute-black">distance</span>
-                    <span className="font-body-bold text-renault-blue uppercase">
-                      {(venue as Venue).distance_miles?.toFixed(1)} MILES FROM ORIGIN
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Address & Info */}
+            <div className="mb-8 space-y-4">
+              {address && (
+                <div className="flex items-start gap-3 p-4 bg-surface rounded-[16px] border border-outline-variant">
+                  <span className="material-symbols-outlined text-outline">location_on</span>
+                  <span className="font-body-md text-body-md text-on-surface">{address}</span>
+                </div>
+              )}
+              {(venue as Venue).distance_miles !== undefined && (
+                <div className="flex items-center gap-3 p-4 bg-surface rounded-[16px] border border-outline-variant">
+                  <span className="material-symbols-outlined text-outline">distance</span>
+                  <span className="font-title-sm text-title-sm text-on-surface">
+                    {(venue as Venue).distance_miles?.toFixed(1)} miles away
+                  </span>
+                </div>
+              )}
+            </div>
 
             {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              {isValidPhone(phone) && (
-                <a
-                  href={`tel:${phone!.trim()}`}
-                  className="flex-1 flex items-center justify-center gap-2 bg-absolute-black text-pure-white h-[touch-target-min] font-button-label text-button-label uppercase hover:bg-renault-blue transition-colors"
-                >
-                  <span className="material-symbols-outlined text-xl">call</span>
-                  <span>Direct Line</span>
-                </a>
-              )}
-              {isValidUrl(website) && (
-                <a
-                  href={website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 bg-renault-yellow text-absolute-black h-[touch-target-min] font-button-label text-button-label uppercase hover:bg-renault-blue hover:text-pure-white transition-colors border border-absolute-black"
-                >
-                  <span className="material-symbols-outlined text-xl">language</span>
-                  <span>Website</span>
-                </a>
-              )}
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                {isValidPhone(phone) && (
+                  <a
+                    href={`tel:${phone!.trim()}`}
+                    className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 text-white h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform"
+                  >
+                    <span className="material-symbols-outlined">call</span>
+                    Call Now
+                  </a>
+                )}
+                {isValidUrl(website) && (
+                  <a
+                    href={website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-2 bg-primary-container text-on-primary-container h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform"
+                  >
+                    <span className="material-symbols-outlined">language</span>
+                    Website
+                  </a>
+                )}
+              </div>
               <ShareButton 
                 title={venue.name} 
-                className="flex-1 flex items-center justify-center gap-2 border-2 border-absolute-black h-[touch-target-min] font-button-label text-button-label uppercase hover:bg-gray-100 transition-colors"
+                className="flex items-center justify-center gap-2 bg-surface border border-outline-variant h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform"
               />
             </div>
           </>

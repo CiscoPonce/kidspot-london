@@ -24,7 +24,7 @@ export function SearchPill() {
       setSearchLocation(result.lat, result.lon);
       setPostcode(postcodeInput);
       plausible('SearchPerformed', { 
-        props: { type: venueType || 'all', radius, method: 'postcode_pill' } 
+        props: { type: venueType || 'all', radius, method: 'postcode_stacked' } 
       });
     } catch (error) {
       console.error('Geocoding failed:', error);
@@ -34,13 +34,14 @@ export function SearchPill() {
   };
 
   return (
-    <div className="bg-pure-white rounded-full p-2 flex flex-col sm:flex-row items-center shadow-lg w-full max-w-xl mx-auto border border-border-gray mt-8">
-      <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center w-full">
-        <div className="flex-1 flex items-center px-4 w-full h-[touch-target-min]">
-          <span className="material-symbols-outlined text-secondary-brand mr-2">search</span>
+    <div className="bg-surface-container-lowest p-2 rounded-[16px] shadow-[0_8px_30px_rgba(0,0,0,0.08)] flex flex-col gap-2 w-full">
+      <form onSubmit={handleSearch} className="flex flex-col gap-2 w-full">
+        {/* Search Input */}
+        <div className="flex items-center bg-surface px-4 py-3 rounded-lg border border-outline-variant focus-within:border-primary-container focus-within:border-2 transition-colors">
+          <span className="material-symbols-outlined text-outline mr-2">search</span>
           <input 
-            className="w-full border-none focus:ring-0 text-body-text font-body-text bg-transparent placeholder-secondary-brand outline-none" 
-            placeholder="Where is the party?" 
+            className="bg-transparent border-none focus:ring-0 w-full text-body-md font-body-md text-on-surface outline-none" 
+            placeholder="Search by location..." 
             type="text"
             value={postcodeInput}
             onChange={(e) => setPostcodeInput(e.target.value)}
@@ -48,33 +49,34 @@ export function SearchPill() {
           />
         </div>
         
-        <div className="w-px h-8 bg-border-gray hidden sm:block mx-2"></div>
-        
-        <div className="flex-1 flex items-center px-4 w-full h-[touch-target-min]">
-          <span className="material-symbols-outlined text-secondary-brand mr-2">group</span>
-          <select 
-            className="w-full border-none focus:ring-0 text-body-text font-body-text bg-transparent text-secondary-brand appearance-none outline-none cursor-pointer"
-            value={venueType || ''}
-            onChange={(e) => setVenueType(e.target.value || null)}
+        <div className="flex flex-col sm:flex-row gap-2">
+          {/* Category/Guests Placeholder */}
+          <div className="flex-1 flex items-center bg-surface px-4 py-3 rounded-lg border border-outline-variant focus-within:border-primary-container focus-within:border-2 transition-colors">
+            <span className="material-symbols-outlined text-outline mr-2">group</span>
+            <select 
+              className="bg-transparent border-none focus:ring-0 w-full text-body-md font-body-md text-on-surface outline-none cursor-pointer appearance-none"
+              value={venueType || ''}
+              onChange={(e) => setVenueType(e.target.value || null)}
+            >
+              <option value="">Any Category</option>
+              <option value="softplay">Soft Play</option>
+              <option value="park">Parks & Playgrounds</option>
+              <option value="museum">Museums</option>
+              <option value="library">Libraries</option>
+              <option value="community_hall">Community Halls</option>
+              <option value="leisure_centre">Leisure Centres</option>
+              <option value="cafe">Child-friendly Cafes</option>
+            </select>
+          </div>
+          
+          <button 
+            type="submit"
+            disabled={isGeocoding}
+            className="bg-primary-container text-on-primary-container font-title-sm text-title-sm px-6 rounded-lg active:scale-95 transition-transform h-[48px] flex items-center justify-center disabled:opacity-50"
           >
-            <option value="">Any Category</option>
-            <option value="softplay">Soft Play</option>
-            <option value="park">Parks & Playgrounds</option>
-            <option value="museum">Museums</option>
-            <option value="library">Libraries</option>
-            <option value="community_hall">Community Halls</option>
-            <option value="leisure_centre">Leisure Centres</option>
-            <option value="cafe">Child-friendly Cafes</option>
-          </select>
+            {isGeocoding ? '...' : 'Search'}
+          </button>
         </div>
-        
-        <button 
-          type="submit"
-          disabled={isGeocoding}
-          className="bg-absolute-black text-pure-white font-button-label text-button-label px-button-x py-button-y h-[touch-target-min] w-full sm:w-auto uppercase hover:bg-renault-blue transition-colors duration-200 rounded-full sm:rounded-none mt-2 sm:mt-0 disabled:opacity-50"
-        >
-          {isGeocoding ? '...' : 'SEARCH'}
-        </button>
       </form>
     </div>
   );
@@ -82,19 +84,15 @@ export function SearchPill() {
 
 export function Hero() {
   return (
-    <section className="aurora-gradient min-h-[530px] flex flex-col justify-center px-6 py-section-gap relative overflow-hidden">
-      <div className="relative z-10 max-w-2xl mx-auto text-center w-full">
-        <h2 className="font-hero-title text-hero-title text-pure-white mb-8 uppercase tracking-tighter">
-          THE PERFECT PARTY SPACE
-        </h2>
+    <section className="relative bg-gradient-to-br from-[#c8b6ff] via-[#e7c6ff] to-[#ffd6a5] px-margin-mobile py-stack-lg min-h-[400px] flex flex-col justify-center items-center text-center overflow-hidden">
+      <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px]"></div>
+      
+      <div className="relative z-10 w-full max-w-lg mx-auto space-y-stack-md">
+        <h1 className="font-display-lg text-display-lg text-on-background uppercase">
+          FIND THE PERFECT PARTY SPACE
+        </h1>
         
         <SearchPill />
-      </div>
-      
-      {/* Abstract shapes or effects can go here */}
-      <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-renault-yellow rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-renault-blue rounded-full blur-[120px]"></div>
       </div>
     </section>
   );

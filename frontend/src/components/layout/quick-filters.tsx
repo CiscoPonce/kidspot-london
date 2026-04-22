@@ -17,19 +17,19 @@ export function QuickFilters() {
   const { venueType, setVenueType } = useSearch();
 
   return (
-    <section className="py-12 px-6 bg-pure-white border-b border-border-gray">
-      <div className="flex overflow-x-auto gap-4 pb-4 hide-scrollbar max-w-6xl mx-auto">
+    <section className="px-margin-mobile py-stack-md overflow-x-auto no-scrollbar">
+      <div className="flex gap-3 min-w-max">
         {FILTERS.map((filter) => (
           <button
             key={filter.value}
             onClick={() => setVenueType(venueType === filter.value ? null : filter.value)}
-            className={`flex-shrink-0 min-h-[touch-target-min] px-button-x py-button-y border border-absolute-black transition-colors duration-200 font-button-label text-button-label uppercase
+            className={`px-4 py-2 rounded-full font-label-caps text-label-caps whitespace-nowrap transition-all duration-200
               ${venueType === filter.value 
-                ? 'bg-absolute-black text-pure-white' 
-                : 'bg-transparent text-absolute-black hover:text-renault-blue hover:border-renault-blue'
+                ? 'bg-primary-container text-on-primary-container shadow-sm' 
+                : 'bg-[#F9F9F7] text-on-surface-variant border border-outline-variant hover:bg-surface-variant'
               }`}
           >
-            {filter.label}
+            {filter.label.toUpperCase()}
           </button>
         ))}
       </div>

@@ -23,15 +23,16 @@ export function VenueCard({ venue, distance, onSelect, isSelected }: VenueCardPr
     onSelect();
   };
 
-  // Use a placeholder image if none available
   const backgroundImage = venue.image_url || `https://images.unsplash.com/photo-1533749047139-189de3cf06d3?q=80&w=800&auto=format&fit=crop`;
 
   return (
     <div
       onClick={handleCardClick}
       className={`
-        relative w-full h-[400px] overflow-hidden group cursor-pointer border-2 transition-all duration-300
-        ${isSelected ? 'border-renault-blue' : 'border-transparent'}
+        bg-surface-container-lowest rounded-[16px] shadow-[0_4px_20px_rgba(0,0,0,0.04)] 
+        hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-shadow duration-300 
+        overflow-hidden flex flex-col group cursor-pointer border-2
+        ${isSelected ? 'border-primary-container' : 'border-transparent'}
       `}
       role="button"
       tabIndex={0}
@@ -41,40 +42,47 @@ export function VenueCard({ venue, distance, onSelect, isSelected }: VenueCardPr
         }
       }}
     >
-      {/* Background Image */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-        style={{ backgroundImage: `url('${backgroundImage}')` }}
-      />
-      
-      {/* Overlay */}
-      <div className="absolute inset-0 promo-overlay" />
-      
+      {/* Padded Image Container */}
+      <div className="relative h-48 w-full p-2">
+        <img 
+          src={backgroundImage} 
+          alt={venue.name}
+          className="w-full h-full object-cover rounded-[12px]"
+        />
+        <button 
+          className="absolute top-4 right-4 bg-white/80 p-2 rounded-full backdrop-blur-sm text-secondary hover:text-error transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>
+            favorite
+          </span>
+        </button>
+      </div>
+
       {/* Content */}
-      <div className="absolute inset-0 p-card-padding flex flex-col justify-between">
-        <h4 className="font-card-heading text-card-heading text-pure-white uppercase tracking-tighter">
-          {venue.name}
-        </h4>
+      <div className="p-4 flex flex-col gap-2">
+        <div className="flex justify-between items-start">
+          <h3 className="font-title-sm text-title-sm text-on-surface">
+            {venue.name}
+          </h3>
+          <span className="bg-tertiary-container text-on-tertiary-container px-2 py-1 rounded text-xs font-bold">
+            {venue.sponsor_tier === 'gold' ? '4.9 ★' : '4.5 ★'}
+          </span>
+        </div>
         
-        <div>
-          <div className="flex flex-col gap-2 items-start mb-6">
-            <div className="bg-absolute-black text-pure-white inline-block px-4 py-2 font-body-bold text-body-bold uppercase">
-              {venue.type.replace('_', ' ')}
-            </div>
-            <div className="bg-pure-white text-absolute-black inline-block px-4 py-2 font-body-bold text-body-bold uppercase">
-              {formatDistance(distance)}
-            </div>
+        <p className="font-body-md text-body-md text-on-surface-variant capitalize">
+          {venue.type.replace('_', ' ')}
+        </p>
+
+        <div className="flex items-center gap-4 mt-2">
+          <div className="flex items-center gap-1 text-on-secondary-container text-sm">
+            <span className="material-symbols-outlined text-sm">payments</span>
+            From £15/child
           </div>
-          
-          <button 
-            className="w-full bg-renault-yellow text-absolute-black font-button-label text-button-label px-button-x py-button-y min-h-[touch-target-min] uppercase hover:bg-renault-blue hover:text-pure-white transition-colors duration-200"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCardClick();
-            }}
-          >
-            VIEW DETAILS
-          </button>
+          <div className="flex items-center gap-1 text-on-secondary-container text-sm">
+            <span className="material-symbols-outlined text-sm">location_on</span>
+            {formatDistance(distance)}
+          </div>
         </div>
       </div>
     </div>

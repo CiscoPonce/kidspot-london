@@ -29,7 +29,6 @@ function VenueMapSection({ onVenueSelect }: { onVenueSelect: (venue: Venue) => v
 
   const venues = venuesResponse?.all || [];
 
-  // Track fallback results
   useEffect(() => {
     if (venuesResponse?.meta?.fallback_triggered) {
       plausible('FallbackTriggered', { 
@@ -43,14 +42,12 @@ function VenueMapSection({ onVenueSelect }: { onVenueSelect: (venue: Venue) => v
 
   if (lat === null || lon === null) {
     return (
-      <div className="flex h-[400px] items-center justify-center bg-secondary-fixed-dim border-2 border-absolute-black">
+      <div className="flex h-64 items-center justify-center bg-surface-variant rounded-[12px] opacity-80">
         <div className="text-center px-6">
-          <p className="font-body-bold text-body-bold text-absolute-black uppercase mb-4">
-            NO LOCATION DETECTED
-          </p>
-          <p className="text-sm text-secondary-brand max-w-xs mx-auto uppercase">
-            Search for a location to activate the interactive city grid
-          </p>
+          <button className="bg-primary-container text-on-primary-container px-6 py-3 rounded-full font-title-sm text-title-sm shadow-md active:scale-95 transition-transform flex items-center gap-2 mx-auto">
+            <span className="material-symbols-outlined">map</span>
+            View Map
+          </button>
         </div>
       </div>
     );
@@ -58,27 +55,22 @@ function VenueMapSection({ onVenueSelect }: { onVenueSelect: (venue: Venue) => v
 
   if (isLoading) {
     return (
-      <div className="flex h-[400px] items-center justify-center bg-secondary-fixed-dim border-2 border-absolute-black">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin border-4 border-renault-blue border-t-transparent" />
-          <p className="font-button-label text-button-label text-absolute-black uppercase">
-            CALIBRATING GRID...
-          </p>
-        </div>
+      <div className="flex h-64 items-center justify-center bg-surface-variant rounded-[12px] animate-pulse">
+        <div className="h-10 w-10 animate-spin border-4 border-primary-container border-t-transparent" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex h-[400px] items-center justify-center bg-secondary-fixed-dim border-2 border-absolute-black">
-        <p className="font-body-bold text-error uppercase">Grid Error: System Failure</p>
+      <div className="flex h-64 items-center justify-center bg-error-container rounded-[12px]">
+        <p className="font-title-sm text-error uppercase">Grid Connection Error</p>
       </div>
     );
   }
 
   return (
-    <div className="h-[400px] border-2 border-absolute-black relative overflow-hidden">
+    <div className="h-64 rounded-[12px] overflow-hidden relative">
       <VenueMap venues={venues} onVenueSelect={onVenueSelect} />
     </div>
   );
@@ -96,57 +88,69 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="bg-pure-white text-absolute-black font-body-text antialiased max-w-[1440px] mx-auto pb-16 md:pb-0">
+    <div className="bg-background text-on-background min-h-screen pb-24 max-w-[container-max] mx-auto">
       <Header />
       
       <main>
         <Hero />
         <QuickFilters />
         
-        {/* Map Section */}
-        <section className="py-section-gap px-6 bg-absolute-black text-pure-white">
-          <div className="max-w-6xl mx-auto">
-            <h3 className="font-section-heading text-section-heading uppercase mb-8 tracking-tighter">
-              INTERACTIVE CITY GRID
-            </h3>
+        {/* Featured Venues Section */}
+        <section className="px-margin-mobile py-stack-md space-y-stack-md">
+          <h2 className="font-headline-md text-headline-md text-on-surface">
+            Featured Spaces
+          </h2>
+          <VenueList
+            onVenueSelect={handleVenueSelect}
+            selectedId={selectedVenue?.id}
+          />
+        </section>
+        
+        {/* Interactive Map Section */}
+        <section className="px-margin-mobile py-stack-md">
+          <div className="bg-surface-container-lowest rounded-[16px] shadow-[0_4px_20px_rgba(0,0,0,0.04)] p-2">
             <VenueMapSection onVenueSelect={handleVenueSelect} />
           </div>
         </section>
         
-        {/* Venue List Section */}
-        <section className="py-section-gap px-6 bg-pure-white">
-          <div className="max-w-6xl mx-auto">
-            <h3 className="font-section-heading text-section-heading uppercase mb-8 tracking-tighter">
-              FEATURED VENUES
-            </h3>
-            <VenueList
-              onVenueSelect={handleVenueSelect}
-              selectedId={selectedVenue?.id}
-            />
-          </div>
-        </section>
-        
-        {/* Branding Section */}
-        <section className="py-section-gap px-6 bg-absolute-black text-pure-white text-center">
-          <div className="max-w-3xl mx-auto">
-            <span className="material-symbols-outlined text-6xl text-renault-yellow mb-6">
-              verified
-            </span>
-            <h2 className="font-section-heading text-section-heading uppercase mb-6 tracking-tighter">
-              CURATED. SAFE. VERIFIED.
-            </h2>
-            <p className="font-body-text text-body-text text-secondary-fixed-dim max-w-xl mx-auto uppercase">
-              Every KidSpot venue is rigorously checked for safety, quality, and maximum fun. 
-              We partner only with top-tier children&apos;s entertainment spaces to ensure 
-              your celebration is perfect.
+        {/* Trust Section */}
+        <section className="px-margin-mobile py-stack-lg bg-surface-container-low text-center rounded-t-[32px] mt-8">
+          <div className="max-w-md mx-auto space-y-6">
+            <div className="flex justify-center gap-4">
+              <div className="bg-surface-container-lowest p-4 rounded-full shadow-sm text-tertiary">
+                <span className="material-symbols-outlined text-3xl">verified_user</span>
+              </div>
+              <div className="bg-surface-container-lowest p-4 rounded-full shadow-sm text-tertiary">
+                <span className="material-symbols-outlined text-3xl">health_and_safety</span>
+              </div>
+              <div className="bg-surface-container-lowest p-4 rounded-full shadow-sm text-tertiary">
+                <span className="material-symbols-outlined text-3xl">mood</span>
+              </div>
+            </div>
+            <h2 className="font-headline-md text-headline-md text-on-surface">Curated. Safe. Verified.</h2>
+            <p className="font-body-md text-body-md text-on-surface-variant">
+              Every venue on KidSpot is rigorously checked for safety, cleanliness, and maximum fun potential.
             </p>
           </div>
         </section>
       </main>
 
+      <footer className="bg-zinc-50 dark:bg-zinc-950 w-full rounded-t-3xl border-t border-zinc-200 dark:border-zinc-800 hidden md:block mt-12">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 px-8 py-12">
+          <div className="font-bold text-lg text-zinc-900 dark:text-zinc-50">KidSpot</div>
+          <div className="flex gap-6">
+            <a className="text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors cursor-pointer font-space-grotesk text-sm" href="#">Safety</a>
+            <a className="text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors cursor-pointer font-space-grotesk text-sm" href="#">Venues</a>
+            <a className="text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors cursor-pointer font-space-grotesk text-sm" href="#">Contact</a>
+          </div>
+          <div className="text-zinc-500 dark:text-zinc-400 font-space-grotesk text-sm">
+            © 2026 KidSpot. Built for happy families.
+          </div>
+        </div>
+      </footer>
+
       <BottomNav />
       
-      {/* Venue Detail Modal */}
       {selectedVenue && (
         <VenueDetailModal
           venue={selectedVenue}
