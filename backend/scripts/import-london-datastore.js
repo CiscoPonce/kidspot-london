@@ -97,7 +97,7 @@ async function insertVenue(venue) {
       `INSERT INTO venues (
         source, source_id, name, type, lat, lon, borough, slug, last_scraped
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-      ON CONFLICT (source_id) DO UPDATE SET
+      ON CONFLICT (source, source_id) DO UPDATE SET
         name = EXCLUDED.name,
         type = EXCLUDED.type,
         lat = EXCLUDED.lat,
@@ -171,14 +171,34 @@ async function importVenues(csvData, source) {
     
     try {
       // Extract venue data from CSV row
-      // Note: Column names may vary depending on the actual CSV structure
       const name = row.name || row.Name || row.venue_name || '';
       const postcode = row.postcode || row.Postcode || row.post_code || '';
       const csvType = row.type || row.Type || row.venue_type || 'other';
       const borough = row.borough_name || row.Borough || 'London';
       
-      // Skip rows without required fields
-      if (!name || !postcode) {
+      // Use existing coordinates if available
+      let lat = row.latitude ? parseFloat(row.latitude) : null;
+      let lon = row.longitude ? parseFloat(row.longitude) : null;
+      
+      // Skip rows without name
+      if (!name) {
+        skipped++;
+        continue;
+      }
+      
+      // Geocode only if coordinates are missing
+      if (!lat || !lon) {
+        if (!postcode) {
+          skipped++;
+          continue;
+        }
+        const coords = await geocodePostcode(postcode);
+        lat = coords.lat;
+        lon = coords.lon;
+      }
+      
+      if (!lat || !lon) {
+        console.warn(`Skipping ${name} - missing location`);
         skipped++;
         continue;
       }
@@ -189,23 +209,14 @@ async function importVenues(csvData, source) {
       // Map venue type
       const type = mapVenueType(csvType);
       
-      // Geocode postcode
-      const coords = await geocodePostcode(postcode);
-      
-      if (!coords.lat || !coords.lon) {
-        console.warn(`Skipping ${name} - could not geocode postcode ${postcode}`);
-        skipped++;
-        continue;
-      }
-      
       // Create venue object (minimal schema)
       const venue = {
         source: source,
         source_id: sourceId,
         name: name,
         type: type,
-        lat: coords.lat,
-        lon: coords.lon,
+        lat: lat,
+        lon: lon,
         borough: borough,
         slug: generateSlug(name, borough)
       };

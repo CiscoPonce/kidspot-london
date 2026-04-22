@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { Trees, Building, Joystick, Dumbbell, MapPin, ExternalLink } from 'lucide-react';
 import type { Venue } from '@/lib/api';
 import { usePlausible } from 'next-plausible';
 
@@ -12,31 +11,11 @@ interface VenueCardProps {
   isSelected?: boolean;
 }
 
-const TYPE_ICONS = {
-  park: Trees,
-  community_hall: Building,
-  softplay: Joystick,
-  sports_centre: Dumbbell,
-  other: MapPin,
-} as const;
-
-type VenueType = keyof typeof TYPE_ICONS;
-
-const SPONSOR_BADGE_COLORS = {
-  gold: 'bg-amber-400 text-amber-900',
-  silver: 'bg-slate-300 text-slate-700',
-  bronze: 'bg-orange-600 text-orange-100',
-} as const;
-
 function formatDistance(miles: number): string {
-  return `${miles.toFixed(1)} miles`;
+  return `${miles.toFixed(1)} miles away`;
 }
 
 export function VenueCard({ venue, distance, onSelect, isSelected }: VenueCardProps) {
-  const IconComponent = TYPE_ICONS[(venue.type as VenueType) || 'other'];
-  const sponsorBadge = venue.sponsor_tier
-    ? SPONSOR_BADGE_COLORS[venue.sponsor_tier as keyof typeof SPONSOR_BADGE_COLORS]
-    : null;
   const plausible = usePlausible();
 
   const handleCardClick = () => {
@@ -44,22 +23,15 @@ export function VenueCard({ venue, distance, onSelect, isSelected }: VenueCardPr
     onSelect();
   };
 
-  const handleLinkClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    plausible('VenueViewed', { props: { venueId: venue.id, source: 'external_link' } });
-  };
+  // Use a placeholder image if none available
+  const backgroundImage = venue.image_url || `https://images.unsplash.com/photo-1533749047139-189de3cf06d3?q=80&w=800&auto=format&fit=crop`;
 
   return (
     <div
       onClick={handleCardClick}
       className={`
-        w-full text-left p-4 rounded-lg border transition-all duration-150
-        min-h-[72px] touch-manipulation cursor-pointer group
-        ${
-          isSelected
-            ? 'border-primary-500 bg-primary-50 shadow-md'
-            : 'border-secondary-200 bg-white hover:border-primary-300 hover:shadow-sm active:scale-[0.98]'
-        }
+        relative w-full h-[400px] overflow-hidden group cursor-pointer border-2 transition-all duration-300
+        ${isSelected ? 'border-renault-blue' : 'border-transparent'}
       `}
       role="button"
       tabIndex={0}
@@ -69,50 +41,40 @@ export function VenueCard({ venue, distance, onSelect, isSelected }: VenueCardPr
         }
       }}
     >
-      <div className="flex items-start gap-3">
-        {/* Type Icon */}
-        <div
-          className={`
-            flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center
-            ${isSelected ? 'bg-primary-100 text-primary-600' : 'bg-secondary-100 text-secondary-600'}
-          `}
-        >
-          <IconComponent size={20} />
-        </div>
-
-        {/* Venue Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-semibold text-secondary-900 truncate">{venue.name}</h3>
-            {sponsorBadge && (
-              <span
-                className={`
-                  inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium uppercase
-                  ${sponsorBadge}
-                `}
-              >
-                {venue.sponsor_tier}
-              </span>
-            )}
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+        style={{ backgroundImage: `url('${backgroundImage}')` }}
+      />
+      
+      {/* Overlay */}
+      <div className="absolute inset-0 promo-overlay" />
+      
+      {/* Content */}
+      <div className="absolute inset-0 p-card-padding flex flex-col justify-between">
+        <h4 className="font-card-heading text-card-heading text-pure-white uppercase tracking-tighter">
+          {venue.name}
+        </h4>
+        
+        <div>
+          <div className="flex flex-col gap-2 items-start mb-6">
+            <div className="bg-absolute-black text-pure-white inline-block px-4 py-2 font-body-bold text-body-bold uppercase">
+              {venue.type.replace('_', ' ')}
+            </div>
+            <div className="bg-pure-white text-absolute-black inline-block px-4 py-2 font-body-bold text-body-bold uppercase">
+              {formatDistance(distance)}
+            </div>
           </div>
-          <p className="text-sm text-secondary-500 capitalize mt-0.5">
-            {venue.type.replace('_', ' ')}
-          </p>
-        </div>
-
-        {/* Distance & Link */}
-        <div className="flex flex-col items-end gap-2 flex-shrink-0">
-          <span className="text-sm font-medium text-primary-600">
-            {formatDistance(distance)}
-          </span>
-          <Link
-            href={`/venue/${venue.slug}`}
-            onClick={handleLinkClick}
-            className="p-1 rounded-md text-secondary-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-            title="View full details"
+          
+          <button 
+            className="w-full bg-renault-yellow text-absolute-black font-button-label text-button-label px-button-x py-button-y min-h-[touch-target-min] uppercase hover:bg-renault-blue hover:text-pure-white transition-colors duration-200"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCardClick();
+            }}
           >
-            <ExternalLink size={16} />
-          </Link>
+            VIEW DETAILS
+          </button>
         </div>
       </div>
     </div>

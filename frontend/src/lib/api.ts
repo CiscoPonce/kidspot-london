@@ -11,6 +11,7 @@ export interface Venue {
   borough?: string;
   distance_miles?: number;
   sponsor_tier?: string | null;
+  image_url?: string;
 }
 
 export interface VenueDetails {
@@ -29,6 +30,7 @@ export interface VenueDetails {
   user_ratings_total?: number;
   opening_hours?: Record<string, string>;
   sponsor_tier?: string | null;
+  image_url?: string;
 }
 
 export interface VenueSearchParams {

@@ -1,8 +1,7 @@
-version: '3.8'
 
 services:
   postgres:
-    image: postgis/postgis:15-3.4
+    image: kartoza/postgis:15
     ports:
       - "5432:5432"
     environment:
@@ -33,9 +32,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: pm2-runtime start ecosystem.config.js --only kidspot-api
     environment:
-      - DATABASE_URL=postgres://kidspot_admin:${DB_PASSWORD}@postgres:5432/kidspot
+      - DATABASE_URL=postgres://kidspot_admin:${DB_PASSWORD:-password}@postgres:5432/kidspot
       - REDIS_URL=redis://redis:6379
       - GOOGLE_PLACES_API_KEY=${GOOGLE_PLACES_API_KEY}
       - ADMIN_KEY=${ADMIN_KEY}
@@ -60,7 +58,7 @@ services:
       dockerfile: Dockerfile.worker
     command: npm run worker
     environment:
-      - DATABASE_URL=postgres://kidspot_admin:${DB_PASSWORD}@postgres:5432/kidspot
+      - DATABASE_URL=postgres://kidspot_admin:${DB_PASSWORD:-password}@postgres:5432/kidspot
       - REDIS_URL=redis://redis:6379
       - NODE_ENV=production
     depends_on:
@@ -79,12 +77,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    command: pm2-runtime start ecosystem.config.js
     environment:
       - NEXT_PUBLIC_API_URL=http://api:4000
       - NODE_ENV=production
     ports:
-      - "3000:3000"
+      - "3005:3000"
     depends_on:
       api:
         condition: service_healthy

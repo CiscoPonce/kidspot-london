@@ -1,6 +1,5 @@
 'use client';
 
-import { Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ShareButtonProps {
@@ -46,10 +45,10 @@ export function ShareButton({ title, text, url, className = "" }: ShareButtonPro
   return (
     <button
       onClick={handleShare}
-      className={`inline-flex items-center gap-2 rounded-lg bg-secondary-100 px-4 py-2 text-sm font-medium text-secondary-900 transition-all hover:bg-secondary-200 active:scale-95 ${className}`}
+      className={`inline-flex items-center gap-2 font-button-label text-button-label uppercase transition-all active:scale-95 ${className}`}
       aria-label="Share venue"
     >
-      <Share2 className="h-4 w-4" />
+      <span className="material-symbols-outlined text-xl">share</span>
       <span>Share</span>
     </button>
   );
