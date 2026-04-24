@@ -44,14 +44,21 @@ async function updateVenue(venue: any) {
   const { id: venueId, name: venueName, lat, lon } = venue;
   try {
     // 1. First, search for the business to get its Yelp ID and details
-    // We use a tight radius to ensure we find the exact venue
-    const searchResults = await yelpService.searchBusinesses({
+    // We use a tight radius to ensure we find the exact venue if lat/lon are valid
+    let searchParams: any = {
       term: venueName,
-      latitude: lat,
-      longitude: lon,
-      radius: 100, // Very tight radius (meters)
       limit: 1
-    });
+    };
+
+    if (lat && lon && lat !== 0 && lon !== 0) {
+      searchParams.latitude = lat;
+      searchParams.longitude = lon;
+      searchParams.radius = 100; // Very tight radius (meters)
+    } else {
+      searchParams.location = 'London, UK';
+    }
+
+    const searchResults = await yelpService.searchBusinesses(searchParams);
 
     const details = searchResults.length > 0 ? searchResults[0] : null;
     
@@ -138,11 +145,12 @@ export async function processStaleVenues() {
         console.log(`  ✗ Error: ${res.message}`);
       }
       
-      // Add delay to respect API rate limits (staggered)
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Add delay to respect API rate limits
+      await new Promise(resolve => setTimeout(resolve, 500));
     };
 
-    // Process venues with concurrency limit
+    // Process venues with concurrency limit (reduced to 2 to respect Yelp QPS limit)
+    const CONCURRENCY = 2;
     const workers = Array(Math.min(CONCURRENCY, venues.length)).fill(0).map(async () => {
       while (queue.length > 0) {
         const entry = queue.shift();

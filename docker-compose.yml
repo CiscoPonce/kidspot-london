@@ -40,6 +40,8 @@ services:
       - ADMIN_KEY=${ADMIN_KEY}
       - CORS_ORIGIN=${CORS_ORIGIN}
       - INGEST_SIGNING_SECRET=${INGEST_SIGNING_SECRET}
+      - YELP_API_KEY=${YELP_API_KEY}
+      - YELP_CLIENT_ID=${YELP_CLIENT_ID}
       - NODE_ENV=production
     ports:
       - "4000:4000"
