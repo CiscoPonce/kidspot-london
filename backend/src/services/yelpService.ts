@@ -67,7 +67,11 @@ export const yelpService = {
 
       return response.data.businesses as YelpBusiness[];
     } catch (error: any) {
-      logger.error({ err: error, params }, 'Yelp search failed');
+      if (error.response && error.response.status === 429) {
+        logger.warn({ params }, 'Yelp API rate limit reached (429)');
+      } else {
+        logger.error({ err: error.message || error, params }, 'Yelp search failed');
+      }
       return [];
     }
   },
