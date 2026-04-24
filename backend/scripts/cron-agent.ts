@@ -1,103 +1,92 @@
 #!/usr/bin/env node
 
-const axios = require('axios');
-const { pool } = require('../src/utils/db');
-require('dotenv').config();
+import axios from 'axios';
+import { pool } from '../src/utils/db.js';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // Configuration
 const STALE_HOURS = 24; // Mark venues as stale after 24 hours
 const BATCH_SIZE = 50; // Process 50 venues at a time
 
-// Google Places API configuration
-const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
-const BASE_URL = 'https://maps.googleapis.com/maps/api/place';
+// Yelp Fusion API configuration
+import { yelpService } from '../src/services/yelpService.js';
+import { calculateKidScore } from '../src/scoring/kidScore.js';
 
-// Map Google Places types to our venue types
-function mapVenueType(googleTypes) {
+// Map Yelp categories to our venue types
+export function mapVenueType(yelpCategories: any[]) {
   const typeMap = {
-    'amusement_park': 'softplay',
-    'bowling_alley': 'other',
-    'community_center': 'community_hall',
-    'gym': 'other',
-    'park': 'park',
-    'playground': 'park',
-    'stadium': 'other',
-    'swimming_pool': 'other',
-    'tourist_attraction': 'other',
-    'zoo': 'other'
+    'kids_activities': 'softplay',
+    'playgrounds': 'park',
+    'parks': 'park',
+    'recreation': 'leisure_centre',
+    'gyms': 'leisure_centre',
+    'leisure_centers': 'leisure_centre',
+    'communitycenters': 'community_hall',
+    'libraries': 'library',
+    'museums': 'museum',
+    'cafes': 'cafe'
   };
   
-  for (const googleType of googleTypes) {
-    if (typeMap[googleType]) {
-      return typeMap[googleType];
+  if (yelpCategories && Array.isArray(yelpCategories)) {
+    for (const category of yelpCategories) {
+      if (category.alias && typeMap[category.alias]) {
+        return typeMap[category.alias];
+      }
     }
   }
   
   return 'other';
 }
 
-const { calculateKidScore } = require('../src/scoring/kidScore.ts');
-
-// Get venue details from Google Places API
-async function getVenueDetails(placeId) {
+// Update venue information using Yelp Fusion API
+async function updateVenue(venue: any) {
+  const { id: venueId, name: venueName, lat, lon } = venue;
   try {
-    const response = await axios.get(`${BASE_URL}/details/json`, {
-      params: {
-        place_id: placeId,
-        fields: 'name,types,permanently_closed,rating,user_ratings_total',
-        key: GOOGLE_PLACES_API_KEY
-      },
-      timeout: 10000
+    // 1. First, search for the business to get its Yelp ID and details
+    // We use a tight radius to ensure we find the exact venue
+    const searchResults = await yelpService.searchBusinesses({
+      term: venueName,
+      latitude: lat,
+      longitude: lon,
+      radius: 100, // Very tight radius (meters)
+      limit: 1
     });
-    
-    if (response.data.status === 'OK' && response.data.result) {
-      return response.data.result;
-    } else {
-      console.error(`Google Places API error for ${placeId}: ${response.data.status}`);
-      return null;
-    }
-  } catch (error) {
-    console.error(`Error fetching details for ${placeId}:`, error.message);
-    return null;
-  }
-}
 
-// Update venue information
-async function updateVenue(venue) {
-  const { id: venueId, source_id: placeId, name: venueName } = venue;
-  try {
-    const details = await getVenueDetails(placeId);
+    const details = searchResults.length > 0 ? searchResults[0] : null;
     
     if (!details) {
-      return { status: 'error', message: 'Failed to fetch details' };
+      // If we can't find it, we just update the scrape timestamp so we don't keep trying
+      await pool.query('SELECT update_venue_scrape_time($1)', [venueId]);
+      return { status: 'updated', message: 'Venue not found on Yelp. Timestamp updated.' };
     }
     
     // Check if venue is permanently closed
-    if (details.permanently_closed) {
-      await pool.query('SELECT deactivate_venue($1, $2, $3)', [venueId, 'permanently_closed', 'Detected via Google Places API']);
+    if (details.is_closed) {
+      await pool.query('SELECT deactivate_venue($1, $2, $3)', [venueId, 'permanently_closed', 'Detected via Yelp Fusion API']);
       return { status: 'deactivated', message: 'Venue permanently closed' };
     }
     
     // Update venue type and kid_score
-    const newType = mapVenueType(details.types || []);
+    const newType = mapVenueType(details.categories || []);
     
     const kidScoreInput = {
       name: details.name || venueName,
-      types: [newType], // Use mapped type or raw types? calculateKidScore expects our mapped types or raw? The test used 'softplay', 'park'. So mapped type.
+      types: [newType], 
       rating: details.rating,
-      user_ratings_total: details.user_ratings_total
+      user_ratings_total: details.review_count
     };
     
     const kidScore = calculateKidScore(kidScoreInput);
     
     await pool.query(
       `UPDATE venues 
-       SET type = $1, rating = $2, user_ratings_total = $3, kid_score = $4, enriched_at = NOW(), last_scraped = NOW()
-       WHERE id = $5`,
-      [newType, details.rating || null, details.user_ratings_total || null, kidScore, venueId]
+       SET type = $1, rating = $2, user_ratings_total = $3, kid_score = $4, enriched_at = NOW(), last_scraped = NOW(), source_id = COALESCE(source_id, $5)
+       WHERE id = $6`,
+      [newType, details.rating || null, details.review_count || null, kidScore, details.id, venueId]
     );
     
-    return { status: 'updated', type: newType, kidScore };
+    return { status: 'updated', type: newType, kidScore, message: 'Updated via Yelp' };
   } catch (error) {
     console.error(`Error updating venue ${venueId}:`, error.message);
     return { status: 'error', message: error.message };
@@ -105,7 +94,7 @@ async function updateVenue(venue) {
 }
 
 // Process venues that need scraping
-async function processStaleVenues() {
+export async function processStaleVenues() {
   console.log('Processing venues that need scraping...\n');
   
   try {
@@ -135,13 +124,8 @@ async function processStaleVenues() {
       
       let res;
       
-      if (venue.source === 'google') {
-        res = await updateVenue(venue);
-      } else {
-        // For non-Google sources, just update the scrape timestamp
-        await pool.query('SELECT update_venue_scrape_time($1)', [venue.id]);
-        res = { status: 'updated', message: 'Timestamp updated' };
-      }
+      // Update all venues via Yelp Fusion API
+      res = await updateVenue(venue);
       
       if (res.status === 'updated') {
         updated++;
@@ -200,8 +184,7 @@ async function discoverNewVenues() {
   }
 }
 
-// Main cron agent function
-async function runCronAgent() {
+export async function runCronAgent() {
   console.log('=== KidSpot London - Cron Agent ===\n');
   console.log('This agent performs continuous scraping and categorization.');
   console.log(`Stale threshold: ${STALE_HOURS} hours\n`);
@@ -231,8 +214,11 @@ async function runCronAgent() {
   }
 }
 
-// Run cron agent
-if (require.main === module) {
+// ES modules don't have require.main, so we use import.meta.url
+import { fileURLToPath } from 'url';
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMainModule) {
   runCronAgent()
     .then(() => process.exit(0))
     .catch(error => {
@@ -240,5 +226,3 @@ if (require.main === module) {
       process.exit(1);
     });
 }
-
-module.exports = { runCronAgent, processStaleVenues, mapVenueType };

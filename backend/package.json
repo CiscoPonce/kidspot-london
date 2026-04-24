@@ -29,7 +29,7 @@
     "discover": "tsx scripts/discovery/run-discovery.ts",
     "discover:google": "tsx scripts/discovery/google-places-discovery.js",
     "discover:osm": "tsx scripts/discovery/osm-discovery.ts",
-    "cron": "tsx scripts/cron-agent.js",
+    "cron": "tsx scripts/cron-agent.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
