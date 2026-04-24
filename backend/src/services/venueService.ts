@@ -35,13 +35,14 @@ const fetchOsmSearchResults = async (lat: number, lon: number, radiusMiles: numb
     const radiusMeters = Math.min(radiusMiles * 1609.34, 5000); // Max 5km for OSM to be fast
     let tagQuery = '';
     
-    if (type === 'softplay') tagQuery = '["leisure"="fitness_centre"]';
+    if (type === 'softplay') tagQuery = '["leisure"="indoor_play"]';
     else if (type === 'community_hall') tagQuery = '["amenity"="community_centre"]';
+    else if (type === 'leisure_centre') tagQuery = '["leisure"~"sports_centre|fitness_centre"]';
     else if (type === 'park') tagQuery = '["leisure"="park"]';
     else if (type === 'library') tagQuery = '["amenity"="library"]';
     else if (type === 'museum') tagQuery = '["tourism"="museum"]';
     else if (type === 'cafe') tagQuery = '["amenity"="cafe"]';
-    else tagQuery = '["leisure"~"park|playground|fitness_centre"]';
+    else tagQuery = '["leisure"~"indoor_play|park|playground|sports_centre"]';
 
     const query = `
       [out:json][timeout:10];
