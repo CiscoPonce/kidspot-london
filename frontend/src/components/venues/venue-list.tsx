@@ -64,11 +64,11 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 }
 
 export function VenueList({ onVenueSelect, selectedId }: VenueListProps) {
-  const { lat, lon, radius, venueType } = useSearch();
+  const { lat, lon, radius, venueType, postcode } = useSearch();
 
   const { data: venuesResponse, isLoading, error, refetch } = useQuery({
-    queryKey: ['venues', lat, lon, radius, venueType],
-    queryFn: () => fetchVenues(lat!, lon!, radius, venueType || undefined),
+    queryKey: ['venues', lat, lon, radius, venueType, postcode],
+    queryFn: () => fetchVenues(lat!, lon!, radius, venueType || undefined, postcode || undefined),
     enabled: lat !== null && lon !== null,
   });
 

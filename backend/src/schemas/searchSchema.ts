@@ -6,6 +6,7 @@ export const searchQuerySchema = z.object({
   radius_miles: z.coerce.number().positive().max(50).default(5),
   type: z.enum(['softplay', 'community_hall', 'leisure_centre', 'library', 'park', 'museum', 'cafe', 'other']).optional(),
   borough: z.string().optional(),
+  postcode: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(100).optional()
 }).refine(data => data.borough || (data.lat !== undefined && data.lon !== undefined) || data.type, {
   message: 'Either borough, (lat and lon), or type are required',

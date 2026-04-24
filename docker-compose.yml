@@ -39,6 +39,7 @@ services:
       - BRAVE_API_KEY=${BRAVE_API_KEY}
       - ADMIN_KEY=${ADMIN_KEY}
       - CORS_ORIGIN=${CORS_ORIGIN}
+      - INGEST_SIGNING_SECRET=${INGEST_SIGNING_SECRET}
       - NODE_ENV=production
     ports:
       - "4000:4000"

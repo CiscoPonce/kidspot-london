@@ -36,6 +36,7 @@ export interface SearchQuery {
   type?: VenueType;
   limit?: number;
   borough?: string;
+  postcode?: string;
 }
 
 export interface SearchResponse {

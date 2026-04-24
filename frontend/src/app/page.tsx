@@ -14,7 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { usePlausible } from 'next-plausible';
 
 function VenueMapSection({ onVenueSelect }: { onVenueSelect: (venue: Venue) => void }) {
-  const { lat, lon, radius, venueType } = useSearch();
+  const { lat, lon, radius, venueType, postcode } = useSearch();
   const plausible = usePlausible();
 
   const {
@@ -22,8 +22,8 @@ function VenueMapSection({ onVenueSelect }: { onVenueSelect: (venue: Venue) => v
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['venues', lat, lon, radius, venueType],
-    queryFn: () => fetchVenues(lat!, lon!, radius, venueType || undefined),
+    queryKey: ['venues', lat, lon, radius, venueType, postcode],
+    queryFn: () => fetchVenues(lat!, lon!, radius, venueType || undefined, postcode || undefined),
     enabled: lat !== null && lon !== null,
   });
 

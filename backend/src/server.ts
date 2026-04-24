@@ -15,6 +15,9 @@ import adminRoutes from './routes/admin.js';
 // Create Express app
 const app = express();
 
+// Trust proxy for rate limiting (ngrok/proxies)
+app.set('trust proxy', 1);
+
 // Set up logging middleware
 app.use(httpLogger);
 
@@ -33,8 +36,10 @@ app.use(helmet({
 
 // CORS - Lock to production origin if available
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  credentials: true
+  origin: true, // Reflect request origin (effectively allowing any origin while keeping credentials support)
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-ingest-timestamp', 'x-ingest-signature']
 }));
 
 // Rate limiting - now Redis-backed

@@ -71,7 +71,12 @@ async function fetchApi<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  // Ensure we don't have double slashes and that we include /api if it's missing from the base
+  const cleanBase = API_BASE_URL.replace(/\/$/, '');
+  const cleanEndpoint = endpoint.replace(/^\//, '');
+  const url = endpoint.startsWith('http') ? endpoint : `${cleanBase}/${cleanEndpoint}`;
+
+  console.log(`[API] Fetching: ${url}`); // Added for easier debugging in browser console
 
   const response = await fetch(url, {
     ...options,
@@ -104,6 +109,7 @@ export async function fetchVenues(
   lon: number,
   radiusMiles: number,
   type?: string,
+  postcode?: string,
   limit: number = 50
 ): Promise<VenueResponse> {
   const params = new URLSearchParams({
@@ -115,6 +121,9 @@ export async function fetchVenues(
 
   if (type) {
     params.set('type', type);
+  }
+  if (postcode) {
+    params.set('postcode', postcode);
   }
 
   return fetchApi<VenueResponse>(`/search/venues?${params.toString()}`);
