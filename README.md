@@ -8,7 +8,7 @@
 
 - **Hyper-Local Search**: Search by postcode or current location with a customizable radius (1-10 miles).
 - **Agentic Discovery**: Real-time integration with Brave Search API to ensure "zero-result" searches never happen. If it's on the web, KidSpot will find it.
-- **On-Demand Venue Details**: Minimizes data decay by fetching the latest venue info (opening hours, ratings, photos) directly from Google Places and OpenStreetMap on-demand.
+- **On-Demand Venue Details**: Minimizes data decay by fetching the latest venue info (opening hours, ratings, photos) directly from Yelp Fusion API and OpenStreetMap on-demand.
 - **Programmatic SEO**: 33+ dedicated area pages (e.g., "Venues in Islington") and category-specific landing pages (e.g., "Soft Play in London").
 - **Sponsor System**: Multi-tiered monetization engine (Gold, Silver, Bronze) for featured local business listings.
 - **Mobile First**: Fast, responsive UI optimized for busy parents on the go.
@@ -18,18 +18,17 @@
 ## 🛠️ Technical Stack
 
 ### Frontend
-- **Framework**: Next.js 16.2 (App Router)
-- **Styling**: Tailwind CSS
-- **Maps**: MapLibre GL JS
+- **Framework**: Next.js 15 (React 19)
+- **Styling**: Tailwind CSS 4
+- **Maps**: MapLibre GL JS 5
 - **State Management**: React Query
 - **Analytics**: Plausible (Privacy-first)
 
 ### Backend
-- **Runtime**: Node.js 22 (Express)
-- **Database**: PostgreSQL 15 + PostGIS (Official arm64 supported image)
-- **Caching**: Redis
+- **Runtime**: Node.js 22 (Express 5)
+- **Database**: PostgreSQL 15 + PostGIS
+- **Caching**: Redis 7
 - **Task Queue**: BullMQ (for background discovery)
-- **Process Manager**: PM2
 
 ---
 
@@ -39,26 +38,26 @@
 - Docker and Docker Compose
 - API Keys for:
   - **Brave Search API** (Required for fallback search)
-  - **Google Places API** (Required for rich venue details)
+  - **Yelp Fusion API** (Required for rich venue details and discovery)
 
 ### Setup
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/kidspot-london.git
+   git clone https://github.com/CiscoPonce/kidspot-london.git
    cd kidspot-london
    ```
 
 2. **Configure Environment Variables**:
    Copy the example env files and fill in your API keys:
    ```bash
-   cp backend/.env.example backend/.env
-   # Edit backend/.env with your BRAVE_API_KEY and GOOGLE_PLACES_API_KEY
+   cp .env.example .env
+   # Edit .env with your BRAVE_API_KEY, YELP_API_KEY, and YELP_CLIENT_ID
    ```
 
 3. **Launch with Docker**:
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 4. **Access the application**:

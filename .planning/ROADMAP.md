@@ -4,262 +4,115 @@
 To become the default, zero-friction utility for parents in the UK to discover, evaluate, and share child-friendly spaces, starting with London.
 
 ## Tech Stack
-- **Frontend**: Next.js (React 18), TailwindCSS, MapLibre GL JS
-- **Backend**: Node.js 20, Express, BullMQ (Task Queue), Cheerio/Playwright (Scraping)
-- **Data/AI**: PostgreSQL 15 + PostGIS, Redis (Caching & Queues), OpenRouter (LLM Parsing), Brave Search API (Fallback)
-- **Infrastructure**: Docker Compose on ARM VPS
+- **Frontend**: Next.js 15 (React 19), TailwindCSS 4, MapLibre GL JS 5
+- **Backend**: Node.js 22, Express 5, BullMQ (Task Queue), Pino Logging
+- **Data/AI**: PostgreSQL 15 + PostGIS, Redis 7, Brave Search API, Yelp Fusion API
+- **Infrastructure**: Docker Compose on ARM VPS, GitHub Actions
 
 ---
 
 ## Phase 1: Data Foundation (Weeks 1-2)
 **Status**: Completed
-**Requirements**: [DATA-01, DATA-02, DATA-03, INFRA-01]
-
-**Goal**: Provision infrastructure and establish the data foundation with initial venue imports.
-
-**Plans**: 5 plans (3 completed, 2 gap closure)
-- [x] 01-01-PLAN.md — Provision ARM VPS and setup Docker Compose environment
-- [x] 01-02-PLAN.md — Configure PostgreSQL + PostGIS with venue schema
-- [x] 01-03-PLAN.md — Bulk import London Datastore CSVs into database
-- [x] 01-04-PLAN.md — Gap closure: Add worker service to docker-compose.yml
-- [x] 01-05-PLAN.md — Gap closure: Fix London Datastore URLs and verify data import
+- ✅ Provision VPS and setup Docker environment
+- ✅ Configure PostgreSQL + PostGIS
+- ✅ Bulk import initial London Datastore data
 
 ---
 
 ## Phase 2: Ingestion Engine (Weeks 3-4)
 **Status**: Completed
-**Requirements**: [INGEST-01, INGEST-02, INGEST-03, AI-01]
-
-**Goal**: Build intelligent data ingestion pipeline with LLM-powered parsing and OSM integration.
-
-**Plans**:
-- [x] 02-01-PLAN.md — Setup BullMQ workers and Redis queue infrastructure
-- [x] 02-02-PLAN.md — Integrate OpenRouter API for intelligent HTML parsing
-- [x] 02-03-PLAN.md — Implement Overpass API (OSM) data import script
-- [x] 02-04-PLAN.md — Build deduplication logic with Levenshtein distance
+- ✅ Setup BullMQ worker infrastructure
+- ✅ Integrate OpenRouter for LLM data parsing
+- ✅ Implement Overpass API (OSM) integration
+- ✅ Build deduplication logic
 
 ---
 
 ## Phase 3: Backend API & Fallback (Weeks 5-6)
 **Status**: Completed
-**Requirements**: [API-01, API-02, API-03, FALLBACK-01, CACHE-01]
-
-**Goal**: Build REST API with spatial queries, caching, and "never zero" fallback engine.
-
-**Plans**:
-- [x] 03-01-PLAN.md — Create Express API with PostGIS spatial search endpoint
-- [x] 03-02-PLAN.md — Implement Redis caching layer for search results
-- [x] 03-04-PLAN.md — Add rate limiting and security headers (Helmet.js)
-- [x] 03-05-PLAN.md — Gap closure: Security hardening
-- [x] 03-06-PLAN.md — Gap closure: Brave Search API fallback (FALLBACK-01)
+- ✅ Create REST API with spatial search
+- ✅ Implement Redis caching and rate limiting
+- ✅ Integrate Brave Search fallback engine
 
 ---
 
 ## Phase 4: Frontend Core (Weeks 7-8)
 **Status**: Completed
-**Requirements**: [UI-01, UI-02, UI-03, MAP-01, STATE-01]
-
-**Goal**: Build mobile-first UI with map integration and real-time search.
-
-**Plans**:
-- [x] 04-01-PLAN.md — Setup Next.js project with TailwindCSS and React Query
-- [x] 04-02-PLAN.md — Create search bar with location detection and radius slider
-- [x] 04-03-PLAN.md — Integrate MapLibre GL JS with dynamic venue pins
-- [x] 04-04-PLAN.md — Build venue list view with distance sorting
-- [x] 04-05-PLAN.md — Implement venue detail modal with map snippet
+- ✅ Mobile-first UI with TailwindCSS
+- ✅ Search with location detection and radius
+- ✅ MapLibre GL JS integration with venue pins
+- ✅ Distance sorting and detail modals
 
 ---
 
 ## Phase 5: SEO & Detail Pages (Weeks 9-10)
 **Status**: Completed
-**Requirements**: [SEO-01, SEO-02, SEO-03, ROUTING-01]
-
-**Goal**: Implement programmatic SEO and dynamic routing for venue pages.
-
-**Plans**:
-- [x] 05-01-PLAN.md — Backend Slug Foundation & Migration
-- [x] 05-02-PLAN.md — Venue Detail Standalone Pages
-- [x] 05-03-PLAN.md — Programmatic Landing Pages
-- [x] 05-04-PLAN.md — SEO, Sitemaps & Social Sharing
+- ✅ Programmatic slug generation
+- ✅ Standalone venue detail pages
+- ✅ Programmatic landing pages for SEO
+- ✅ OpenGraph and Metadata optimization
 
 ---
 
 ## Phase 6: Polish & Launch (Weeks 11-12)
 **Status**: Completed
-**Requirements**: [PERF-01, DEPLOY-01, MONITOR-01, UAT-01]
-
-**Goal**: Optimize performance, deploy to production, and conduct UAT testing.
-
-**Plans**:
-- [x] 06-01-PLAN.md — Performance profiling and optimization
-- [x] 06-02-PLAN.md — Setup PM2 process management
-- [x] 06-03-PLAN.md — Configure Plausible Analytics for privacy-first telemetry
-- [x] 06-04-PLAN.md — Conduct UAT testing with beta users
-- [x] 06-05-PLAN.md — Soft launch and Brave Search verification
+- ✅ Performance profiling and PM2 management
+- ✅ Plausible Analytics integration
+- ✅ Production deployment and soft launch
 
 ---
 
-## Phase 7: The Improvement Phase (Weeks 13+)
+## Phase 7: Improvement & Cleanup (Weeks 13-16)
 **Status**: Completed
-**Requirements**: [FIX-01, FIX-02, FIX-03, SEC-01, PERF-02, ARCH-01, ARCH-02, TEST-01, RANK-01, DATA-04, PIPE-01, SEO-04, REV-01, UPGRADE-01]
-
-**Goal**: Transition from soft-launch prototype to production-hardened platform with improved ranking, SEO, and revenue features.
-
-**Plans**: 9 plans
-- [x] 07-01-PLAN.md — P0: Correctness & Critical Fixes
-- [x] 07-02-PLAN.md — P0: Security Hardening & Health Monitoring
-- [x] 07-03-PLAN.md — P0: Core API Client & Redis Refactor
-- [x] 07-04-PLAN.md — P1: Layered Backend Architecture & Shared Types
-- [x] 07-05-PLAN.md — P1: Quality Baseline (Testing & CI)
-- [x] 07-06-PLAN.md — P2: Data Model Enrichment, Scoring Engine & Backfill
-- [x] 07-07-PLAN.md — P2: Search Optimization & Data Backfill
-- [x] 07-08-PLAN.md — P3: GitHub Actions Discovery Pipeline
-- [x] 07-09-PLAN.md — P4: Advanced SEO & SSR Optimization
-
-**Success Criteria**:
-- Worker service stable without crash loops
-- "Kid Score" ranking engine driving search results
-- GitHub Actions successfully automating discovery
-- 100% SEO coverage with valid JSON-LD
-- Stripe claim flow operational
-- App running on Node 22, Next 16, React 19, Tailwind 4
+- ✅ Layered backend architecture & TypeScript migration
+- ✅ Enriched data model (Kid Score, Ratings)
+- ✅ GitHub Actions automated discovery pipeline
+- ✅ Yelp Fusion API integration (Replacing Google Places)
+- ✅ Combined OSM + Brave search fallback with Haversine sorting
 
 ---
 
-## Phase 7.5: Cleanup Sprint (Weeks 15-16)
+## Phase 8: Framework Modernization (Weeks 17-18)
 **Status**: Completed
-**Requirements**: [TS-01, TEST-02, DB-01, API-04, VERIFY-01]
-
-**Goal**: Address lingering technical debt, expand test coverage, prepare the database schema for the revenue loop, and swap Google Places for zero-cost Yelp Fusion waterfall before framework upgrades.
-
-**Plans**:
-- [x] 07.5-01-PLAN.md — Convert worker.js to TypeScript and fix missing environment variables
-- [x] 07.5-02-PLAN.md — Expand backend test coverage to 40-50%
-- [x] 07.5-03-PLAN.md — Create database migrations for Phase 8 features
-- [x] 07.5-04-PLAN.md — Implement zero-cost Yelp Fusion waterfall API replacing Google Places
-- [x] 07.5-05-PLAN.md — Complete Phase 7.5 verification
-
-**Success Criteria**:
-- `worker.ts` compiled and integrated safely
-- 40-50% test coverage achieved across services/routes
-- Phase 8 database schema active (Stripe, Claim statuses)
-- Yelp Fusion waterfall operational with Redis caching
-- 100% Phase 7.5 verification complete
+- ✅ Upgrade to Node 22, Express 5, Next 15, React 19, Tailwind 4
+- ✅ Established CI pipeline (Lint, Typecheck, Test)
+- ✅ Product surface polish (Server Components)
 
 ---
 
-## Phase 8: Framework Modernization & Polish (Weeks 17+)
-**Status**: Completed
-**Requirements**: [UPGRADE-01, CI-01, ANALYTICS-01, POLISH-01]
+## Phase 8.5: UX & Data Quality Verification (Weeks 19-21)
+**Status**: **ACTIVE**
+**Goal**: Ensure data accuracy and polish the user experience to prove traffic value before monetization.
 
-**Goal**: Modernize the framework stack to current stable versions (Node 22, Next 15/16, React 19, Tailwind 4), implement CI/CD, and apply product polish.
-
-**Plans**: 4 plans
-- [x] 08-01-PLAN.md — Framework Upgrades: Node 22, Express 5, Latest Next.js, React 19, Tailwind 4
-- [x] 08-02-PLAN.md — Quality Baseline: CI Pipeline, ESLint Flat Config, Zod Schemas
-- [x] 08-03-PLAN.md — Analytics and Observability: Plausible Events, Prom-Client Metrics
-- [x] 08-04-PLAN.md — Product Surface Polish: Server Components, Map Clustering
-
-**Success Criteria**:
-- App running smoothly on Node 22, Latest Next.js, React 19, Tailwind 4
-- CI pipeline with lint, typecheck, and tests on every PR
-- Analytics events track key user behaviors
-- Map clustering prevents overlapping pins at high density
+**Requirements**:
+- [ ] 08.5-01-PLAN.md — **Data Accuracy Check**: Verify opening hours, pricing, and booking links display correctly.
+- [ ] 08.5-02-PLAN.md — **Review & Sentiment UX**: Enhance the display of reviews and venue atmosphere details.
+- [ ] 08.5-03-PLAN.md — **Accessibility & Mobile UX**: Achieve high accessibility scores and refine mobile interactions.
+- [ ] 08.5-04-PLAN.md — **Traffic Proofing**: Implement outbound link tracking (clicks to booking/website) to quantify value.
 
 ---
 
-## Phase 9: Revenue Loop (Future)
+## Phase 9: Revenue & Monetization (Future)
 **Status**: Deferred
-**Requirements**: [REV-01]
-
-**Goal**: Complete the revenue loop with Stripe integration for venue claims and sponsorships.
+**Goal**: Implement the monetization engine once the product value and traffic are proven.
 
 **Plans**:
 - [ ] 09-01-PLAN.md — Revenue Loop: Claim Your Listing Flow
-- [ ] 09-02-PLAN.md — Admin Audit Log and Fraud Prevention
-
-**Success Criteria**:
-- Venue owners can claim listings and upgrade to paid tiers via Stripe
-- Admin audit log tracks all revenue-related actions
+- [ ] 09-02-PLAN.md — Stripe Integration: Sponsorship Tiers (Gold/Silver/Bronze)
+- [ ] 09-03-PLAN.md — Admin Revenue Dashboard and Audit Logs
 
 ---
 
-## Requirements Index
+## Requirements Index (New Additions)
 
-### Data Foundation
-- **DATA-01**: Provision ARM VPS with Docker Compose
-- **DATA-02**: Configure PostgreSQL + PostGIS with venue schema
-- **DATA-03**: Bulk import London Datastore CSVs
-- **INFRA-01**: Setup Docker Compose environment
-
-### Ingestion Engine
-- **INGEST-01**: Setup BullMQ workers and Redis queue
-- **INGEST-02**: Integrate OpenRouter API for HTML parsing
-- **INGEST-03**: Implement Overpass API (OSM) import
-- **AI-01**: LLM-powered data extraction
-
-### Backend API
-- **API-01**: Create Express API with spatial search
-- **API-02**: Implement Redis caching layer
-- **API-03**: Add rate limiting and security
-- **FALLBACK-01**: Integrate Brave Search API fallback
-- **CACHE-01**: Cache search results for 1 hour
-
-### Frontend Core
-- **UI-01**: Setup Next.js with TailwindCSS
-- **UI-02**: Create search bar with location detection
-- **UI-03**: Build venue list view
-- **MAP-01**: Integrate MapLibre GL JS
-- **STATE-01**: Implement React Query for data fetching
-
-### SEO & Detail Pages
-- **SEO-01**: Create dynamic routing for venue pages
-- **SEO-02**: Generate programmatic SEO landing pages
-- **SEO-03**: Add OpenGraph tags
-- **ROUTING-01**: Implement share functionality
-
-### Polish & Launch
-- **PERF-01**: Performance profiling and optimization
-- **DEPLOY-01**: Setup PM2 process management
-- **MONITOR-01**: Configure Plausible Analytics
-- **UAT-01**: Conduct UAT testing
-
-### Phase 7: Improvement
-- **FIX-01**: Fix worker crash loop and service config
-- **FIX-02**: Fix Brave search coordinate bug
-- **FIX-03**: Fix Google Places API implementation (v1/FieldMask)
-- **SEC-01**: Security hardening (HMAC, timing-safe, CSP)
-- **PERF-02**: Redis-backed rate limiting and caching refactor
-- **ARCH-01**: Layered backend refactor (Controllers/Services/Clients)
-- **ARCH-02**: TypeScript migration and unified types
-- **TEST-01**: Unit and route testing (Vitest)
-- **RANK-01**: Kid Score ranking engine (TS port)
-- **DATA-04**: Enriched data model (Kid Score, ratings, types)
-- **PIPE-01**: GitHub Actions discovery pipeline
-- **SEO-04**: Advanced SEO (Sitemaps index, SSR/ISR optimization)
-- **REV-01**: Venue claim and Stripe sponsorship flow
-- **UPGRADE-01**: Framework upgrades (Node 22, Next 16, React 19)
-
-### Phase 8: Revenue & Framework Modernization
-- **REV-01**: Venue claim and Stripe sponsorship flow
-- **UPGRADE-01**: Framework upgrades (Node 22, Next 16, React 19, Tailwind 4)
-- **CI-01**: CI pipeline with lint, typecheck, and tests
-- **ANALYTICS-01**: Plausible events and prom-client metrics
-- **POLISH-01**: Server Components and map clustering
-
----
-
-## Milestones
-
-- **Milestone 1 (Week 2)**: Data Foundation Complete - Database running with initial venue data
-- **Milestone 2 (Week 4)**: Ingestion Engine Complete - All data sources flowing into database
-- **Milestone 3 (Week 6)**: API Complete - Search API with fallback engine operational
-- **Milestone 4 (Week 8)**: Frontend Complete - Full UI with map integration working
-- **Milestone 5 (Week 10)**: SEO Complete - Programmatic pages generating traffic
-- **Milestone 6 (Week 12)**: Launch - Production deployment with initial users
-- **Milestone 7 (Week 16)**: Improvement - Production-hardened with ranking and revenue
+### Phase 8.5: UX & Quality
+- **UX-DATA-01**: Opening hours display and "Open Now" status.
+- **UX-DATA-02**: Pricing and booking fee transparency.
+- **UX-DATA-03**: Direct booking/contact access from detail pages.
+- **UX-ACC-01**: WCAG 2.1 compliance check.
+- **UX-TRAF-01**: Click-through tracking for external links.
 
 ---
 
 ## Last Updated
-May 15, 2026
+April 24, 2026
