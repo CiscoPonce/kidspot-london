@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 import axios from 'axios';
-import { pool } from '../src/utils/db.js';
+import { db } from '../src/clients/db.js';
 import dotenv from 'dotenv';
+import { runAllDiscovery } from './discovery/run-discovery.js';
 dotenv.config();
 
 // Configuration
@@ -64,13 +65,13 @@ async function updateVenue(venue: any) {
     
     if (!details) {
       // If we can't find it, we just update the scrape timestamp so we don't keep trying
-      await pool.query('SELECT update_venue_scrape_time($1)', [venueId]);
+      await db.query('SELECT update_venue_scrape_time($1)', [venueId]);
       return { status: 'updated', message: 'Venue not found on Yelp. Timestamp updated.' };
     }
     
     // Check if venue is permanently closed
     if (details.is_closed) {
-      await pool.query('SELECT deactivate_venue($1, $2, $3)', [venueId, 'permanently_closed', 'Detected via Yelp Fusion API']);
+      await db.query('SELECT deactivate_venue($1, $2, $3)', [venueId, 'permanently_closed', 'Detected via Yelp Fusion API']);
       return { status: 'deactivated', message: 'Venue permanently closed' };
     }
     
@@ -86,7 +87,7 @@ async function updateVenue(venue: any) {
     
     const kidScore = calculateKidScore(kidScoreInput);
     
-    await pool.query(
+    await db.query(
       `UPDATE venues 
        SET type = $1, rating = $2, user_ratings_total = $3, kid_score = $4, enriched_at = NOW(), last_scraped = NOW(), source_id = COALESCE(source_id, $5)
        WHERE id = $6`,
@@ -106,7 +107,7 @@ export async function processStaleVenues() {
   
   try {
     // Get venues that need scraping
-    const result = await pool.query('SELECT * FROM get_venues_needing_scrape($1)', [STALE_HOURS]);
+    const result = await db.query('SELECT * FROM get_venues_needing_scrape($1)', [STALE_HOURS]);
     const venues = result.rows;
     
     console.log(`Found ${venues.length} venues needing scrape\n`);
@@ -146,11 +147,10 @@ export async function processStaleVenues() {
       }
       
       // Add delay to respect API rate limits
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1500));
     };
 
-    // Process venues with concurrency limit (reduced to 2 to respect Yelp QPS limit)
-    const CONCURRENCY = 2;
+    // Process venues with concurrency limit (reduced to 1 to respect Yelp QPS limit)
     const workers = Array(Math.min(CONCURRENCY, venues.length)).fill(0).map(async () => {
       while (queue.length > 0) {
         const entry = queue.shift();
@@ -194,7 +194,7 @@ async function discoverNewVenues() {
 
 export async function runCronAgent() {
   console.log('=== KidSpot London - Cron Agent ===\n');
-  console.log('This agent performs continuous scraping and categorization.');
+  console.log('This agent performs continuous scraping, categorization, and discovery.');
   console.log(`Stale threshold: ${STALE_HOURS} hours\n`);
   
   const startTime = Date.now();
@@ -204,11 +204,12 @@ export async function runCronAgent() {
     // But we should verify it works if we want to
     console.log('✓ Connected to database\n');
     
-    // Process stale venues
+    // 1. Process stale venues (Validation)
     await processStaleVenues();
     
-    // Optionally discover new venues
-    // await discoverNewVenues();
+    // 2. Discover new venues (Discovery)
+    console.log('\n--- Starting Venue Discovery ---');
+    await runAllDiscovery();
     
     const duration = Math.round((Date.now() - startTime) / 1000);
     
@@ -218,7 +219,7 @@ export async function runCronAgent() {
     console.error('Fatal error:', error);
     process.exit(1);
   } finally {
-    await pool.end();
+    // Shared db client cleanup
   }
 }
 

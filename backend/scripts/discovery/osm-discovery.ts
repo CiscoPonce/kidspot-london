@@ -7,7 +7,7 @@ const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
 // Map OSM tags to our venue types
 function mapVenueType(tags: Record<string, string>): string {
   const typeMap: Record<string, string> = {
-    'leisure=fitness_centre': 'softplay',
+    'leisure=indoor_play': 'softplay',
     'amenity=community_centre': 'community_hall',
     'leisure=park': 'park',
     'leisure=playground': 'park',
@@ -31,9 +31,9 @@ const OSM_QUERIES = [
     query: `
       [out:json][timeout:300];
       (
-        node["leisure"="fitness_centre"](51.2,-0.5,51.7,0.3);
-        way["leisure"="fitness_centre"](51.2,-0.5,51.7,0.3);
-        relation["leisure"="fitness_centre"](51.2,-0.5,51.7,0.3);
+        node["leisure"="indoor_play"](51.2,-0.5,51.7,0.3);
+        way["leisure"="indoor_play"](51.2,-0.5,51.7,0.3);
+        relation["leisure"="indoor_play"](51.2,-0.5,51.7,0.3);
       );
       out center;
     `
@@ -109,13 +109,18 @@ async function upsertOSMVenue(venue: any, venueType: string) {
 
 async function queryOverpass(query: string) {
   try {
-    const response = await axios.post(OVERPASS_API_URL, query, {
-      headers: { 'Content-Type': 'text/plain' },
+    const minifiedQuery = query.replace(/\s+/g, ' ').trim();
+    const response = await axios.post(OVERPASS_API_URL, `data=${encodeURIComponent(minifiedQuery)}`, {
+      headers: { 
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+        'User-Agent': 'KidSpotLondon/1.0'
+      },
       timeout: 60000
     });
     return response.data?.elements || [];
   } catch (error: any) {
-    logger.error({ err: error }, 'Overpass API query failed');
+    logger.error({ err: error.message || error }, 'Overpass API query failed');
     return [];
   }
 }

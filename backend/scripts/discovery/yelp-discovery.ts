@@ -13,9 +13,11 @@ const CATEGORY_MAP: Record<string, string> = {
   'museums': 'museum',
   'childrensmuseums': 'museum',
   'active': 'other',
-  'kids_activities': 'other',
+  'kids_activities': 'softplay',
   'softplay': 'softplay',
-  'recreation': 'leisure_centre'
+  'recreation': 'leisure_centre',
+  'fitness': 'leisure_centre',
+  'gyms': 'leisure_centre'
 };
 
 function mapYelpCategoriesToType(categories: { alias: string; title: string }[]): string {
@@ -45,6 +47,11 @@ function slugify(text: string): string {
  */
 async function upsertYelpVenue(business: YelpBusiness) {
   try {
+    if (!business.coordinates || business.coordinates.latitude === null || business.coordinates.longitude === null) {
+      logger.warn({ businessName: business.name }, 'Skipping Yelp venue due to missing coordinates');
+      return { status: 'skipped', id: null };
+    }
+
     const type = mapYelpCategoriesToType(business.categories);
     const slug = `${slugify(business.name)}-${business.id.slice(0, 5)}`;
     
@@ -89,7 +96,7 @@ export async function discoverVenuesWithYelp() {
     return;
   }
   
-  const searchTerms = ['soft play', 'playground', 'community center', 'children museum', 'park'];
+  const searchTerms = ['soft play', 'playground', 'community centre', 'children museum', 'park', 'leisure centre'];
   const londonCenter = { lat: 51.5074, lon: -0.1278 };
   
   let totalProcessed = 0;
