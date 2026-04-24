@@ -11,18 +11,18 @@ Here is the status of the project and the tasks remaining to finalize the OpenSt
 ### Actions for Tomorrow
 
 **1. Verify the OSM Fallback**
-* Run a test search from the frontend (e.g., searching for "park" or "softplay" in a specific postcode).
-* Check the backend logs (`docker logs kidspot-api-1`) to confirm that `OSM Overpass fallback triggered` and successfully returns elements without the 406 error.
+* [x] Run a test search from the frontend (e.g., searching for "park" or "softplay" in a specific postcode).
+* [x] Check the backend logs (`docker logs kidspot-api-1`) to confirm that `OSM Overpass fallback triggered` and successfully returns elements without the 406 error.
 
 **2. Fine-tune Fallback Logic**
-* Currently, if OSM returns *any* results, the backend skips Brave Search entirely. We should decide if we want to **combine** the results from OSM and Brave instead of mutually excluding them.
-* Review the Overpass query tags to ensure we are capturing the most relevant kid-friendly venues for each category.
+* [x] Currently, if OSM returns *any* results, the backend skips Brave Search entirely. We should decide if we want to **combine** the results from OSM and Brave instead of mutually excluding them.
+* [x] Review the Overpass query tags to ensure we are capturing the most relevant kid-friendly venues for each category.
 
 **3. Fix Distance Sorting for Fallbacks**
-* Fallback venues (from OSM and Brave) currently don't calculate `distance_miles` from the user's exact search coordinates on the fly. We need to add a Haversine distance calculation in the backend before returning fallback results, otherwise the frontend might struggle to sort them correctly.
+* [x] Fallback venues (from OSM and Brave) currently don't calculate `distance_miles` from the user's exact search coordinates on the fly. We need to add a Haversine distance calculation in the backend before returning fallback results, otherwise the frontend might struggle to sort them correctly.
 
 **4. Commit and Push Changes**
-* The modifications to `backend/src/services/venueService.ts`, `backend/src/schemas/searchSchema.ts`, `backend/src/types/venue.ts`, and the frontend components need to be committed and pushed to your Git repository.
+* [x] The modifications to `backend/src/services/venueService.ts`, `backend/src/schemas/searchSchema.ts`, `backend/src/types/venue.ts`, and the frontend components need to be committed and pushed to your Git repository.
 
 ### How to Resume
 When you're back, simply read this document and run:
