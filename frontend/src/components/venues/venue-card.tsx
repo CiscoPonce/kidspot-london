@@ -102,7 +102,7 @@ export function VenueCard({ venue, distance, onSelect, isSelected }: VenueCardPr
                 <span className="text-amber-400 text-xs font-black">{Number(venue.rating).toFixed(1)}</span>
               </div>
             )}
-            {venue.price_level !== undefined && (
+            {venue.price_level !== undefined && venue.price_level !== null && (
               <div className="flex items-center gap-0.5 px-2 py-1 bg-secondary-800 rounded-lg">
                 <span className="text-primary text-[10px] font-black">
                   {'£'.repeat(Number(venue.price_level) || 1)}

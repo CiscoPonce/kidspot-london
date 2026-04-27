@@ -137,10 +137,17 @@ export function VenueDetailContent({
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <TypeBadge type={venue.type} />
             {venue.sponsor_tier && <SponsorBadge tier={venue.sponsor_tier} />}
-            <span className="bg-primary-container text-on-primary-container px-3 py-1 rounded-[8px] text-xs font-bold uppercase flex items-center gap-1">
-              <span className="material-symbols-outlined text-xs">star</span>
-              {venue.sponsor_tier === 'gold' ? '4.9' : '4.5'}
-            </span>
+            {venue.rating && (
+              <span className="bg-primary-container text-on-primary-container px-3 py-1 rounded-[8px] text-xs font-bold uppercase flex items-center gap-1">
+                <span className="material-symbols-outlined text-xs">star</span>
+                {Number(venue.rating).toFixed(1)}
+              </span>
+            )}
+            {venue.price_level !== undefined && venue.price_level !== null && (
+              <span className="bg-tertiary-container text-on-tertiary-container px-3 py-1 rounded-[8px] text-xs font-bold uppercase flex items-center gap-0.5">
+                {'£'.repeat(Number(venue.price_level) || 1)}
+              </span>
+            )}
             {venue.features && venue.features.map(f => (
               <FeatureBadge key={f} feature={f} />
             ))}
