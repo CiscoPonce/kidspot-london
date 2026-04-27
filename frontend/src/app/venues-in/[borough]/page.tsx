@@ -55,8 +55,8 @@ export default async function BoroughPage({ params }: { params: Promise<{ boroug
     notFound();
   }
 
-  const data = await fetchVenuesByBorough(boroughName);
-  const venues = data.all;
+  const response = await fetchVenuesByBorough(boroughName);
+  const venues = response.data.all;
 
   // Use the first venue's coordinates as the center for the map link, 
   // or default to London center if no venues found

@@ -97,14 +97,7 @@ async function insertVenue(venue) {
       `INSERT INTO venues (
         source, source_id, name, type, lat, lon, borough, slug, last_scraped
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-      ON CONFLICT (source, source_id) DO UPDATE SET
-        name = EXCLUDED.name,
-        type = EXCLUDED.type,
-        lat = EXCLUDED.lat,
-        lon = EXCLUDED.lon,
-        borough = EXCLUDED.borough,
-        slug = EXCLUDED.slug,
-        last_scraped = NOW()
+      ON CONFLICT (source_id) DO NOTHING
       RETURNING id`,
       [
         venue.source,
@@ -117,6 +110,10 @@ async function insertVenue(venue) {
         venue.slug
       ]
     );
+    
+    if (result.rows.length === 0) {
+      return { status: 'duplicate', id: null };
+    }
     
     return { status: 'inserted', id: result.rows[0].id };
   } catch (error) {
@@ -171,34 +168,14 @@ async function importVenues(csvData, source) {
     
     try {
       // Extract venue data from CSV row
+      // Note: Column names may vary depending on the actual CSV structure
       const name = row.name || row.Name || row.venue_name || '';
       const postcode = row.postcode || row.Postcode || row.post_code || '';
       const csvType = row.type || row.Type || row.venue_type || 'other';
       const borough = row.borough_name || row.Borough || 'London';
       
-      // Use existing coordinates if available
-      let lat = row.latitude ? parseFloat(row.latitude) : null;
-      let lon = row.longitude ? parseFloat(row.longitude) : null;
-      
-      // Skip rows without name
+      // Skip rows without required fields (name is mandatory)
       if (!name) {
-        skipped++;
-        continue;
-      }
-      
-      // Geocode only if coordinates are missing
-      if (!lat || !lon) {
-        if (!postcode) {
-          skipped++;
-          continue;
-        }
-        const coords = await geocodePostcode(postcode);
-        lat = coords.lat;
-        lon = coords.lon;
-      }
-      
-      if (!lat || !lon) {
-        console.warn(`Skipping ${name} - missing location`);
         skipped++;
         continue;
       }
@@ -208,6 +185,27 @@ async function importVenues(csvData, source) {
       
       // Map venue type
       const type = mapVenueType(csvType);
+      
+      if (processed <= 5) console.log(`[${source}] Row ${processed}:`, JSON.stringify(row));
+      
+      // Use coordinates from CSV if available, otherwise geocode postcode
+      let lat = row.latitude || row.Latitude || row.lat;
+      let lon = row.longitude || row.Longitude || row.lon;
+      
+      if (!lat || !lon) {
+        const coords = await geocodePostcode(postcode);
+        lat = coords.lat;
+        lon = coords.lon;
+      } else {
+        lat = parseFloat(lat);
+        lon = parseFloat(lon);
+      }
+      
+      if (!lat || !lon) {
+        console.warn(`Skipping ${name} - could not determine coordinates`);
+        skipped++;
+        continue;
+      }
       
       // Create venue object (minimal schema)
       const venue = {
@@ -287,6 +285,7 @@ async function importAllData() {
       
       try {
         const csvData = await processCSV(filePath, source);
+        if (csvData.length > 0) console.log(`[${source}] Sample row 0:`, JSON.stringify(csvData[0]));
         const results = await importVenues(csvData, source);
         
         totalProcessed += results.processed;

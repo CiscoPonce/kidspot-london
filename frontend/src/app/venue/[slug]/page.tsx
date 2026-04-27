@@ -15,7 +15,8 @@ export const revalidate = 3600;
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const resolvedParams = await params;
-    const venue = await getVenueBySlug(resolvedParams.slug);
+    const response = await getVenueBySlug(resolvedParams.slug);
+    const venue = response.data.basic;
     const title = `${venue.name} | KidSpot London`;
     const description = `Details, location, and contact information for ${venue.name} in ${venue.borough || 'London'}.`;
     
@@ -51,18 +52,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function VenuePage({ params }: Props) {
-  let venue;
+  let response;
   try {
     const resolvedParams = await params;
-    venue = await getVenueBySlug(resolvedParams.slug);
+    response = await getVenueBySlug(resolvedParams.slug);
   } catch (error) {
     console.error('Error fetching venue:', error);
     return notFound();
   }
 
-  if (!venue) {
+  if (!response?.data?.basic) {
     return notFound();
   }
+
+  const venue = response.data.basic;
+  const fullDetails = response.data.details;
 
   const jsonLd: any = {
     '@context': 'https://schema.org',
@@ -126,6 +130,7 @@ export default async function VenuePage({ params }: Props) {
         <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
           <VenueDetailContent 
             venue={venue} 
+            details={fullDetails}
             showCloseButton={false}
           />
         </div>

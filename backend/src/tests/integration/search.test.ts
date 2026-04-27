@@ -41,6 +41,11 @@ vi.mock('../../middleware/rateLimit', () => ({
 describe('Search API Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ elements: [] })
+    }) as any;
+    delete process.env.BRAVE_API_KEY;
   });
 
   describe('GET /api/search/venues', () => {

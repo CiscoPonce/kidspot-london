@@ -100,18 +100,20 @@ export function useVenueMarkers({ map, venues, onVenueClick }: VenueMarkerProps)
     // Create GeoJSON from venues
     const geojson: GeoJSON.FeatureCollection = {
       type: 'FeatureCollection',
-      features: venues.map((venue) => ({
-        type: 'Feature',
-        properties: {
-          id: venue.id,
-          name: venue.name,
-          sponsor_tier: venue.sponsor_tier,
-        },
-        geometry: {
-          type: 'Point',
-          coordinates: [venue.lon, venue.lat],
-        },
-      })),
+      features: venues
+        .filter((v) => v.lat !== null && v.lon !== null)
+        .map((venue) => ({
+          type: 'Feature',
+          properties: {
+            id: venue.id,
+            name: venue.name,
+            sponsor_tier: venue.sponsor_tier,
+          },
+          geometry: {
+            type: 'Point',
+            coordinates: [venue.lon!, venue.lat!] as [number, number],
+          },
+        })),
     };
 
     // Add GeoJSON source with clustering

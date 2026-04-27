@@ -1,6 +1,7 @@
 {
   "name": "kidspot-backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "KidSpot London Backend - API and data ingestion services",
   "main": "src/server.js",
   "author": "KidSpot London",

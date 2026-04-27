@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Header } from '@/components/layout/header';
 import { Hero } from '@/components/layout/hero';
 import { QuickFilters } from '@/components/layout/quick-filters';
@@ -11,11 +11,9 @@ import { VenueDetailModal } from '@/components/modals/venue-detail-modal';
 import { useSearch } from '@/hooks/use-search';
 import { fetchVenues, type Venue } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
-import { usePlausible } from 'next-plausible';
 
 function VenueMapSection({ onVenueSelect }: { onVenueSelect: (venue: Venue) => void }) {
   const { lat, lon, radius, venueType, postcode } = useSearch();
-  const plausible = usePlausible();
 
   const {
     data: venuesResponse,
@@ -27,26 +25,15 @@ function VenueMapSection({ onVenueSelect }: { onVenueSelect: (venue: Venue) => v
     enabled: lat !== null && lon !== null,
   });
 
-  const venues = venuesResponse?.all || [];
-
-  useEffect(() => {
-    if (venuesResponse?.meta?.fallback_triggered) {
-      plausible('FallbackTriggered', { 
-        props: { 
-          source: venuesResponse.meta.fallback_source,
-          count: venuesResponse.meta.fallback_count 
-        } 
-      });
-    }
-  }, [venuesResponse, plausible]);
+  const venues = venuesResponse?.data.all || [];
 
   if (lat === null || lon === null) {
     return (
-      <div className="flex h-64 items-center justify-center bg-surface-variant rounded-[12px] opacity-80">
+      <div className="flex h-64 items-center justify-center bg-secondary-800 rounded-[2.5rem] border border-border/50">
         <div className="text-center px-6">
-          <button className="bg-primary-container text-on-primary-container px-6 py-3 rounded-full font-title-sm text-title-sm shadow-md active:scale-95 transition-transform flex items-center gap-2 mx-auto">
-            <span className="material-symbols-outlined">map</span>
-            View Map
+          <button className="bg-primary text-black px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 active:scale-95 transition-transform flex items-center gap-2 mx-auto">
+            <span className="material-symbols-outlined text-sm">map</span>
+            Explore Map
           </button>
         </div>
       </div>
@@ -55,22 +42,22 @@ function VenueMapSection({ onVenueSelect }: { onVenueSelect: (venue: Venue) => v
 
   if (isLoading) {
     return (
-      <div className="flex h-64 items-center justify-center bg-surface-variant rounded-[12px] animate-pulse">
-        <div className="h-10 w-10 animate-spin border-4 border-primary-container border-t-transparent" />
+      <div className="flex h-64 items-center justify-center bg-secondary-800 rounded-[2.5rem] animate-pulse border border-border/50">
+        <div className="h-10 w-10 animate-spin border-4 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex h-64 items-center justify-center bg-error-container rounded-[12px]">
-        <p className="font-title-sm text-error uppercase">Grid Connection Error</p>
+      <div className="flex h-64 items-center justify-center bg-red-950/20 rounded-[2.5rem] border border-red-900/30">
+        <p className="text-xs font-black text-red-500 uppercase tracking-widest">Map Sync Error</p>
       </div>
     );
   }
 
   return (
-    <div className="h-64 rounded-[12px] overflow-hidden relative">
+    <div className="h-[400px] rounded-[2.5rem] overflow-hidden relative border border-border/50 shadow-2xl">
       <VenueMap venues={venues} onVenueSelect={onVenueSelect} />
     </div>
   );
@@ -88,18 +75,21 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="bg-background text-on-background min-h-screen pb-24 max-w-[container-max] mx-auto">
+    <div className="bg-background text-text-main min-h-screen pb-24 max-w-[1400px] mx-auto">
       <Header />
       
-      <main>
+      <main className="space-y-12">
         <Hero />
         <QuickFilters />
         
         {/* Featured Venues Section */}
-        <section className="px-margin-mobile py-stack-md space-y-stack-md">
-          <h2 className="font-headline-md text-headline-md text-on-surface">
-            Featured Spaces
-          </h2>
+        <section className="px-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-black tracking-tight">
+              Nearby Discovery
+            </h2>
+            <div className="h-px flex-1 bg-border/50 mx-6" />
+          </div>
           <VenueList
             onVenueSelect={handleVenueSelect}
             selectedId={selectedVenue?.id}
@@ -107,43 +97,45 @@ export default function HomePage() {
         </section>
         
         {/* Interactive Map Section */}
-        <section className="px-margin-mobile py-stack-md">
-          <div className="bg-surface-container-lowest rounded-[16px] shadow-[0_4px_20px_rgba(0,0,0,0.04)] p-2">
+        <section className="px-6">
+          <div className="premium-card p-2 rounded-[3rem]">
             <VenueMapSection onVenueSelect={handleVenueSelect} />
           </div>
         </section>
         
         {/* Trust Section */}
-        <section className="px-margin-mobile py-stack-lg bg-surface-container-low text-center rounded-t-[32px] mt-8">
-          <div className="max-w-md mx-auto space-y-6">
-            <div className="flex justify-center gap-4">
-              <div className="bg-surface-container-lowest p-4 rounded-full shadow-sm text-tertiary">
-                <span className="material-symbols-outlined text-3xl">verified_user</span>
-              </div>
-              <div className="bg-surface-container-lowest p-4 rounded-full shadow-sm text-tertiary">
-                <span className="material-symbols-outlined text-3xl">health_and_safety</span>
-              </div>
-              <div className="bg-surface-container-lowest p-4 rounded-full shadow-sm text-tertiary">
-                <span className="material-symbols-outlined text-3xl">mood</span>
-              </div>
+        <section className="px-6 py-16 bg-secondary-800/30 rounded-[4rem] text-center mx-6">
+          <div className="max-w-2xl mx-auto space-y-8">
+            <div className="flex justify-center gap-6">
+              {[
+                { icon: 'verified_user', color: 'text-primary' },
+                { icon: 'health_and_safety', color: 'text-green-400' },
+                { icon: 'mood', color: 'text-amber-400' }
+              ].map((item, i) => (
+                <div key={i} className="bg-secondary-800 w-16 h-16 rounded-3xl flex items-center justify-center shadow-xl border border-border/50">
+                  <span className={`material-symbols-outlined text-3xl ${item.color}`}>{item.icon}</span>
+                </div>
+              ))}
             </div>
-            <h2 className="font-headline-md text-headline-md text-on-surface">Curated. Safe. Verified.</h2>
-            <p className="font-body-md text-body-md text-on-surface-variant">
-              Every venue on KidSpot is rigorously checked for safety, cleanliness, and maximum fun potential.
-            </p>
+            <div className="space-y-4">
+              <h2 className="text-3xl font-black tracking-tighter">Curated. Safe. Verified.</h2>
+              <p className="text-text-muted font-bold leading-relaxed max-w-lg mx-auto">
+                Every venue on KidSpot is rigorously checked for safety, cleanliness, and maximum fun potential.
+              </p>
+            </div>
           </div>
         </section>
       </main>
 
-      <footer className="bg-zinc-50 dark:bg-zinc-950 w-full rounded-t-3xl border-t border-zinc-200 dark:border-zinc-800 hidden md:block mt-12">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 px-8 py-12">
-          <div className="font-bold text-lg text-zinc-900 dark:text-zinc-50">KidSpot</div>
-          <div className="flex gap-6">
-            <a className="text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors cursor-pointer font-space-grotesk text-sm" href="#">Safety</a>
-            <a className="text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors cursor-pointer font-space-grotesk text-sm" href="#">Venues</a>
-            <a className="text-zinc-500 dark:text-zinc-400 hover:text-primary transition-colors cursor-pointer font-space-grotesk text-sm" href="#">Contact</a>
+      <footer className="w-full rounded-t-[4rem] border-t border-border/50 bg-secondary-800/50 hidden md:block mt-12">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 px-12 py-16">
+          <div className="font-black text-2xl tracking-tighter">KidSpot</div>
+          <div className="flex gap-8">
+            {['Safety', 'Venues', 'Contact'].map(link => (
+              <a key={link} className="text-text-muted hover:text-primary transition-all cursor-pointer font-black text-xs uppercase tracking-widest" href="#">{link}</a>
+            ))}
           </div>
-          <div className="text-zinc-500 dark:text-zinc-400 font-space-grotesk text-sm">
+          <div className="text-text-muted font-bold text-xs uppercase tracking-widest opacity-50">
             © 2026 KidSpot. Built for happy families.
           </div>
         </div>

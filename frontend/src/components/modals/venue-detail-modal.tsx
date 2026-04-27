@@ -112,8 +112,8 @@ export function VenueDetailModal({ venue, isOpen, onClose }: VenueDetailModalPro
         `}</style>
 
         <VenueDetailContent
-          venue={venue}
-          details={details}
+          venue={details?.data?.basic || venue}
+          details={details?.data?.details}
           isLoading={isLoading}
           isError={isError}
           onRetry={() => refetch()}

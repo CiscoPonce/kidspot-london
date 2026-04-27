@@ -1,23 +1,22 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { fetchVenues, type Venue } from '@/lib/api';
 import { useSearch } from '@/hooks/use-search';
-import { fetchVenues } from '@/lib/api';
 import { VenueCard } from './venue-card';
-import type { Venue } from '@/lib/api';
 
 interface VenueListProps {
   onVenueSelect: (venue: Venue) => void;
-  selectedId?: number;
+  selectedId?: string | number;
 }
 
 function LoadingSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-grid-gap">
-      {[1, 2, 4, 5].map((i) => (
+    <div className="space-y-4">
+      {[1, 2, 3, 4].map((i) => (
         <div
           key={i}
-          className="h-[400px] border-2 border-border-gray bg-secondary-fixed-dim animate-pulse"
+          className="h-32 rounded-[2rem] bg-secondary-800 animate-pulse border border-border/50"
         />
       ))}
     </div>
@@ -26,15 +25,27 @@ function LoadingSkeleton() {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center py-24 px-4 text-center border-2 border-dashed border-border-gray">
-      <span className="material-symbols-outlined text-6xl text-secondary-brand mb-6">
-        search_off
-      </span>
-      <h3 className="font-section-heading text-2xl text-absolute-black uppercase mb-2">
-        NO VENUES DETECTED
+    <div className="flex flex-col items-center justify-center py-16 px-6 text-center premium-card rounded-[2.5rem]">
+      <div className="w-20 h-20 rounded-full bg-secondary-800 flex items-center justify-center mb-6 border border-border">
+        <svg
+          className="w-10 h-10 text-primary"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2.5}
+            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+          />
+        </svg>
+      </div>
+      <h3 className="text-xl font-black text-text-main mb-2 tracking-tight">
+        No Venues Found
       </h3>
-      <p className="font-body-text text-secondary-brand uppercase max-w-sm">
-        Try expanding your search radius or scanning a different sector
+      <p className="text-xs font-bold uppercase tracking-widest text-text-muted">
+        Try expanding your discovery radius
       </p>
     </div>
   );
@@ -42,22 +53,34 @@ function EmptyState() {
 
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center py-24 px-4 text-center border-2 border-error">
-      <span className="material-symbols-outlined text-6xl text-error mb-6">
-        warning
-      </span>
-      <h3 className="font-section-heading text-2xl text-error uppercase mb-2">
-        DATA LINK FAILURE
+    <div className="flex flex-col items-center justify-center py-16 px-6 text-center premium-card rounded-[2.5rem]">
+      <div className="w-20 h-20 rounded-full bg-red-950 flex items-center justify-center mb-6 border border-red-900/50">
+        <svg
+          className="w-10 h-10 text-red-500"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2.5}
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
+        </svg>
+      </div>
+      <h3 className="text-xl font-black text-text-main mb-2 tracking-tight">
+        System Error
       </h3>
-      <p className="font-body-text text-error uppercase mb-8">
-        Unable to sync with venue database
+      <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-6">
+        Discovery engine encountered a fault
       </p>
       <button
         type="button"
         onClick={onRetry}
-        className="px-8 py-3 bg-absolute-black text-pure-white font-button-label text-button-label uppercase hover:bg-renault-blue transition-colors"
+        className="px-6 py-3 bg-red-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-red-700 active:scale-95 transition-all shadow-lg shadow-red-600/20"
       >
-        RETRY SYNC
+        Reboot Search
       </button>
     </div>
   );
@@ -72,28 +95,8 @@ export function VenueList({ onVenueSelect, selectedId }: VenueListProps) {
     enabled: lat !== null && lon !== null,
   });
 
-  const venues = venuesResponse?.all || [];
-
-  // Sort venues by distance (nearest first)
-  const sortedVenues = venues.length > 0
-    ? [...venues].sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0))
-    : [];
-
-  if (!lat || !lon) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 px-4 text-center border-2 border-border-gray bg-surface-container">
-        <span className="material-symbols-outlined text-6xl text-absolute-black mb-6">
-          location_searching
-        </span>
-        <h3 className="font-section-heading text-2xl text-absolute-black uppercase mb-2">
-          AWAITING COORDINATES
-        </h3>
-        <p className="font-body-text text-secondary-brand uppercase">
-          Enter a location to populate the featured grid
-        </p>
-      </div>
-    );
-  }
+  const venues = venuesResponse?.data.all || [];
+  const sortedVenues = [...venues].sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0));
 
   if (isLoading) {
     return <LoadingSkeleton />;
@@ -103,12 +106,40 @@ export function VenueList({ onVenueSelect, selectedId }: VenueListProps) {
     return <ErrorState onRetry={() => refetch()} />;
   }
 
+  if (!lat || !lon) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-6 text-center premium-card rounded-[2.5rem]">
+        <div className="w-20 h-20 rounded-full bg-secondary-800 flex items-center justify-center mb-6 border border-border">
+          <svg
+            className="w-10 h-10 text-primary"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2.5}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </div>
+        <h3 className="text-xl font-black text-text-main mb-2 tracking-tight">
+          Initialize Discovery
+        </h3>
+        <p className="text-xs font-bold uppercase tracking-widest text-text-muted">
+          Enter a location to map nearby venues
+        </p>
+      </div>
+    );
+  }
+
   if (sortedVenues.length === 0) {
     return <EmptyState />;
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-grid-gap">
+    <div className="w-full space-y-4 pr-2 -mr-2 max-h-[calc(100vh-300px)] overflow-y-auto custom-scrollbar">
       {sortedVenues.map((venue) => (
         <VenueCard
           key={venue.id}

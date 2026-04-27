@@ -13,6 +13,10 @@ const nextConfig = withPlausibleProxy()({
         protocol: 'https',
         hostname: '**.ggpht.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
     ],
   },
   reactStrictMode: true,

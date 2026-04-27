@@ -27,6 +27,7 @@ export interface Venue {
   user_ratings_total?: number;
   kid_score?: number;
   enriched_at?: string | Date;
+  features?: string[];
 }
 
 export interface SearchQuery {

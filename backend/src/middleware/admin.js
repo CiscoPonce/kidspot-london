@@ -1,10 +1,10 @@
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 /**
  * Timing-safe admin authentication middleware.
  * Uses crypto.timingSafeEqual to prevent timing attacks.
  */
-const adminAuth = (req, res, next) => {
+export const adminAuth = (req, res, next) => {
   const adminKey = req.headers['x-admin-key'] || req.query.admin_key;
   const expectedKey = process.env.ADMIN_KEY;
 
@@ -48,5 +48,3 @@ const adminAuth = (req, res, next) => {
     error: 'Invalid admin key'
   });
 };
-
-module.exports = { adminAuth };

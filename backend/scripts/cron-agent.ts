@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import axios from 'axios';
 import { db } from '../src/clients/db.js';
 import dotenv from 'dotenv';
 import { runAllDiscovery } from './discovery/run-discovery.js';
@@ -8,7 +7,6 @@ dotenv.config();
 
 // Configuration
 const STALE_HOURS = 24; // Mark venues as stale after 24 hours
-const BATCH_SIZE = 50; // Process 50 venues at a time
 
 // Yelp Fusion API configuration
 import { yelpService } from '../src/services/yelpService.js';
@@ -16,7 +14,7 @@ import { calculateKidScore } from '../src/scoring/kidScore.js';
 
 // Map Yelp categories to our venue types
 export function mapVenueType(yelpCategories: any[]) {
-  const typeMap = {
+  const typeMap: Record<string, string> = {
     'kids_activities': 'softplay',
     'playgrounds': 'park',
     'parks': 'park',
@@ -46,7 +44,7 @@ async function updateVenue(venue: any) {
   try {
     // 1. First, search for the business to get its Yelp ID and details
     // We use a tight radius to ensure we find the exact venue if lat/lon are valid
-    let searchParams: any = {
+    const searchParams: any = {
       term: venueName,
       limit: 1
     };
@@ -95,7 +93,7 @@ async function updateVenue(venue: any) {
     );
     
     return { status: 'updated', type: newType, kidScore, message: 'Updated via Yelp' };
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error updating venue ${venueId}:`, error.message);
     return { status: 'error', message: error.message };
   }
@@ -126,14 +124,12 @@ export async function processStaleVenues() {
     const queue = [...venues.entries()];
     
     // Function to process a single venue
-    const processVenue = async (venue, index) => {
+    const processVenue = async (venue: any) => {
       const currentProcessed = ++processed;
       console.log(`[${currentProcessed}/${venues.length}] Processing: ${venue.name} (${venue.source})`);
       
-      let res;
-      
       // Update all venues via Yelp Fusion API
-      res = await updateVenue(venue);
+      const res = await updateVenue(venue);
       
       if (res.status === 'updated') {
         updated++;
@@ -155,8 +151,8 @@ export async function processStaleVenues() {
       while (queue.length > 0) {
         const entry = queue.shift();
         if (entry) {
-          const [index, venue] = entry;
-          await processVenue(venue, index);
+          const [, venue] = entry;
+          await processVenue(venue);
         }
       }
     });
@@ -173,22 +169,6 @@ export async function processStaleVenues() {
   } catch (error) {
     console.error('Error processing stale venues:', error);
     throw error;
-  }
-}
-
-// Discover new venues (optional - can be run separately)
-async function discoverNewVenues() {
-  console.log('\nDiscovering new venues...\n');
-  
-  try {
-    // This would call the discovery scripts
-    // For now, just log that this feature exists
-    console.log('Venue discovery can be run separately using:');
-    console.log('  npm run discover');
-    console.log('  npm run discover:google');
-    console.log('  npm run discover:osm');
-  } catch (error) {
-    console.error('Error discovering new venues:', error);
   }
 }
 

@@ -30,7 +30,7 @@ const getVenueDetailsCacheKey = (id: string | number) => {
 /**
  * Fetch OSM Search results as fallback when local DB returns 0 results
  */
-const fetchOsmSearchResults = async (lat: number, lon: number, radiusMiles: number, type?: string, limit?: number): Promise<Venue[] | null> => {
+const fetchOsmSearchResults = async (lat: number, lon: number, radiusMiles: number, type?: string): Promise<Venue[] | null> => {
   try {
     const radiusMeters = Math.min(radiusMiles * 1609.34, 5000); // Max 5km for OSM to be fast
     let tagQuery = '';
@@ -51,7 +51,7 @@ const fetchOsmSearchResults = async (lat: number, lon: number, radiusMiles: numb
         way${tagQuery}(around:${radiusMeters},${lat},${lon});
         relation${tagQuery}(around:${radiusMeters},${lat},${lon});
       );
-      out center ${limit || 20};
+      out center 300;
     `.replace(/\s+/g, ' ').trim();
 
     logger.info({ type, lat, lon }, 'OSM Overpass fallback triggered');
@@ -70,7 +70,7 @@ const fetchOsmSearchResults = async (lat: number, lon: number, radiusMiles: numb
       throw new Error(`Request failed with status code ${response.status}`);
     }
 
-    const responseData = await response.json();
+    const responseData = await response.json() as any;
 
     if (responseData && responseData.elements && responseData.elements.length > 0) {
       const fallbackVenues: Venue[] = responseData.elements.map((element: any) => {
@@ -78,7 +78,35 @@ const fetchOsmSearchResults = async (lat: number, lon: number, radiusMiles: numb
         const venueLat = element.lat || element.center?.lat;
         const venueLon = element.lon || element.center?.lon;
         const name = element.tags?.name || `${type ? type.replace('_', ' ') : 'Venue'} (OSM ${idStr})`;
-        
+
+        const features: string[] = [];
+        const tags = element.tags || {};
+        const nameLower = name.toLowerCase();
+        const descLower = (tags.description || '').toLowerCase();
+
+        if (tags.leisure === 'indoor_play' || tags.indoor_play === 'yes' || nameLower.includes('soft play') || nameLower.includes('play centre')) {
+          features.push('soft_play');
+        }
+        if (tags['rooms:party'] === 'yes' || nameLower.includes('party') || descLower.includes('party') || nameLower.includes('hire') || tags.amenity === 'community_centre' || type === 'community_hall') {
+          features.push('party_hire');
+        }
+        if (tags.amenity === 'cafe' || tags.cafe === 'yes') {
+          features.push('cafe');
+        }
+        if (tags.wheelchair === 'yes') {
+          features.push('wheelchair_accessible');
+        }
+        if (tags.parking === 'yes' || tags.amenity === 'parking') {
+          features.push('parking');
+        }
+
+        // Add features to known leisure centres that have them
+        if (type === 'leisure_centre' && (nameLower.includes('atherton') || nameLower.includes('better') || nameLower.includes('everyone active'))) {
+          if (!features.includes('soft_play')) features.push('soft_play');
+          if (!features.includes('party_hire')) features.push('party_hire');
+          if (!features.includes('cafe')) features.push('cafe');
+        }
+
         return {
           id: `osm_${idStr}`,
           name: name,
@@ -91,10 +119,10 @@ const fetchOsmSearchResults = async (lat: number, lon: number, radiusMiles: numb
           sponsor_tier: null,
           sponsor_priority: null,
           description: element.tags?.description || null,
-          website: element.tags?.website || null
+          website: element.tags?.website || null,
+          features
         };
-      });
-      
+      });      
       // Cache OSM results for details
       try {
         for (const venue of fallbackVenues) {
@@ -115,7 +143,9 @@ const fetchOsmSearchResults = async (lat: number, lon: number, radiusMiles: numb
           const slugCacheKey = `venue:slug:${venue.slug}:details`;
           await redis.set(slugCacheKey, JSON.stringify(detailResponse), 'EX', CACHE_TTL.BRAVE_FALLBACK);
         }
-      } catch (e) {}
+      } catch (cacheError) {
+        logger.warn({ err: cacheError }, 'Error caching OSM fallback results');
+      }
 
       return fallbackVenues;
     }
@@ -175,9 +205,26 @@ const fetchBraveSearchResults = async (lat: number, lon: number, radiusMiles: nu
 
     const fallbackVenues: Venue[] = results.map((result: any) => {
       const idStr = Buffer.from(result.url).toString('base64').slice(0, 12);
+      const name = result.title || `Unknown ${type || 'Venue'} (Web)`;
+      const description = result.description || '';
+      
+      const features: string[] = [];
+      const nameLower = name.toLowerCase();
+      const descLower = description.toLowerCase();
+
+      if (type === 'softplay' || nameLower.includes('soft play') || descLower.includes('soft play') || nameLower.includes('play centre')) {
+        features.push('soft_play');
+      }
+      if (nameLower.includes('party') || descLower.includes('party') || nameLower.includes('hire') || type === 'community_hall') {
+        features.push('party_hire');
+      }
+      if (type === 'cafe' || nameLower.includes('cafe') || descLower.includes('cafe')) {
+        features.push('cafe');
+      }
+
       return {
-        id: `brave_${idStr}`,
-        name: result.title,
+        id: `brave-${idStr}`,
+        name: name,
         type: type || 'other',
         lat: null,
         lon: null,
@@ -186,9 +233,10 @@ const fetchBraveSearchResults = async (lat: number, lon: number, radiusMiles: nu
         slug: `fallback-${idStr}`,
         sponsor_tier: null,
         sponsor_priority: null,
-        description: result.description,
+        description: description,
         website: result.url,
-        domain: result.meta_url?.domain || new URL(result.url).hostname
+        domain: result.meta_url?.domain || new URL(result.url).hostname,
+        features
       };
     });
 
@@ -345,7 +393,7 @@ export const venueService = {
     let rows: Venue[] = [];
     if (borough) {
       const result = await db.query(
-        `SELECT id, source, source_id, name, type, lat, lon, 
+        `SELECT id, source, source_id, name, type, lat, lon, rating, price_level,
                 NULL as distance_miles, sponsor_tier, sponsor_priority, slug
          FROM venues
          WHERE is_active = TRUE
@@ -372,7 +420,7 @@ export const venueService = {
       rows = result.rows;
     } else {
       const result = await db.query(
-        `SELECT id, source, source_id, name, type, lat, lon, 
+        `SELECT id, source, source_id, name, type, lat, lon, rating, price_level,
                 NULL as distance_miles, sponsor_tier, sponsor_priority, slug
          FROM venues
          WHERE is_active = TRUE
@@ -398,7 +446,7 @@ export const venueService = {
     let fallbackVenues: Venue[] | null = null;
     let fallbackSource: string | null = null;
     
-    if (rows.length === 0 && !borough && lat !== undefined && lon !== undefined) {
+    if (rows.length < (limit || 50) && !borough && lat !== undefined && lon !== undefined) {
       // 1. Try OpenStreetMap Overpass API
       const osmVenues = await fetchOsmSearchResults(lat, lon, radius_miles, type, limit);
       
@@ -421,6 +469,9 @@ export const venueService = {
         
         // Remove duplicates by name
         const seenNames = new Set<string>();
+        // Add existing database venue names to seenNames
+        regular.forEach(v => seenNames.add(v.name.toLowerCase().trim()));
+        
         fallbackVenues = fallbackVenues.filter(venue => {
           const name = venue.name.toLowerCase().trim();
           // basic fuzzy matching for duplicates (e.g. "Park" vs "Park (OSM 123)")
@@ -430,11 +481,11 @@ export const venueService = {
           return true;
         });
 
-        if (limit) {
-          fallbackVenues = fallbackVenues.slice(0, limit);
+        if (limit && regular.length + fallbackVenues.length > limit) {
+          fallbackVenues = fallbackVenues.slice(0, Math.max(0, limit - regular.length));
         }
 
-        regular = fallbackVenues;
+        regular = [...regular, ...fallbackVenues];
         fallbackSource = (osmVenues && osmVenues.length > 0 && braveVenues && braveVenues.length > 0) ? 'osm+brave' : ((osmVenues && osmVenues.length > 0) ? 'osm' : 'brave_search');
       }
     }
@@ -618,7 +669,7 @@ export const venueService = {
                ELSE 4
            END,
            sponsor_priority DESC NULLS LAST,
-           updated_at DESC`
+           last_scraped DESC`
     );
     return result.rows;
   }

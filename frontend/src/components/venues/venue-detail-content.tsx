@@ -46,6 +46,22 @@ export function TypeBadge({ type }: { type: string }) {
   );
 }
 
+export function FeatureBadge({ feature }: { feature: string }) {
+  const labels: Record<string, string> = {
+    soft_play: 'Soft Play',
+    party_hire: 'Party Hire',
+    cafe: 'Cafe',
+    wheelchair_accessible: 'Wheelchair',
+    parking: 'Parking',
+  };
+  
+  return (
+    <span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-[8px] text-xs font-bold uppercase border border-secondary-200">
+      {labels[feature] ?? feature.replace('_', ' ')}
+    </span>
+  );
+}
+
 // ─── States ───────────────────────────────────────────────────────────────────
 
 export function VenueLoadingSkeleton() {
@@ -125,6 +141,9 @@ export function VenueDetailContent({
               <span className="material-symbols-outlined text-xs">star</span>
               {venue.sponsor_tier === 'gold' ? '4.9' : '4.5'}
             </span>
+            {venue.features && venue.features.map(f => (
+              <FeatureBadge key={f} feature={f} />
+            ))}
           </div>
         </div>
         {showCloseButton && onClose && (
@@ -145,7 +164,7 @@ export function VenueDetailContent({
         ) : isError ? (
           <>
             <div className="mb-6 rounded-[24px] overflow-hidden border border-outline-variant">
-              <VenueMapSnippet lat={venue.lat} lon={venue.lon} name={venue.name} />
+              <VenueMapSnippet lat={venue.lat || 51.5074} lon={venue.lon || -0.1278} name={venue.name} />
             </div>
             {onRetry && <VenueErrorState onRetry={onRetry} />}
           </>
@@ -153,7 +172,7 @@ export function VenueDetailContent({
           <>
             {/* Map */}
             <div className="mb-6 rounded-[24px] overflow-hidden border border-outline-variant">
-              <VenueMapSnippet lat={venue.lat} lon={venue.lon} name={venue.name} />
+              <VenueMapSnippet lat={venue.lat || 51.5074} lon={venue.lon || -0.1278} name={venue.name} />
             </div>
 
             {/* Address & Info */}

@@ -49,8 +49,8 @@ export default async function CategoryPage({ params }: { params: Promise<{ type:
     notFound();
   }
 
-  const data = await fetchVenuesByType(venueType.value);
-  const venues = data.all;
+  const response = await fetchVenuesByType(venueType.value);
+  const venues = response.data.all;
 
   const jsonLd = {
     '@context': 'https://schema.org',
