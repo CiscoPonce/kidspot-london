@@ -324,10 +324,10 @@ export function VenueMap({ venues, onVenueSelect }: VenueMapProps) {
       />
 
       {!mapLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-secondary-100">
+        <div className="absolute inset-0 flex items-center justify-center bg-surface-container/80 backdrop-blur-[2px]">
           <div className="flex flex-col items-center gap-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600" />
-            <p className="text-sm text-secondary-600">Loading map...</p>
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-outline-variant border-t-primary" />
+            <p className="text-sm text-on-surface-variant">Loading map…</p>
           </div>
         </div>
       )}

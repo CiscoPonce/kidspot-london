@@ -1,26 +1,60 @@
 'use client';
 
-import React from 'react';
+import Link from 'next/link';
 
 export function Header() {
   return (
-    <header className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md sticky top-0 z-50 w-full shadow-[0_4px_20px_rgba(0,0,0,0.04)] border-b border-zinc-100 dark:border-zinc-800">
-      <div className="flex justify-between items-center w-full px-6 py-4">
-        <button className="text-zinc-900 dark:text-zinc-100 hover:opacity-80 transition-opacity active:scale-95 transition-transform duration-200">
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>
+    <header className="sticky top-0 z-40 w-full bg-background/85 backdrop-blur-md border-b border-outline-variant/60">
+      <div className="mx-auto max-w-6xl flex items-center justify-between px-4 sm:px-6 py-3">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-on-background hover:text-primary transition-colors"
+          aria-label="KidSpot home"
+        >
+          <span
+            className="material-symbols-outlined text-[28px] text-on-primary-container bg-primary-container rounded-full p-1"
+            aria-hidden="true"
+          >
             child_care
           </span>
-        </button>
-        
-        <div className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 font-space-grotesk">
-          KidSpot
-        </div>
-        
-        <button className="text-zinc-900 dark:text-zinc-100 hover:opacity-80 transition-opacity active:scale-95 transition-transform duration-200">
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 0" }}>
-            search
+          <span className="font-display text-xl font-bold tracking-tight">
+            KidSpot
           </span>
-        </button>
+          <span className="hidden sm:inline text-xs font-semibold tracking-wider uppercase text-on-surface-variant ml-1">
+            London
+          </span>
+        </Link>
+
+        <nav className="hidden md:flex items-center gap-1 text-sm font-medium text-on-surface-variant">
+          <Link
+            href="/"
+            className="px-3 py-2 rounded-full hover:bg-surface-container transition-colors"
+          >
+            Explore
+          </Link>
+          <Link
+            href="/#trust"
+            className="px-3 py-2 rounded-full hover:bg-surface-container transition-colors"
+          >
+            How it works
+          </Link>
+          <Link
+            href="/#footer"
+            className="px-3 py-2 rounded-full hover:bg-surface-container transition-colors"
+          >
+            About
+          </Link>
+        </nav>
+
+        <a
+          href="https://tally.so/r/n0XOXO"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hidden sm:inline-flex items-center gap-1.5 bg-primary-container text-on-primary-container text-sm font-semibold px-4 py-2 rounded-full hover:brightness-95 active:scale-95 transition"
+        >
+          <span className="material-symbols-outlined text-[18px]">chat_bubble</span>
+          Feedback
+        </a>
       </div>
     </header>
   );

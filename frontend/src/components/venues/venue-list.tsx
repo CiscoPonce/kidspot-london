@@ -12,76 +12,49 @@ interface VenueListProps {
 
 function LoadingSkeleton() {
   return (
-    <div className="space-y-4">
-      {[1, 2, 3, 4].map((i) => (
+    <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="h-32 rounded-[2rem] bg-secondary-800 animate-pulse border border-border/50"
-        />
+          className="ks-card animate-pulse p-4 sm:p-5 flex gap-4"
+          aria-hidden="true"
+        >
+          <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-surface-variant" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-2/3 bg-surface-variant rounded" />
+            <div className="h-3 w-1/3 bg-surface-variant rounded" />
+            <div className="flex gap-1.5 mt-2">
+              <div className="h-5 w-12 bg-surface-variant rounded-full" />
+              <div className="h-5 w-16 bg-surface-variant rounded-full" />
+            </div>
+          </div>
+        </div>
       ))}
     </div>
   );
 }
 
-function EmptyState() {
+function StateCard({
+  icon,
+  title,
+  message,
+  action,
+}: {
+  icon: string;
+  title: string;
+  message: string;
+  action?: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 text-center premium-card rounded-[2.5rem]">
-      <div className="w-20 h-20 rounded-full bg-secondary-800 flex items-center justify-center mb-6 border border-border">
-        <svg
-          className="w-10 h-10 text-primary"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2.5}
-            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-          />
-        </svg>
+    <div className="ks-card flex flex-col items-center text-center px-6 py-12">
+      <div className="w-16 h-16 rounded-2xl bg-primary-container/60 text-on-primary-container flex items-center justify-center mb-5">
+        <span className="material-symbols-outlined text-[32px]">{icon}</span>
       </div>
-      <h3 className="text-xl font-black text-text-main mb-2 tracking-tight">
-        No Venues Found
+      <h3 className="font-display text-xl font-semibold text-on-background">
+        {title}
       </h3>
-      <p className="text-xs font-bold uppercase tracking-widest text-text-muted">
-        Try expanding your discovery radius
-      </p>
-    </div>
-  );
-}
-
-function ErrorState({ onRetry }: { onRetry: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 text-center premium-card rounded-[2.5rem]">
-      <div className="w-20 h-20 rounded-full bg-red-950 flex items-center justify-center mb-6 border border-red-900/50">
-        <svg
-          className="w-10 h-10 text-red-500"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2.5}
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-          />
-        </svg>
-      </div>
-      <h3 className="text-xl font-black text-text-main mb-2 tracking-tight">
-        System Error
-      </h3>
-      <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-6">
-        Discovery engine encountered a fault
-      </p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="px-6 py-3 bg-red-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-red-700 active:scale-95 transition-all shadow-lg shadow-red-600/20"
-      >
-        Reboot Search
-      </button>
+      <p className="mt-2 text-sm text-on-surface-variant max-w-sm">{message}</p>
+      {action && <div className="mt-5">{action}</div>}
     </div>
   );
 }
@@ -91,55 +64,61 @@ export function VenueList({ onVenueSelect, selectedId }: VenueListProps) {
 
   const { data: venuesResponse, isLoading, error, refetch } = useQuery({
     queryKey: ['venues', lat, lon, radius, venueType, postcode],
-    queryFn: () => fetchVenues(lat!, lon!, radius, venueType || undefined, postcode || undefined),
+    queryFn: () =>
+      fetchVenues(lat!, lon!, radius, venueType || undefined, postcode || undefined),
     enabled: lat !== null && lon !== null,
   });
 
-  const venues = venuesResponse?.data.all || [];
-  const sortedVenues = [...venues].sort((a, b) => (a.distance_miles || 0) - (b.distance_miles || 0));
+  if (lat === null || lon === null) {
+    return (
+      <StateCard
+        icon="search"
+        title="Start your search"
+        message="Enter a postcode above or use your current location to find child-friendly venues nearby."
+      />
+    );
+  }
 
   if (isLoading) {
     return <LoadingSkeleton />;
   }
 
   if (error) {
-    return <ErrorState onRetry={() => refetch()} />;
-  }
-
-  if (!lat || !lon) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 px-6 text-center premium-card rounded-[2.5rem]">
-        <div className="w-20 h-20 rounded-full bg-secondary-800 flex items-center justify-center mb-6 border border-border">
-          <svg
-            className="w-10 h-10 text-primary"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+      <StateCard
+        icon="error"
+        title="Something went wrong"
+        message="We couldn't load venues just now. Please try again."
+        action={
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="bg-primary-container text-on-primary-container font-semibold rounded-full px-5 py-2 hover:brightness-95 active:scale-95 transition"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2.5}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-        </div>
-        <h3 className="text-xl font-black text-text-main mb-2 tracking-tight">
-          Initialize Discovery
-        </h3>
-        <p className="text-xs font-bold uppercase tracking-widest text-text-muted">
-          Enter a location to map nearby venues
-        </p>
-      </div>
+            Retry
+          </button>
+        }
+      />
     );
   }
 
+  const venues = venuesResponse?.data.all || [];
+  const sortedVenues = [...venues].sort(
+    (a, b) => (a.distance_miles || 0) - (b.distance_miles || 0)
+  );
+
   if (sortedVenues.length === 0) {
-    return <EmptyState />;
+    return (
+      <StateCard
+        icon="explore_off"
+        title="No venues nearby"
+        message="Try widening your search radius or picking a different category."
+      />
+    );
   }
 
   return (
-    <div className="w-full space-y-4 pr-2 -mr-2 max-h-[calc(100vh-300px)] overflow-y-auto custom-scrollbar">
+    <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
       {sortedVenues.map((venue) => (
         <VenueCard
           key={venue.id}

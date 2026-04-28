@@ -4,26 +4,19 @@ import Link from 'next/link';
 
 export function FeedbackButton() {
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="hidden md:block fixed bottom-6 right-6 z-40">
       <Link
-        href="https://tally.so/r/n0XOXO" // Placeholder Tally.so link for KidSpot feedback
+        href="https://tally.so/r/n0XOXO"
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-2 rounded-full bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-primary-700 hover:shadow-xl active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+        className="inline-flex items-center gap-2 rounded-full bg-on-background text-background px-4 py-2.5 text-sm font-semibold shadow-lg shadow-on-background/20 hover:bg-tertiary hover:text-on-tertiary transition-all active:scale-95"
       >
-        <svg
-          className="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
+        <span
+          className="material-symbols-outlined text-[18px]"
+          aria-hidden="true"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
-          />
-        </svg>
+          chat_bubble
+        </span>
         <span>Feedback</span>
       </Link>
     </div>

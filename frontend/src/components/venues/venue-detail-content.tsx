@@ -56,7 +56,7 @@ export function FeatureBadge({ feature }: { feature: string }) {
   };
   
   return (
-    <span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-[8px] text-xs font-bold uppercase border border-secondary-200">
+    <span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-[8px] text-xs font-bold uppercase border border-outline-variant">
       {labels[feature] ?? feature.replace('_', ' ')}
     </span>
   );

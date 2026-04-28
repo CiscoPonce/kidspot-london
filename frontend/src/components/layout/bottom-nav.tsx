@@ -1,46 +1,55 @@
 'use client';
 
-import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const NAV_ITEMS = [
   { label: 'Explore', icon: 'explore', href: '/' },
-  { label: 'Map', icon: 'map', href: '#map' },
+  { label: 'Map', icon: 'map', href: '/#map' },
   { label: 'Saved', icon: 'favorite', href: '/saved' },
-  { label: 'Profile', icon: 'person', href: '/profile' },
+  { label: 'About', icon: 'info', href: '/#trust' },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="bg-white dark:bg-zinc-900 fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] border-t border-zinc-100 dark:border-zinc-800 rounded-t-[32px] z-50 md:hidden">
-      {NAV_ITEMS.map((item) => {
-        const isActive = pathname === item.href;
-        
-        return (
-          <Link
-            key={item.label}
-            href={item.href}
-            className={`flex flex-col items-center justify-center rounded-2xl px-5 py-2 active:scale-90 transition-all duration-300 ease-out group
-              ${isActive 
-                ? 'bg-[#EFDF00] text-zinc-900 shadow-sm' 
-                : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
-              }`}
-          >
-            <span className={`material-symbols-outlined group-hover:scale-110 transition-transform
-              ${isActive ? 'fill-1' : 'fill-0'}`}
-              style={{ fontVariationSettings: `'FILL' ${isActive ? 1 : 0}` }}
-            >
-              {item.icon}
-            </span>
-            <span className="font-space-grotesk text-[12px] font-semibold mt-1">
-              {item.label}
-            </span>
-          </Link>
-        );
-      })}
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant pb-[env(safe-area-inset-bottom)]">
+      <ul className="flex justify-around items-center px-2 pt-2 pb-1">
+        {NAV_ITEMS.map((item) => {
+          const isActive =
+            (item.href === '/' && pathname === '/') ||
+            (item.href.startsWith('/') &&
+              !item.href.startsWith('/#') &&
+              pathname.startsWith(item.href) &&
+              item.href !== '/');
+          return (
+            <li key={item.label}>
+              <Link
+                href={item.href}
+                className={`flex flex-col items-center justify-center min-w-[64px] py-1.5 px-3 rounded-2xl transition-all
+                  ${
+                    isActive
+                      ? 'bg-primary-container text-on-primary-container'
+                      : 'text-on-surface-variant hover:bg-surface-container'
+                  }`}
+              >
+                <span
+                  className="material-symbols-outlined text-[24px]"
+                  style={{
+                    fontVariationSettings: `'FILL' ${isActive ? 1 : 0}`,
+                  }}
+                >
+                  {item.icon}
+                </span>
+                <span className="text-[11px] font-semibold mt-0.5">
+                  {item.label}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </nav>
   );
 }

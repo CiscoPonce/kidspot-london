@@ -1,9 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { Trees, Building, Joystick, Dumbbell, MapPin, ExternalLink } from 'lucide-react';
-import type { Venue } from '@/lib/api';
+import {
+  Trees,
+  Building2,
+  Joystick,
+  Dumbbell,
+  MapPin,
+  BookOpen,
+  Coffee,
+  Landmark,
+  ArrowUpRight,
+  Star,
+} from 'lucide-react';
 import { usePlausible } from 'next-plausible';
+import type { Venue } from '@/lib/api';
 
 interface VenueCardProps {
   venue: Venue;
@@ -12,137 +23,160 @@ interface VenueCardProps {
   isSelected?: boolean;
 }
 
-const TYPE_ICONS = {
-  park: Trees,
-  community_hall: Building,
-  softplay: Joystick,
-  sports_centre: Dumbbell,
-  other: MapPin,
+const TYPE_META: Record<
+  string,
+  { icon: typeof Trees; label: string }
+> = {
+  park: { icon: Trees, label: 'Park' },
+  community_hall: { icon: Building2, label: 'Community hall' },
+  softplay: { icon: Joystick, label: 'Soft play' },
+  sports_centre: { icon: Dumbbell, label: 'Sports centre' },
+  leisure_centre: { icon: Dumbbell, label: 'Leisure centre' },
+  museum: { icon: Landmark, label: 'Museum' },
+  library: { icon: BookOpen, label: 'Library' },
+  cafe: { icon: Coffee, label: 'Cafe' },
+  other: { icon: MapPin, label: 'Other' },
+};
+
+const SPONSOR_BADGE = {
+  gold: 'bg-amber-100 text-amber-800 border-amber-200',
+  silver: 'bg-slate-100 text-slate-700 border-slate-200',
+  bronze: 'bg-orange-100 text-orange-700 border-orange-200',
 } as const;
 
-type VenueType = keyof typeof TYPE_ICONS;
-
-const SPONSOR_BADGE_COLORS = {
-  gold: 'bg-amber-400 text-amber-900',
-  silver: 'bg-slate-300 text-slate-700',
-  bronze: 'bg-orange-600 text-orange-100',
-} as const;
+const FEATURE_LABELS: Record<string, string> = {
+  soft_play: 'Soft play',
+  party_hire: 'Party hire',
+  cafe: 'Cafe',
+  parking: 'Parking',
+  wheelchair_accessible: 'Step-free',
+  toilets: 'Toilets',
+};
 
 function formatDistance(miles: number): string {
-  return `${miles.toFixed(1)} miles`;
+  if (!miles && miles !== 0) return '';
+  return miles < 0.1
+    ? '<0.1 mi'
+    : miles < 1
+      ? `${miles.toFixed(1)} mi`
+      : `${miles.toFixed(1)} mi`;
 }
 
-export function VenueCard({ venue, distance, onSelect, isSelected }: VenueCardProps) {
-  const IconComponent = (TYPE_ICONS[venue.type as VenueType] || TYPE_ICONS.other) as any;
-  const sponsorBadge = venue.sponsor_tier
-    ? SPONSOR_BADGE_COLORS[venue.sponsor_tier as keyof typeof SPONSOR_BADGE_COLORS]
+export function VenueCard({
+  venue,
+  distance,
+  onSelect,
+  isSelected,
+}: VenueCardProps) {
+  const meta = TYPE_META[venue.type] ?? TYPE_META.other;
+  const Icon = meta.icon;
+  const sponsorClass = venue.sponsor_tier
+    ? SPONSOR_BADGE[venue.sponsor_tier as keyof typeof SPONSOR_BADGE]
     : null;
   const plausible = usePlausible();
 
   const handleCardClick = () => {
-    plausible('VenueSelected', { props: { venueId: venue.id, source: 'card_click' } });
+    plausible('VenueSelected', {
+      props: { venueId: venue.id, source: 'card_click' },
+    });
     onSelect();
   };
 
-  const handleLinkClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    plausible('VenueViewed', { props: { venueId: venue.id, source: 'external_link' } });
-  };
-
   return (
-    <div
+    <article
       onClick={handleCardClick}
-      className={`
-        w-full text-left p-5 rounded-[2rem] premium-card group cursor-pointer
-        ${isSelected ? 'ring-2 ring-primary border-transparent' : 'border border-border/50'}
-      `}
-      role="button"
-      tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
           handleCardClick();
         }
       }}
+      role="button"
+      tabIndex={0}
+      aria-pressed={isSelected}
+      className={`ks-card ${isSelected ? 'ks-card-active' : ''} group cursor-pointer p-4 sm:p-5 flex gap-4`}
     >
-      <div className="flex items-start gap-4">
-        {/* Type Icon */}
-        <div
-          className={`
-            flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center transition-colors duration-300
-            ${isSelected ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'bg-secondary-800 text-secondary-400 group-hover:bg-secondary-700'}
-          `}
-        >
-          <IconComponent size={24} strokeWidth={2.5} />
-        </div>
+      <div
+        className={`flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center transition-colors
+          ${isSelected ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container text-on-surface-variant group-hover:bg-primary-container/60 group-hover:text-on-primary-container'}`}
+      >
+        <Icon size={26} strokeWidth={2} />
+      </div>
 
-        {/* Venue Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <h3 className="font-bold text-text-main group-hover:text-primary transition-colors truncate">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="font-display text-lg font-semibold leading-snug text-on-background truncate">
               {venue.name}
             </h3>
-            {sponsorBadge && (
+            <p className="text-sm text-on-surface-variant mt-0.5">
+              {meta.label}
+              {venue.borough ? ` · ${venue.borough}` : ''}
+            </p>
+          </div>
+          {distance > 0 && (
+            <span className="flex-shrink-0 inline-flex items-center gap-1 text-xs font-semibold bg-surface-container text-on-surface-variant px-2.5 py-1 rounded-full">
+              <MapPin size={12} strokeWidth={2.5} />
+              {formatDistance(distance)}
+            </span>
+          )}
+        </div>
+
+        {(venue.rating ||
+          (venue.price_level !== undefined && venue.price_level !== null) ||
+          sponsorClass ||
+          (venue.features && venue.features.length > 0)) && (
+          <div className="flex items-center flex-wrap gap-1.5 mt-3">
+            {venue.rating && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full">
+                <Star size={12} strokeWidth={2.5} fill="currentColor" />
+                {Number(venue.rating).toFixed(1)}
+              </span>
+            )}
+            {venue.price_level !== undefined &&
+              venue.price_level !== null && (
+                <span className="inline-flex items-center text-xs font-semibold bg-tertiary-container text-on-tertiary-container px-2 py-0.5 rounded-full">
+                  {'£'.repeat(Math.max(1, Math.min(4, Number(venue.price_level) || 1)))}
+                </span>
+              )}
+            {sponsorClass && (
               <span
-                className={`
-                  inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest
-                  ${sponsorBadge}
-                `}
+                className={`inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${sponsorClass}`}
               >
                 {venue.sponsor_tier}
               </span>
             )}
-          </div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
-            {venue.type.replace('_', ' ')}
-          </p>
-          <div className="flex items-center gap-3 mt-3">
-            {venue.rating && (
-              <div className="flex items-center gap-1 px-2 py-1 bg-amber-400/10 rounded-lg">
-                <span className="text-amber-400 text-xs">★</span>
-                <span className="text-amber-400 text-xs font-black">{Number(venue.rating).toFixed(1)}</span>
-              </div>
-            )}
-            {venue.price_level !== undefined && venue.price_level !== null && (
-              <div className="flex items-center gap-0.5 px-2 py-1 bg-secondary-800 rounded-lg">
-                <span className="text-primary text-[10px] font-black">
-                  {'£'.repeat(Number(venue.price_level) || 1)}
-                </span>
-              </div>
-            )}
-            {venue.features && venue.features.length > 0 && (
-              <div className="flex items-center gap-1 flex-wrap">
-                {venue.features.slice(0, 3).map(f => (
-                  <span key={f} className="px-2 py-1 bg-primary/10 text-primary rounded-lg text-[9px] font-black uppercase tracking-widest">
-                    {f.replace('_', ' ')}
-                  </span>
-                ))}
-                {venue.features.length > 3 && (
-                  <span className="px-2 py-1 bg-secondary-800 text-secondary-400 rounded-lg text-[9px] font-black tracking-widest">
-                    +{venue.features.length - 3}
-                  </span>
-                )}
-              </div>
+            {venue.features?.slice(0, 3).map((f) => (
+              <span
+                key={f}
+                className="inline-flex items-center text-xs font-medium bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full"
+              >
+                {FEATURE_LABELS[f] ?? f.replace(/_/g, ' ')}
+              </span>
+            ))}
+            {venue.features && venue.features.length > 3 && (
+              <span className="inline-flex items-center text-xs font-medium text-outline">
+                +{venue.features.length - 3}
+              </span>
             )}
           </div>
-        </div>
-
-        {/* Distance & Link */}
-        <div className="flex flex-col items-end gap-3 flex-shrink-0">
-          <div className="px-2 py-1 bg-secondary-800 rounded-lg border border-border">
-            <span className="text-[10px] font-black text-text-main">
-              {formatDistance(distance)}
-            </span>
-          </div>
-          <Link
-            href={`/venue/${venue.slug}`}
-            onClick={handleLinkClick}
-            className="p-2 rounded-xl text-secondary-400 hover:text-primary hover:bg-primary/10 transition-all duration-200"
-            title="View full details"
-          >
-            <ExternalLink size={18} strokeWidth={2.5} />
-          </Link>
-        </div>
+        )}
       </div>
-    </div>
+
+      <Link
+        href={`/venue/${venue.slug}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          plausible('VenueViewed', {
+            props: { venueId: venue.id, source: 'detail_link' },
+          });
+        }}
+        className="flex-shrink-0 self-start mt-1 w-9 h-9 rounded-full bg-surface-container text-on-surface-variant hover:bg-primary-container hover:text-on-primary-container flex items-center justify-center transition-colors"
+        aria-label={`View full details for ${venue.name}`}
+        title="View full details"
+      >
+        <ArrowUpRight size={18} strokeWidth={2.5} />
+      </Link>
+    </article>
   );
 }

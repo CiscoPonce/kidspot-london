@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import { getVenueBySlug } from '@/lib/api';
 import { VenueDetailContent } from '@/components/venues/venue-detail-content';
 
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const venue = response.data.basic;
     const title = `${venue.name} | KidSpot London`;
     const description = `Details, location, and contact information for ${venue.name} in ${venue.borough || 'London'}.`;
-    
+
     return {
       title,
       description,
@@ -44,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         images: ['/og-image.png'],
       },
     };
-  } catch (error) {
+  } catch {
     return {
       title: 'Venue Not Found | KidSpot London',
     };
@@ -68,7 +69,7 @@ export default async function VenuePage({ params }: Props) {
   const venue = response.data.basic;
   const fullDetails = response.data.details;
 
-  const jsonLd: any = {
+  const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
     name: venue.name,
@@ -90,8 +91,8 @@ export default async function VenuePage({ params }: Props) {
         '@type': 'LocationFeatureSpecification',
         name: 'Child Friendly',
         value: true,
-      }
-    ]
+      },
+    ],
   };
 
   if (venue.rating && venue.user_ratings_total) {
@@ -103,44 +104,41 @@ export default async function VenuePage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-secondary-50 pb-12">
+    <div className="min-h-screen bg-background pb-12">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      {/* Navigation Header */}
-      <header className="sticky top-0 z-30 flex h-14 items-center border-b bg-white/80 px-4 backdrop-blur-md">
+      <header className="sticky top-0 z-30 flex h-14 items-center border-b border-outline-variant bg-background/85 backdrop-blur-md px-4">
         <Link
           href="/"
-          className="flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
+          className="flex items-center gap-2 text-sm font-medium text-on-surface-variant hover:text-tertiary transition-colors"
         >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Search
+          <ArrowLeft className="h-4 w-4" />
+          Back to search
         </Link>
         <div className="ml-auto">
-          <Link href="/" className="text-lg font-bold tracking-tight text-secondary-900">
-            Kid<span className="text-primary-600">Spot</span>
+          <Link
+            href="/"
+            className="font-display text-lg font-bold tracking-tight"
+          >
+            Kid<span className="text-tertiary">Spot</span>
           </Link>
         </div>
       </header>
 
       <main className="mx-auto mt-6 max-w-2xl px-4">
-        <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
-          <VenueDetailContent 
-            venue={venue} 
+        <div className="overflow-hidden rounded-3xl border border-outline-variant bg-surface-container-lowest shadow-sm">
+          <VenueDetailContent
+            venue={venue}
             details={fullDetails}
             showCloseButton={false}
           />
         </div>
 
-        {/* SEO Content / Footer area */}
-        <div className="mt-8 text-center text-secondary-500">
-          <p className="text-sm">
-            Discover more family-friendly spots in {venue.borough || 'London'} on KidSpot.
-          </p>
-        </div>
+        <p className="mt-8 text-center text-sm text-on-surface-variant">
+          Discover more family-friendly spots in {venue.borough || 'London'} on KidSpot.
+        </p>
       </main>
     </div>
   );

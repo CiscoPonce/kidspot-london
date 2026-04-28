@@ -7,15 +7,17 @@ import { notFound } from 'next/navigation';
 
 export const revalidate = 86400;
 
-export async function generateMetadata({ params }: { params: Promise<{ type: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ type: string }>;
+}): Promise<Metadata> {
   const resolvedParams = await params;
   const typeParam = decodeURIComponent(resolvedParams.type);
-  const venueType = VENUE_TYPES.find(t => t.id === typeParam);
+  const venueType = VENUE_TYPES.find((t) => t.id === typeParam);
 
   if (!venueType) {
-    return {
-      title: 'Category Not Found | KidSpot London',
-    };
+    return { title: 'Category Not Found | KidSpot London' };
   }
 
   const title = `Best ${venueType.label} for kids in London | KidSpot London`;
@@ -40,10 +42,14 @@ export async function generateMetadata({ params }: { params: Promise<{ type: str
   };
 }
 
-export default async function CategoryPage({ params }: { params: Promise<{ type: string }> }) {
+export default async function CategoryPage({
+  params,
+}: {
+  params: Promise<{ type: string }>;
+}) {
   const resolvedParams = await params;
   const typeParam = decodeURIComponent(resolvedParams.type);
-  const venueType = VENUE_TYPES.find(t => t.id === typeParam);
+  const venueType = VENUE_TYPES.find((t) => t.id === typeParam);
 
   if (!venueType) {
     notFound();
@@ -62,73 +68,67 @@ export default async function CategoryPage({ params }: { params: Promise<{ type:
         '@type': 'LocalBusiness',
         name: venue.name,
         url: `https://kidspot.london/venue/${venue.slug}`,
-      }
-    }))
+      },
+    })),
   };
 
   return (
-    <main className="min-h-screen bg-secondary-50 pb-12">
+    <main className="min-h-screen bg-background pb-12">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      {/* Header */}
-      <div className="bg-white border-b border-secondary-200">
-        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-          <Link 
+
+      <div className="border-b border-outline-variant bg-surface-container-lowest">
+        <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+          <Link
             href="/"
-            className="inline-flex items-center text-sm text-secondary-500 hover:text-primary-600 mb-4 transition-colors"
+            className="inline-flex items-center text-sm font-medium text-on-surface-variant hover:text-tertiary transition-colors mb-4"
           >
             <ArrowLeft size={16} className="mr-1" />
-            Back to Search
+            Back to search
           </Link>
-          <h1 className="text-3xl font-bold text-secondary-900 sm:text-4xl">
+          <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight">
             Best {venueType.label} for kids in London
           </h1>
-          <p className="mt-2 text-lg text-secondary-600">
+          <p className="mt-2 text-on-surface-variant">
             Showing {venues.length} venues across London
           </p>
         </div>
       </div>
 
-      {/* Venue List */}
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         {venues.length === 0 ? (
-          <div className="bg-white rounded-xl border border-secondary-200 p-12 text-center">
-            <h2 className="text-xl font-semibold text-secondary-900 mb-2">No venues found yet</h2>
-            <p className="text-secondary-600">
+          <div className="ks-card text-center py-12 px-6">
+            <h2 className="font-display text-xl font-semibold mb-2">
+              No venues found yet
+            </h2>
+            <p className="text-on-surface-variant">
               We haven&apos;t indexed any {venueType.label.toLowerCase()} yet. Check back soon.
             </p>
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-3 sm:gap-4">
             {venues.map((venue) => (
               <Link
                 key={venue.id}
                 href={`/venue/${venue.slug}`}
-                className="block bg-white p-4 rounded-xl border border-secondary-200 hover:border-primary-300 hover:shadow-md transition-all group"
+                className="ks-card group block p-5"
               >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className="text-xl font-bold text-secondary-900 group-hover:text-primary-600 transition-colors">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <h2 className="font-display text-xl font-semibold tracking-tight group-hover:text-tertiary transition-colors">
                       {venue.name}
                     </h2>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-secondary-500 capitalize">
+                    <p className="text-sm text-on-surface-variant mt-1">
+                      <span className="capitalize">
                         {venue.type.replace('_', ' ')}
                       </span>
-                      {venue.borough && (
-                        <>
-                          <span className="text-secondary-300">•</span>
-                          <span className="text-secondary-500">
-                            {venue.borough}
-                          </span>
-                        </>
-                      )}
-                    </div>
+                      {venue.borough ? ` · ${venue.borough}` : ''}
+                    </p>
                   </div>
                   {venue.sponsor_tier && (
-                    <span className="px-2 py-1 rounded-md bg-amber-100 text-amber-800 text-xs font-bold uppercase">
+                    <span className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
                       {venue.sponsor_tier}
                     </span>
                   )}
