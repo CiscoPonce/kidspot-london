@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { isWebGLSupported } from '../../lib/webgl-support';
+import { MapFallback } from './map-fallback';
 
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
 
@@ -17,20 +19,32 @@ export function VenueMapSnippet({ lat, lon, name, zoom = 15 }: VenueMapSnippetPr
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
+  const [mapUnavailable, setMapUnavailable] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const map = new MapLibreMap({
-      container: containerRef.current,
-      style: MAP_STYLE,
-      center: [lon, lat],
-      zoom,
-      attributionControl: false,
-      // Disable all interactions for a static snippet
-      interactive: false,
-      pitchWithRotate: false,
-    });
+    if (!isWebGLSupported()) {
+      setMapUnavailable(true);
+      return;
+    }
+
+    let map: MapLibreMap;
+    try {
+      map = new MapLibreMap({
+        container: containerRef.current,
+        style: MAP_STYLE,
+        center: [lon, lat],
+        zoom,
+        attributionControl: false,
+        interactive: false,
+        pitchWithRotate: false,
+      });
+    } catch (err) {
+      console.error('VenueMapSnippet: failed to initialize MapLibre.', err);
+      setMapUnavailable(true);
+      return;
+    }
 
     map.on('load', () => {
       // Add a marker at the venue location
@@ -69,6 +83,10 @@ export function VenueMapSnippet({ lat, lon, name, zoom = 15 }: VenueMapSnippetPr
     markerRef.current.setLngLat([lon, lat]);
     mapRef.current.setCenter([lon, lat]);
   }, [lat, lon]);
+
+  if (mapUnavailable) {
+    return <MapFallback variant="snippet" />;
+  }
 
   return (
     <div

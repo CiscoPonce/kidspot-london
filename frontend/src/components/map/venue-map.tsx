@@ -5,6 +5,8 @@ import maplibregl, { Map as MapLibreMap, NavigationControl, Popup } from 'maplib
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useSearch } from '../../hooks/use-search';
 import { useMapContext } from './map-context';
+import { isWebGLSupported } from '../../lib/webgl-support';
+import { MapFallback } from './map-fallback';
 import type { Venue } from '../../lib/api';
 
 // OpenMapTiles/CartoDB style for London (free, no API key)
@@ -32,6 +34,10 @@ export function VenueMap({ venues, onVenueSelect }: VenueMapProps) {
   const mapRef = useRef<MapLibreMap | null>(null);
   const popupRef = useRef<Popup | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  // Becomes true if WebGL is unavailable or MapLibre throws during init.
+  // We render <MapFallback /> in that case so the rest of the page (search
+  // results, venue list) keeps working instead of crashing the React tree.
+  const [mapUnavailable, setMapUnavailable] = useState(false);
 
   const { lat, lon } = useSearch();
   const { setMap } = useMapContext();
@@ -147,16 +153,28 @@ export function VenueMap({ venues, onVenueSelect }: VenueMapProps) {
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    const map = new MapLibreMap({
-      container: mapContainerRef.current,
-      style: MAP_STYLE,
-      center: DEFAULT_CENTER,
-      zoom: DEFAULT_ZOOM,
-      attributionControl: false,
-      pitchWithRotate: false,
-    });
+    if (!isWebGLSupported()) {
+      console.warn('VenueMap: WebGL not available, rendering fallback.');
+      setMapUnavailable(true);
+      return;
+    }
 
-    // Add navigation controls
+    let map: MapLibreMap;
+    try {
+      map = new MapLibreMap({
+        container: mapContainerRef.current,
+        style: MAP_STYLE,
+        center: DEFAULT_CENTER,
+        zoom: DEFAULT_ZOOM,
+        attributionControl: false,
+        pitchWithRotate: false,
+      });
+    } catch (err) {
+      console.error('VenueMap: failed to initialize MapLibre, rendering fallback.', err);
+      setMapUnavailable(true);
+      return;
+    }
+
     map.addControl(
       new NavigationControl({
         showCompass: true,
@@ -166,7 +184,6 @@ export function VenueMap({ venues, onVenueSelect }: VenueMapProps) {
       'top-right'
     );
 
-    // Add attribution manually (required by most tile providers)
     map.addControl(
       new maplibregl.AttributionControl({
         compact: true,
@@ -290,6 +307,14 @@ export function VenueMap({ venues, onVenueSelect }: VenueMapProps) {
     });
   }, [lat, lon, mapLoaded]);
 
+  if (mapUnavailable) {
+    return (
+      <div className="relative w-full h-full" style={{ minHeight: '300px' }}>
+        <MapFallback variant="full" />
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full" style={{ height: '50vh' }}>
       <div
@@ -298,7 +323,6 @@ export function VenueMap({ venues, onVenueSelect }: VenueMapProps) {
         style={{ minHeight: '300px' }}
       />
 
-      {/* Loading overlay */}
       {!mapLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-secondary-100">
           <div className="flex flex-col items-center gap-3">
