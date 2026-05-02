@@ -48,7 +48,8 @@ jobs:
           : "${API_URL:?missing API_URL variable}"
           case "$API_URL" in
             https://*) ;;
-            *) echo "::error::API_URL must use https (got: $API_URL)"; exit 1 ;;
+            http://*) echo "::notice::API_URL uses http — OK for dev/IP; prefer https in production." ;;
+            *) echo "::error::API_URL must start with http:// or https:// (got: $API_URL)"; exit 1 ;;
           esac
 
       - name: Trigger ingestion
