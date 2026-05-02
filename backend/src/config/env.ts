@@ -23,7 +23,13 @@ const envSchema = z.object({
   // Security
   ADMIN_KEY: z.string().optional(),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
+  JWT_SECRET: z.string().default('super-secret-kidspot-london'),
   
+  // Stripe
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  FRONTEND_URL: z.string().default('http://localhost:3005'),
+
   // Optional
   GEOCODING_API_KEY: z.string().optional(),
 });

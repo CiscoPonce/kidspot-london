@@ -54,6 +54,12 @@ export const searchController = {
         });
       }
 
+      // Track impression
+      const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown';
+      const userAgent = req.headers['user-agent'] || 'unknown';
+      const referrer = req.headers['referer'] as string;
+      venueService.trackImpression(response.data.basic.id.toString(), ip, userAgent, referrer);
+
       return res.json(response);
     } catch (error) {
       logger.error({ err: error, slug: req.params.slug }, 'Error in getVenueDetailsBySlug controller');
@@ -85,6 +91,12 @@ export const searchController = {
         });
       }
 
+      // Track impression
+      const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown';
+      const userAgent = req.headers['user-agent'] || 'unknown';
+      const referrer = req.headers['referer'] as string;
+      venueService.trackImpression(id, ip, userAgent, referrer);
+
       return res.json(response);
     } catch (error) {
       logger.error({ err: error, id: req.params.id }, 'Error in getVenueDetailsById controller');
@@ -110,6 +122,36 @@ export const searchController = {
       return res.status(500).json({
         success: false,
         error: 'Failed to fetch slugs'
+      });
+    }
+  },
+
+  /**
+   * Handle tracking a venue click
+   */
+  async trackClick(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { type } = req.body; // 'website', 'booking', etc.
+      
+      const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown';
+      const userAgent = req.headers['user-agent'] || 'unknown';
+
+      if (!id || !type) {
+        return res.status(400).json({
+          success: false,
+          error: 'id and type are required'
+        });
+      }
+
+      await venueService.trackClick(id, type, ip, userAgent);
+      
+      return res.json({ success: true });
+    } catch (error) {
+      logger.error({ err: error }, 'Error in trackClick controller');
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to track click'
       });
     }
   }

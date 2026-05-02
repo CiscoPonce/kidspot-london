@@ -28,6 +28,7 @@ import { calculateKidScore } from '../src/scoring/kidScore.js';
 export function mapVenueType(yelpCategories: any[]) {
   const typeMap: Record<string, string> = {
     kids_activities: 'softplay',
+    softplay: 'softplay',
     playgrounds: 'park',
     parks: 'park',
     recreation: 'leisure_centre',
@@ -37,6 +38,8 @@ export function mapVenueType(yelpCategories: any[]) {
     libraries: 'library',
     museums: 'museum',
     cafes: 'cafe',
+    venues: 'community_hall',
+    event_spaces: 'community_hall',
   };
 
   if (yelpCategories && Array.isArray(yelpCategories)) {
@@ -87,6 +90,9 @@ async function updateVenue(venue: any) {
 
     const newType = mapVenueType(details.categories || []);
 
+    // Map Yelp price string ("$", "$$", "$$$", "$$$$") to number (1-4)
+    const priceLevel = details.price ? details.price.length : null;
+
     const kidScoreInput = {
       name: details.name || venueName,
       types: [newType],
@@ -98,9 +104,9 @@ async function updateVenue(venue: any) {
 
     await db.query(
       `UPDATE venues 
-       SET type = $1, rating = $2, user_ratings_total = $3, kid_score = $4, enriched_at = NOW(), last_scraped = NOW(), source_id = COALESCE(source_id, $5)
-       WHERE id = $6`,
-      [newType, details.rating || null, details.review_count || null, kidScore, details.id, venueId],
+       SET type = $1, rating = $2, user_ratings_total = $3, price_level = $4, kid_score = $5, enriched_at = NOW(), last_scraped = NOW(), source_id = COALESCE(source_id, $6)
+       WHERE id = $7`,
+      [newType, details.rating || null, details.review_count || null, priceLevel, kidScore, details.id, venueId],
     );
 
     return { status: 'updated', type: newType, kidScore, message: 'Updated via Yelp' };

@@ -27,4 +27,10 @@ router.get('/venues/slug/:slug/details', searchController.getVenueDetailsBySlug)
  */
 router.get('/venues/:id/details', searchController.getVenueDetailsById);
 
+/**
+ * @route POST /api/search/venues/:id/click
+ * @desc Track outbound click (website, booking, etc.)
+ */
+router.post('/venues/:id/click', searchController.trackClick);
+
 export default router;

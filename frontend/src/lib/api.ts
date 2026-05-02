@@ -22,6 +22,20 @@ export interface Venue {
   features?: string[];
 }
 
+export interface YelpReview {
+  id: string;
+  url: string;
+  text: string;
+  rating: number;
+  time_created: string;
+  user: {
+    id: string;
+    profile_url: string;
+    image_url: string;
+    name: string;
+  };
+}
+
 export interface VenueDetails {
   id: number | string;
   name: string;
@@ -35,7 +49,19 @@ export interface VenueDetails {
   phone?: string;
   website?: string;
   user_ratings_total?: number;
-  opening_hours?: Record<string, string>;
+  opening_hours?: {
+    open: {
+      is_overnight: boolean;
+      start: string;
+      end: string;
+      day: number;
+    }[];
+    hours_type: string;
+    is_open_now: boolean;
+  } | null;
+  reviews?: YelpReview[];
+  current_claim_status?: 'unclaimed' | 'pending' | 'verified' | 'rejected';
+  claim_email?: string;
   sponsor_tier?: string | null;
   rating?: number;
   price_level?: number;
@@ -158,4 +184,16 @@ export const getVenueDetails = (id: string | number) => fetchApi<VenueDetailsRes
 export async function fetchAllSlugs(): Promise<any[]> {
   const response = await fetchApi<{ success: boolean; data: any[] }>('/search/slugs');
   return response.data;
+}
+
+export async function trackVenueClick(venueId: string | number, type: string = 'website'): Promise<void> {
+  try {
+    await fetchApi(`/search/venues/${venueId}/click`, {
+      method: 'POST',
+      body: JSON.stringify({ type }),
+    });
+  } catch (error) {
+    // Fail silently in frontend tracking
+    console.warn('Click tracking failed:', error);
+  }
 }

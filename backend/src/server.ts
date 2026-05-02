@@ -11,6 +11,9 @@ import { apiLimiter } from './middleware/rateLimit.js';
 import sponsorRoutes from './routes/sponsors.js';
 import searchRoutes from './routes/search.js';
 import adminRoutes from './routes/admin.js';
+import claimRoutes from './routes/claim.js';
+import billingRoutes from './routes/billing.js';
+import ownerRoutes from './routes/owner.js';
 
 // Create Express app
 const app = express();
@@ -93,6 +96,9 @@ app.get('/ready', async (req: Request, res: Response) => {
 app.use('/api/sponsors', sponsorRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/venues', claimRoutes);
+app.use('/api/billing', billingRoutes);
+app.use('/api/owner', ownerRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

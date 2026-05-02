@@ -27,6 +27,7 @@ export function BottomNav() {
             <li key={item.label}>
               <Link
                 href={item.href}
+                aria-current={isActive ? 'page' : undefined}
                 className={`flex flex-col items-center justify-center min-w-[64px] py-1.5 px-3 rounded-2xl transition-all
                   ${
                     isActive

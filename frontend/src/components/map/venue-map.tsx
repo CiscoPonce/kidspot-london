@@ -316,7 +316,12 @@ export function VenueMap({ venues, onVenueSelect }: VenueMapProps) {
   }
 
   return (
-    <div className="relative w-full" style={{ height: '50vh' }}>
+    <div 
+      className="relative w-full" 
+      style={{ height: '50vh' }}
+      role="region"
+      aria-label="Venue location map"
+    >
       <div
         ref={mapContainerRef}
         className="absolute inset-0 w-full h-full"

@@ -2,9 +2,19 @@
 
 import { VenueMapSnippet } from '@/components/map/venue-map-snippet';
 import { ShareButton } from '@/components/venues/share-button';
-import type { Venue, VenueDetails } from '@/lib/api';
+import Link from 'next/link';
+import { trackVenueClick, type Venue, type VenueDetails, type YelpReview } from '@/lib/api';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+export function formatTime(time: string): string {
+  if (time.length !== 4) return time;
+  const hours = parseInt(time.slice(0, 2), 10);
+  const minutes = time.slice(2);
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  const displayHours = hours % 12 || 12;
+  return `${displayHours}:${minutes}${ampm}`;
+}
 
 export function isValidUrl(url?: string): boolean {
   if (!url) return false;
@@ -22,6 +32,18 @@ export function isValidPhone(phone?: string): boolean {
 }
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
+
+export function OpenStatusBadge({ isOpen }: { isOpen: boolean }) {
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+      isOpen 
+        ? 'bg-green-100 text-green-700 border-green-200' 
+        : 'bg-red-100 text-red-700 border-red-200'
+    }`}>
+      {isOpen ? 'Open Now' : 'Closed'}
+    </span>
+  );
+}
 
 export function SponsorBadge({ tier }: { tier: string }) {
   return (
@@ -95,6 +117,96 @@ export function VenueErrorState({ onRetry }: { onRetry: () => void }) {
 
 // ─── Main Content ─────────────────────────────────────────────────────────────
 
+function OpeningHours({ hours }: { hours: NonNullable<VenueDetails['opening_hours']> }) {
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  
+  return (
+    <div className="mt-6 p-5 bg-surface rounded-[24px] border border-outline-variant">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-title-sm text-title-sm text-on-surface flex items-center gap-2">
+          <span className="material-symbols-outlined text-outline">schedule</span>
+          Opening Hours
+        </h3>
+        <OpenStatusBadge isOpen={hours.is_open_now} />
+      </div>
+      <div className="space-y-2.5">
+        {days.map((dayName, index) => {
+          // Yelp 0 is Monday
+          const dayHours = hours.open.filter(h => h.day === index);
+          const isToday = new Date().getDay() === (index + 1) % 7;
+          return (
+            <div key={dayName} className="flex justify-between text-sm">
+              <span className={isToday ? 'font-bold text-on-surface' : 'text-on-surface-variant'}>
+                {dayName}
+              </span>
+              <span className="text-on-surface">
+                {dayHours.length > 0 
+                  ? dayHours.map(h => `${formatTime(h.start)} – ${formatTime(h.end)}`).join(', ')
+                  : 'Closed'}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ReviewsList({ reviews }: { reviews: YelpReview[] }) {
+  if (reviews.length === 0) return null;
+
+  return (
+    <div className="mt-8 space-y-6">
+      <h3 className="font-title-sm text-title-sm text-on-surface flex items-center gap-2">
+        <span className="material-symbols-outlined text-outline">rate_review</span>
+        Community Reviews
+      </h3>
+      <div className="space-y-4">
+        {reviews.map((review) => (
+          <div key={review.id} className="p-4 bg-surface rounded-[20px] border border-outline-variant">
+            <div className="flex items-center gap-3 mb-3">
+              {review.user.image_url ? (
+                <img 
+                  src={review.user.image_url} 
+                  alt={review.user.name} 
+                  className="w-8 h-8 rounded-full object-cover bg-surface-variant" 
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-xs font-bold">
+                  {review.user.name.charAt(0)}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-on-surface truncate">{review.user.name}</p>
+                <div className="flex items-center gap-2">
+                  <div className="flex text-amber-500">
+                    {'★'.repeat(Math.floor(review.rating))}
+                    {'☆'.repeat(5 - Math.floor(review.rating))}
+                  </div>
+                  <span className="text-[10px] text-outline font-medium">
+                    {new Date(review.time_created).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-on-surface-variant leading-relaxed line-clamp-3">
+              "{review.text}"
+            </p>
+            <a 
+              href={review.url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="mt-2 inline-block text-xs font-bold text-primary hover:underline"
+            >
+              Read full review on Yelp
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export interface VenueDetailContentProps {
   venue: Venue | VenueDetails;
   details?: VenueDetails;
@@ -118,6 +230,8 @@ export function VenueDetailContent({
   const phone = mergedDetails.phone;
   const website = mergedDetails.website;
   const address = mergedDetails.address;
+  const hours = mergedDetails.opening_hours;
+  const reviews = mergedDetails.reviews;
 
   return (
     <div className="bg-surface-container-lowest rounded-t-[32px] sm:rounded-[32px] overflow-hidden">
@@ -157,6 +271,7 @@ export function VenueDetailContent({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close venue details"
             className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-surface text-on-surface-variant hover:bg-surface-variant transition-colors"
           >
             <span className="material-symbols-outlined">close</span>
@@ -183,7 +298,7 @@ export function VenueDetailContent({
             </div>
 
             {/* Address & Info */}
-            <div className="mb-8 space-y-4">
+            <div className="mb-6 space-y-4">
               {address && (
                 <div className="flex items-start gap-3 p-4 bg-surface rounded-[16px] border border-outline-variant">
                   <span className="material-symbols-outlined text-outline">location_on</span>
@@ -200,12 +315,20 @@ export function VenueDetailContent({
               )}
             </div>
 
+            {/* Opening Hours */}
+            {hours && hours.open && <OpeningHours hours={hours} />}
+
+            {/* Reviews */}
+            {reviews && <ReviewsList reviews={reviews} />}
+
             {/* Actions */}
-            <div className="flex flex-col gap-3">
+            <div className="mt-8 flex flex-col gap-3">
               <div className="flex flex-col sm:flex-row gap-3">
                 {isValidPhone(phone) && (
                   <a
                     href={`tel:${phone!.trim()}`}
+                    onClick={() => trackVenueClick(venue.id, 'phone')}
+                    aria-label={`Call ${venue.name} at ${phone}`}
                     className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 text-white h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform"
                   >
                     <span className="material-symbols-outlined">call</span>
@@ -217,6 +340,8 @@ export function VenueDetailContent({
                     href={website}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => trackVenueClick(venue.id, 'website')}
+                    aria-label={`Visit ${venue.name} website`}
                     className="flex-1 flex items-center justify-center gap-2 bg-primary-container text-on-primary-container h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform"
                   >
                     <span className="material-symbols-outlined">language</span>
@@ -229,6 +354,22 @@ export function VenueDetailContent({
                 className="flex items-center justify-center gap-2 bg-surface border border-outline-variant h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform"
               />
             </div>
+
+            {/* Claim Listing CTA */}
+            {(!mergedDetails.current_claim_status || mergedDetails.current_claim_status === 'unclaimed') && (
+              <div className="mt-10 pt-8 border-t border-outline-variant text-center">
+                <p className="text-sm text-on-surface-variant mb-4">
+                  Own this venue? Claim it to manage details and reach more parents.
+                </p>
+                <Link
+                  href={`/claim/${venue.slug}`}
+                  className="inline-flex items-center gap-2 text-primary font-bold text-sm hover:brightness-90 transition-all"
+                >
+                  <span className="material-symbols-outlined text-[20px]">verified</span>
+                  Claim this listing
+                </Link>
+              </div>
+            )}
           </>
         )}
       </div>

@@ -31,6 +31,7 @@ export function QuickFilters() {
                 onClick={() => setVenueType(filter.value)}
                 className={`ks-chip ${isActive ? 'ks-chip-active' : ''}`}
                 aria-pressed={isActive}
+                aria-label={`Filter by ${filter.label}`}
               >
                 <span className="material-symbols-outlined text-[18px] leading-none">
                   {filter.icon}

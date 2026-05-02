@@ -110,6 +110,8 @@ function SearchPill() {
         <button
           type="submit"
           disabled={isGeocoding}
+          aria-busy={isGeocoding}
+          aria-label={isGeocoding ? 'Searching...' : 'Search venues'}
           className="bg-primary-container text-on-primary-container font-semibold rounded-2xl px-6 h-[52px] hover:brightness-95 active:scale-95 disabled:opacity-60 transition flex items-center justify-center gap-2 shadow-[inset_0_-2px_0_rgba(0,0,0,0.06)]"
         >
           {isGeocoding ? (
@@ -126,6 +128,7 @@ function SearchPill() {
           type="button"
           onClick={handleUseLocation}
           disabled={locLoading}
+          aria-busy={locLoading}
           className="inline-flex items-center gap-1.5 text-sm font-medium text-on-surface-variant hover:text-tertiary disabled:opacity-60 transition"
         >
           <span className="material-symbols-outlined text-[18px]">
@@ -133,11 +136,13 @@ function SearchPill() {
           </span>
           {locLoading ? 'Locating…' : 'Use my current location'}
         </button>
-        {error && (
-          <span className="text-sm font-medium text-error" role="alert">
-            {error}
-          </span>
-        )}
+        <div aria-live="polite">
+          {error && (
+            <span className="text-sm font-medium text-error" role="alert">
+              {error}
+            </span>
+          )}
+        </div>
       </div>
     </form>
   );

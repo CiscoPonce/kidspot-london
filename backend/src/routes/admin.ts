@@ -1,6 +1,8 @@
 import express from 'express';
 import { randomUUID } from 'crypto';
 import { verifyHmac } from '../middleware/hmac.js';
+import { adminAuth } from '../middleware/admin.js';
+import { revenueController } from '../controllers/revenueController.js';
 import { logger } from '../config/logger.js';
 import { StaleIngestLockedError, withStaleIngestLock } from '../services/ingestLock.js';
 // @ts-ignore — CommonJS module (no types)
@@ -65,5 +67,20 @@ router.post('/ingest/stale', verifyHmac, async (req, res) => {
     });
   }
 });
+
+/**
+ * @route GET /api/admin/revenue/stats
+ */
+router.get('/revenue/stats', adminAuth, revenueController.getStats);
+
+/**
+ * @route GET /api/admin/audit-logs
+ */
+router.get('/audit-logs', adminAuth, revenueController.getAuditLogs);
+
+/**
+ * @route GET /api/admin/sponsors
+ */
+router.get('/sponsors', adminAuth, revenueController.listSponsors);
 
 export default router;

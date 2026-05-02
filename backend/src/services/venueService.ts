@@ -312,7 +312,11 @@ const fetchYelpDetails = async (venue: Venue) => {
 
     if (!yelpId) return null;
 
-    const details = await yelpService.getBusinessDetails(yelpId);
+    const [details, reviews] = await Promise.all([
+      yelpService.getBusinessDetails(yelpId),
+      yelpService.getBusinessReviews(yelpId)
+    ]);
+
     if (details) {
       return {
         name: details.name,
@@ -321,7 +325,7 @@ const fetchYelpDetails = async (venue: Venue) => {
         website: details.url,
         rating: details.rating,
         user_ratings_total: details.review_count,
-        reviews: [], // Yelp Fusion free tier doesn't give full reviews in details, need separate endpoint
+        reviews: reviews || [],
         opening_hours: details.hours?.[0] || null,
         photos: details.photos || [details.image_url]
       };
@@ -447,14 +451,15 @@ export const venueService = {
     let fallbackSource: string | null = null;
     
     if (rows.length < (limit || 50) && !borough && lat !== undefined && lon !== undefined) {
-      // 1. Try OpenStreetMap Overpass API
-      const osmVenues = await fetchOsmSearchResults(lat, lon, radius_miles, type);
-      
-      // 2. Try Brave Search API
-      let braveVenues: Venue[] | null = null;
-      if (process.env.BRAVE_API_KEY) {
-        braveVenues = await fetchBraveSearchResults(lat, lon, radius_miles, type, limit, postcode);
-      }
+      // Run fallbacks in parallel for better performance
+      const fallbackPromises: [Promise<Venue[] | null>, Promise<Venue[] | null>] = [
+        fetchOsmSearchResults(lat, lon, radius_miles, type),
+        process.env.BRAVE_API_KEY 
+          ? fetchBraveSearchResults(lat, lon, radius_miles, type, limit, postcode)
+          : Promise.resolve(null)
+      ];
+
+      const [osmVenues, braveVenues] = await Promise.all(fallbackPromises);
 
       fallbackVenues = [...(osmVenues || []), ...(braveVenues || [])];
 
@@ -672,5 +677,70 @@ export const venueService = {
            last_scraped DESC`
     );
     return result.rows;
+  },
+
+  /**
+   * Track an outbound click
+   */
+  async trackClick(venueId: string, clickType: string, ip: string, userAgent: string) {
+    try {
+      const isFallback = venueId.startsWith('osm_') || venueId.startsWith('brave-') || venueId.startsWith('brave_');
+      
+      // Simple anonymization of IP (e.g. hash it)
+      const ipHash = Buffer.from(ip).toString('base64').slice(0, 16);
+
+      if (isFallback) {
+        await db.query(
+          `INSERT INTO outbound_clicks (fallback_id, click_type, user_ip_hash, user_agent)
+           VALUES ($1, $2, $3, $4)`,
+          [venueId, clickType, ipHash, userAgent]
+        );
+      } else {
+        const idVal = parseInt(venueId);
+        if (!isNaN(idVal)) {
+          await db.query(
+            `INSERT INTO outbound_clicks (venue_id, click_type, user_ip_hash, user_agent)
+             VALUES ($1, $2, $3, $4)`,
+            [idVal, clickType, ipHash, userAgent]
+          );
+        }
+      }
+      return true;
+    } catch (error) {
+      logger.error({ err: error, venueId, clickType }, 'Error tracking outbound click');
+      return false;
+    }
+  },
+
+  /**
+   * Track a venue impression (page view)
+   */
+  async trackImpression(venueId: string, ip: string, userAgent: string, referrer?: string) {
+    try {
+      const isFallback = venueId.startsWith('osm_') || venueId.startsWith('brave-') || venueId.startsWith('brave_');
+      
+      const ipHash = Buffer.from(ip).toString('base64').slice(0, 16);
+
+      if (isFallback) {
+        await db.query(
+          `INSERT INTO venue_views (fallback_id, user_ip_hash, user_agent, referrer)
+           VALUES ($1, $2, $3, $4)`,
+          [venueId, ipHash, userAgent, referrer]
+        );
+      } else {
+        const idVal = parseInt(venueId);
+        if (!isNaN(idVal)) {
+          await db.query(
+            `INSERT INTO venue_views (venue_id, user_ip_hash, user_agent, referrer)
+             VALUES ($1, $2, $3, $4)`,
+            [idVal, ipHash, userAgent, referrer]
+          );
+        }
+      }
+      return true;
+    } catch (error) {
+      logger.error({ err: error, venueId }, 'Error tracking venue impression');
+      return false;
+    }
   }
 };

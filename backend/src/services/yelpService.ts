@@ -38,6 +38,20 @@ export interface YelpBusiness {
   photos?: string[];
 }
 
+export interface YelpReview {
+  id: string;
+  url: string;
+  text: string;
+  rating: number;
+  time_created: string;
+  user: {
+    id: string;
+    profile_url: string;
+    image_url: string;
+    name: string;
+  };
+}
+
 export const yelpService = {
   /**
    * Search for businesses on Yelp
@@ -91,6 +105,26 @@ export const yelpService = {
     } catch (error: any) {
       logger.error({ err: error, id }, 'Yelp details fetch failed');
       return null;
+    }
+  },
+
+  /**
+   * Get business reviews by Yelp ID
+   */
+  async getBusinessReviews(id: string) {
+    if (!env.YELP_API_KEY) return [];
+
+    try {
+      const response = await axios.get(`${YELP_BASE_URL}/businesses/${id}/reviews`, {
+        headers: {
+          Authorization: `Bearer ${env.YELP_API_KEY}`,
+        },
+      });
+
+      return response.data.reviews as YelpReview[];
+    } catch (error: any) {
+      logger.error({ err: error, id }, 'Yelp reviews fetch failed');
+      return [];
     }
   },
 

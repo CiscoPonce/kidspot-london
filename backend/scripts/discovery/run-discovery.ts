@@ -26,8 +26,10 @@ export async function runAllDiscovery() {
   }
 }
 
-// Run if called directly
-if (typeof require !== 'undefined' && require.main === module) {
+import { fileURLToPath } from 'url';
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMainModule) {
   runAllDiscovery()
     .then(() => process.exit(0))
     .catch(error => {

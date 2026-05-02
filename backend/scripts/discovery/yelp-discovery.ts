@@ -96,7 +96,16 @@ export async function discoverVenuesWithYelp() {
     return;
   }
   
-  const searchTerms = ['soft play', 'playground', 'community centre', 'children museum', 'park', 'leisure centre'];
+  const searchTerms = [
+    'soft play', 
+    'soft play centre', 
+    'kids party venue', 
+    'party hire kids', 
+    'playground', 
+    'children museum', 
+    'park', 
+    'leisure centre'
+  ];
   const londonCenter = { lat: 51.5074, lon: -0.1278 };
   
   let totalProcessed = 0;
@@ -142,8 +151,10 @@ export async function discoverVenuesWithYelp() {
   }
 }
 
-// Run if called directly
-if (typeof require !== 'undefined' && require.main === module) {
+import { fileURLToPath } from 'url';
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMainModule) {
   discoverVenuesWithYelp()
     .then(() => {
       logger.info('Finished');

@@ -6,21 +6,17 @@ const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
 
 // Map OSM tags to our venue types
 function mapVenueType(tags: Record<string, string>): string {
-  const typeMap: Record<string, string> = {
-    'leisure=indoor_play': 'softplay',
-    'amenity=community_centre': 'community_hall',
-    'leisure=park': 'park',
-    'leisure=playground': 'park',
-    'leisure=stadium': 'other',
-    'amenity=gym': 'other'
-  };
+  const name = (tags.name || '').toLowerCase();
   
-  for (const [tagKey, venueType] of Object.entries(typeMap)) {
-    const [key, value] = tagKey.split('=');
-    if (tags[key] === value) {
-      return venueType;
-    }
-  }
+  // Specific kids' party keywords in name
+  if (name.includes('soft play') || name.includes('play centre')) return 'softplay';
+  if (name.includes('playground') || name.includes('play area')) return 'park';
+
+  // Tag-based mapping
+  if (tags.leisure === 'indoor_play' || tags.indoor_play === 'yes') return 'softplay';
+  if (tags['rooms:party'] === 'yes' || tags.party_hire === 'yes') return 'community_hall';
+  if (tags.amenity === 'community_centre' || tags.amenity === 'village_hall') return 'community_hall';
+  if (tags.leisure === 'park' || tags.leisure === 'playground') return 'park';
   
   return 'other';
 }
@@ -34,6 +30,21 @@ const OSM_QUERIES = [
         node["leisure"="indoor_play"](51.2,-0.5,51.7,0.3);
         way["leisure"="indoor_play"](51.2,-0.5,51.7,0.3);
         relation["leisure"="indoor_play"](51.2,-0.5,51.7,0.3);
+        node["indoor_play"="yes"](51.2,-0.5,51.7,0.3);
+        way["indoor_play"="yes"](51.2,-0.5,51.7,0.3);
+      );
+      out center;
+    `
+  },
+  {
+    name: 'party_venue',
+    query: `
+      [out:json][timeout:300];
+      (
+        node["rooms:party"="yes"](51.2,-0.5,51.7,0.3);
+        way["rooms:party"="yes"](51.2,-0.5,51.7,0.3);
+        node["amenity"="hall"]["party_hire"="yes"](51.2,-0.5,51.7,0.3);
+        way["amenity"="hall"]["party_hire"="yes"](51.2,-0.5,51.7,0.3);
       );
       out center;
     `
@@ -58,6 +69,8 @@ const OSM_QUERIES = [
         node["leisure"="park"](51.2,-0.5,51.7,0.3);
         way["leisure"="park"](51.2,-0.5,51.7,0.3);
         relation["leisure"="park"](51.2,-0.5,51.7,0.3);
+        node["leisure"="playground"](51.2,-0.5,51.7,0.3);
+        way["leisure"="playground"](51.2,-0.5,51.7,0.3);
       );
       out center;
     `
@@ -170,7 +183,10 @@ export async function discoverVenuesFromOSM() {
   }
 }
 
-if (typeof require !== 'undefined' && require.main === module) {
+import { fileURLToPath } from 'url';
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMainModule) {
   discoverVenuesFromOSM()
     .then(() => process.exit(0))
     .catch(error => {

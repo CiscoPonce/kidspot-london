@@ -1,14 +1,14 @@
 # KidSpot London - Project State
 
 ## Current Position
-**Phase**: 08.5 - UX & Data Quality Verification
-**Wave**: Active Development
+**Phase**: 11 - Scale & Expansion
+**Wave**: Post-Launch Optimization
 **Status**: 
-- **Search Fallback Engine**: Robust multi-source engine (OSM + Brave Search) implemented with Haversine distance sorting and deduplication.
-- **Automated Pipeline**: Unified nightly validation and discovery pipeline (Yelp Fusion + OSM) fully automated via GitHub Actions.
-- **Framework Modernization**: Stack fully upgraded to Node 22, Express 5, Next 15, and React 19.
-- **Next Goal**: Prove value and traffic through high data accuracy and refined UX before moving to revenue.
-**Last Updated**: April 24, 2026
+- **Phase 10 Complete**: Premium sponsor features are fully operational, including the owner dashboard, impression tracking, and hourly ranking rotation.
+- **Commercial Loop Closed**: System handles everything from discovery -> claim -> subscription -> visibility -> analytics.
+- **Codebase Solid**: Full TypeScript coverage, automated CI/CD, and robust Docker environment.
+- **Next Goal**: Scale the platform across more UK cities and optimize search relevance with AI.
+**Last Updated**: May 2, 2026
 
 ## Completed Phases
 - 01 - Data Foundation
@@ -20,29 +20,23 @@
 - 07 - Improvement
 - 07.5 - Cleanup Sprint
 - 08.0 - Framework Modernization & Polish
+- 08.5 - UX & Data Quality Verification
+- 09.0 - Sponsorship & Revenue
+- 10.0 - Sponsor Features & Engagement
 
-## Active Phase: 08.5 - UX & Data Quality Verification
+## Active Phase: 11 - Scale & Expansion
 ### Objective
-Ensure data accuracy (opening times, prices, fees) and polish the user experience to prove traffic value before monetization.
+Scale the platform across more UK cities and optimize search relevance with AI.
 
-### Requirements
-- [ ] UX-DATA-01: Opening hours display and "Open Now" status validation.
-- [ ] UX-DATA-02: Pricing and booking fee transparency in the UI.
-- [ ] UX-DATA-03: Direct booking/contact access from venue detail pages.
-- [ ] UX-ACC-01: WCAG 2.1 accessibility compliance.
-- [ ] UX-TRAF-01: Outbound link tracking for traffic proofing.
-
-### Accomplishments (April 24, 2026)
-- ✅ **OSM Search Fallback**: Fixed 406 errors, refactored to native `fetch`.
-- ✅ **Unified Fallback Logic**: Combined OSM and Brave Search.
-- ✅ **Haversine Distance Sorting**: Dynamic backend sorting for all fallback results.
-- ✅ **Discovery Automation**: Integrated Yelp and OSM discovery into nightly pipeline.
-- ✅ **GitHub Actions fixed**: Restored ingestion pipeline functionality.
+### Accomplishments (May 2, 2026)
+- ✅ **Sponsor Dashboard Live**: Owners can log in via OTP to view real-time clicks and views.
+- ✅ **Impression Tracking**: New `venue_views` infrastructure implemented and active.
+- ✅ **Premium Ranking**: Hourly rotation for Gold/Silver/Bronze sponsors implemented in PostgreSQL.
+- ✅ **Discovery ESM Fix**: Resolved silent failures in background ingestion scripts.
 
 ### Decisions
-- **2026-04-24**: Creating Phase 8.5 to focus on UX and Data Quality before Revenue (D-08.5-01).
-- **2026-04-24**: Merging validation and discovery into a single nightly cron job (D-07.5-02).
-- **2026-04-24**: Adopting Yelp Fusion as the primary discovery source over Google Places (D-07.5-01).
+- **2026-05-02**: Moving to Phase 10 to focus on sponsor value delivery (D-10-01).
+- **2026-05-02**: Decided to implement OTP-based owner login for simplicity and security (D-10-02).
 
 ---
 
