@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateKidScore } from './kidScore';
+import { calculateKidScore } from './kidScore.js';
 
 describe('calculateKidScore', () => {
   it('should return 0 for disqualifying types (Test 1)', () => {

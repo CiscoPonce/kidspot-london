@@ -1,9 +1,11 @@
-import pino from 'pino';
-import pinoHttp from 'pino-http';
-import { randomUUID } from 'crypto';
+import pino from "pino";
+import { pinoHttp } from "pino-http";
+import { randomUUID } from "crypto";
+import type { IncomingMessage, ServerResponse } from "http";
+import type { RequestHandler } from "express";
 
 export const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
+  level: process.env.LOG_LEVEL || "info",
   formatters: {
     level: (label: string) => {
       return { level: label.toUpperCase() };
@@ -14,17 +16,23 @@ export const logger = pino({
 
 export const httpLogger = pinoHttp({
   logger,
-  genReqId: (req) => req.id || req.headers['x-request-id'] || randomUUID(),
+  genReqId: (req) => {
+    const r = req as IncomingMessage & { id?: string };
+    return r.id || (r.headers["x-request-id"] as string | undefined) || randomUUID();
+  },
   serializers: {
-    req: (req) => ({
-      id: req.id,
-      method: req.method,
-      url: req.url,
-    }),
+    req: (req) => {
+      const r = req as IncomingMessage & { id?: string };
+      return {
+        id: r.id,
+        method: r.method,
+        url: r.url,
+      };
+    },
     res: (res) => ({
-      statusCode: res.statusCode,
+      statusCode: (res as ServerResponse).statusCode,
     }),
   },
-});
+}) as RequestHandler;
 
 export default logger;

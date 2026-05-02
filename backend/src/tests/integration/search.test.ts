@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
-import app from '../../server';
-import { db } from '../../clients/db';
-import { redis } from '../../clients/redis';
+import app from '../../server.js';
+import { db } from '../../clients/db.js';
+import { redis } from '../../clients/redis.js';
 
 // Mock db and redis
-vi.mock('../../clients/db', () => ({
+vi.mock('../../clients/db.js', () => ({
   db: {
     query: vi.fn(),
   },
@@ -14,7 +14,7 @@ vi.mock('../../clients/db', () => ({
   }
 }));
 
-vi.mock('../../clients/redis', () => ({
+vi.mock('../../clients/redis.js', () => ({
   redis: {
     ping: vi.fn().mockResolvedValue('PONG'),
     get: vi.fn(),
@@ -32,7 +32,7 @@ vi.mock('../../clients/redis', () => ({
 }));
 
 // Mock rate limiter to avoid RedisStore dependency issues
-vi.mock('../../middleware/rateLimit', () => ({
+vi.mock('../../middleware/rateLimit.js', () => ({
   apiLimiter: (req: any, res: any, next: any) => next(),
   braveSearchLimiter: vi.fn().mockResolvedValue(undefined),
   default: (req: any, res: any, next: any) => next(),

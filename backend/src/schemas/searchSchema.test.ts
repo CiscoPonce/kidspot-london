@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { searchQuerySchema } from './searchSchema';
+import { searchQuerySchema } from './searchSchema.js';
 
 describe('searchQuerySchema', () => {
   it('validates valid search parameters correctly', () => {

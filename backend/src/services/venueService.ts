@@ -448,7 +448,7 @@ export const venueService = {
     
     if (rows.length < (limit || 50) && !borough && lat !== undefined && lon !== undefined) {
       // 1. Try OpenStreetMap Overpass API
-      const osmVenues = await fetchOsmSearchResults(lat, lon, radius_miles, type, limit);
+      const osmVenues = await fetchOsmSearchResults(lat, lon, radius_miles, type);
       
       // 2. Try Brave Search API
       let braveVenues: Venue[] | null = null;
