@@ -34,7 +34,6 @@ function SearchPill() {
         props: { type: venueType || 'all', radius, method: 'geolocation' },
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [position]);
 
   const handleSearch = async (e: React.FormEvent) => {
