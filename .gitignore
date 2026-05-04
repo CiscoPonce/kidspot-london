@@ -1,8 +1,27 @@
 node_modules/
 .env
+.env.local
+.env.*.local
 .DS_Store
 *.log
+
+# Build outputs
 dist/
 build/
 .next/
+*.tsbuildinfo
+coverage/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Planning tool internals
 .planning/codebase/
+.planning/config.json
+
+# Local-only OS scratch
+.cache/
