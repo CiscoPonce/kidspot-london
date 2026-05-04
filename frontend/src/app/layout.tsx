@@ -35,6 +35,27 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/*
+          Material Symbols Outlined — loaded as a real <link> rather than a CSS
+          @import because Next 16 / Turbopack drops remote @import URLs from the
+          bundled stylesheet, which left every icon rendering as its raw
+          ligature text (e.g. "location_on", "apps", "arrow_forward").
+        */}
+        <link
+          rel="preconnect"
+          href="https://fonts.googleapis.com"
+        />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin=""
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+        />
+      </head>
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} bg-background text-on-background font-sans antialiased`}
       >

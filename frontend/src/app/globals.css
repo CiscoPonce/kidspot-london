@@ -1,4 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+/* Material Symbols Outlined is loaded via <link> in app/layout.tsx — Next 16
+   strips remote @import directives from the bundled CSS, so a CSS @import
+   here would silently fail. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
