@@ -33,23 +33,45 @@ const getVenueDetailsCacheKey = (id: string | number) => {
 const fetchOsmSearchResults = async (lat: number, lon: number, radiusMiles: number, type?: string): Promise<Venue[] | null> => {
   try {
     const radiusMeters = Math.min(radiusMiles * 1609.34, 5000); // Max 5km for OSM to be fast
-    let tagQuery = '';
-    
-    if (type === 'softplay') tagQuery = '["leisure"="indoor_play"]';
-    else if (type === 'community_hall') tagQuery = '["amenity"="community_centre"]';
-    else if (type === 'leisure_centre') tagQuery = '["leisure"~"sports_centre|fitness_centre"]';
-    else if (type === 'park') tagQuery = '["leisure"="park"]';
-    else if (type === 'library') tagQuery = '["amenity"="library"]';
-    else if (type === 'museum') tagQuery = '["tourism"="museum"]';
-    else if (type === 'cafe') tagQuery = '["amenity"="cafe"]';
-    else tagQuery = '["leisure"~"indoor_play|park|playground|sports_centre"]';
+
+    // Build a list of clause groups. Each group is a tag selector applied to
+    // node/way/relation. Multiple groups are unioned in a single Overpass
+    // query.
+    let clauses: string[] = [];
+
+    if (type === 'softplay') {
+      // 1) Dedicated indoor play centres
+      clauses.push('["leisure"="indoor_play"]');
+      // 2) Council-run leisure centres / sports halls that host soft play
+      //    sessions (e.g. Atherton Leisure Centre, Mile End Park Leisure
+      //    Centre). Matched by name pattern to exclude adult-only chains
+      //    like PureGym / CorePower / Anytime Fitness.
+      clauses.push('["leisure"~"fitness_centre|sports_centre"]["name"~"leisure centre|sports centre|kids|family|play",i]');
+    } else if (type === 'community_hall') {
+      clauses.push('["amenity"="community_centre"]');
+    } else if (type === 'leisure_centre') {
+      clauses.push('["leisure"~"sports_centre|fitness_centre"]');
+    } else if (type === 'park') {
+      clauses.push('["leisure"="park"]');
+    } else if (type === 'library') {
+      clauses.push('["amenity"="library"]');
+    } else if (type === 'museum') {
+      clauses.push('["tourism"="museum"]');
+    } else if (type === 'cafe') {
+      clauses.push('["amenity"="cafe"]');
+    } else {
+      clauses.push('["leisure"~"indoor_play|park|playground|sports_centre"]');
+    }
+
+    const buildClauseBlock = (sel: string) =>
+      `node${sel}(around:${radiusMeters},${lat},${lon});` +
+      `way${sel}(around:${radiusMeters},${lat},${lon});` +
+      `relation${sel}(around:${radiusMeters},${lat},${lon});`;
 
     const query = `
       [out:json][timeout:10];
       (
-        node${tagQuery}(around:${radiusMeters},${lat},${lon});
-        way${tagQuery}(around:${radiusMeters},${lat},${lon});
-        relation${tagQuery}(around:${radiusMeters},${lat},${lon});
+        ${clauses.map(buildClauseBlock).join('\n        ')}
       );
       out center 300;
     `.replace(/\s+/g, ' ').trim();
@@ -100,8 +122,21 @@ const fetchOsmSearchResults = async (lat: number, lon: number, radiusMiles: numb
           features.push('parking');
         }
 
-        // Add features to known leisure centres that have them
-        if (type === 'leisure_centre' && (nameLower.includes('atherton') || nameLower.includes('better') || nameLower.includes('everyone active'))) {
+        // Council-run leisure centres operated by Better/GLL or Everyone Active
+        // commonly host soft play sessions, party hire and a cafe. Mark those
+        // features so the listing aligns with what users will actually find on
+        // arrival, both when the search type is `leisure_centre` and when it's
+        // the user-facing `softplay` filter.
+        const isKnownKidFriendlyLeisureCentre =
+          (nameLower.includes('atherton') ||
+            nameLower.includes('better') ||
+            nameLower.includes('everyone active') ||
+            nameLower.includes('leisure centre')) &&
+          (tags.leisure === 'fitness_centre' ||
+            tags.leisure === 'sports_centre' ||
+            type === 'leisure_centre' ||
+            type === 'softplay');
+        if (isKnownKidFriendlyLeisureCentre) {
           if (!features.includes('soft_play')) features.push('soft_play');
           if (!features.includes('party_hire')) features.push('party_hire');
           if (!features.includes('cafe')) features.push('cafe');
@@ -203,7 +238,35 @@ const fetchBraveSearchResults = async (lat: number, lon: number, radiusMiles: nu
     const results = response.data?.web?.results || [];
     logger.info({ count: results.length }, 'Brave Search fallback returned results');
 
-    const fallbackVenues: Venue[] = results.map((result: any) => {
+    // Drop obvious SEO listicles, "best of" guides, year-stamped roundups, and
+    // aggregator/directory pages. These are not real venues and historically
+    // polluted the search results (e.g. "London Soft Play 2026 | UK's #1 Soft
+    // Play Finder", "Top 10 Soft Play Areas In London - Nannytax").
+    const LISTICLE_TITLE_RE = /(\b(20\d{2})\b|\btop\s*\d+\b|\bbest\s+(of|\d+)\b|\b\d+\s+of\b|\b#\s*1\b|\bguide\b|\bfinder\b|\bdirectory\b|\bblog\b|\broundup\b|\bnear me\b|\|.*\|)/i;
+    const LISTICLE_DOMAIN_RE = /(timeout\.|nannytax\.|mumsnet\.|tripadvisor\.|reddit\.|quora\.|pinterest\.|facebook\.|wikipedia\.|youtube\.|instagram\.|tiktok\.|medium\.|wordpress\.|substack\.|theguardian\.|telegraph\.|standard\.co\.uk|expedia\.|booking\.com)/i;
+    const isLikelyRealVenue = (result: any): boolean => {
+      const t = (result.title || '').trim();
+      if (!t) return false;
+      // Multi-clause SEO titles are nearly always listicles
+      if ((t.match(/\|/g) || []).length >= 1) return false;
+      if (t.length > 80) return false;
+      if (LISTICLE_TITLE_RE.test(t)) return false;
+      const domain = result.meta_url?.domain || (() => {
+        try { return new URL(result.url).hostname; } catch { return ''; }
+      })();
+      if (LISTICLE_DOMAIN_RE.test(domain)) return false;
+      return true;
+    };
+
+    const filteredResults = results.filter(isLikelyRealVenue);
+    if (filteredResults.length < results.length) {
+      logger.info(
+        { dropped: results.length - filteredResults.length, kept: filteredResults.length },
+        'Brave fallback: dropped likely-listicle results'
+      );
+    }
+
+    const fallbackVenues: Venue[] = filteredResults.map((result: any) => {
       const idStr = Buffer.from(result.url).toString('base64').slice(0, 12);
       const name = result.title || `Unknown ${type || 'Venue'} (Web)`;
       const description = result.description || '';
@@ -451,15 +514,17 @@ export const venueService = {
     let fallbackSource: string | null = null;
     
     if (rows.length < (limit || 50) && !borough && lat !== undefined && lon !== undefined) {
-      // Run fallbacks in parallel for better performance
-      const fallbackPromises: [Promise<Venue[] | null>, Promise<Venue[] | null>] = [
-        fetchOsmSearchResults(lat, lon, radius_miles, type),
-        process.env.BRAVE_API_KEY 
-          ? fetchBraveSearchResults(lat, lon, radius_miles, type, limit, postcode)
-          : Promise.resolve(null)
-      ];
+      // Step 1: try OSM Overpass first — it returns real geocoded venues.
+      const osmVenues = await fetchOsmSearchResults(lat, lon, radius_miles, type);
 
-      const [osmVenues, braveVenues] = await Promise.all(fallbackPromises);
+      // Step 2: only fall back to Brave Search when neither the local DB nor
+      // OSM returned a single real venue. Brave returns web search snippets,
+      // which are useful as a last-resort hint but NOT as padding for healthy
+      // result sets (it produces SEO listicle / aggregator titles).
+      const localPlusOsm = rows.length + (osmVenues?.length || 0);
+      const braveVenues = (localPlusOsm === 0 && process.env.BRAVE_API_KEY)
+        ? await fetchBraveSearchResults(lat, lon, radius_miles, type, limit, postcode)
+        : null;
 
       fallbackVenues = [...(osmVenues || []), ...(braveVenues || [])];
 
@@ -491,7 +556,9 @@ export const venueService = {
         }
 
         regular = [...regular, ...fallbackVenues];
-        fallbackSource = (osmVenues && osmVenues.length > 0 && braveVenues && braveVenues.length > 0) ? 'osm+brave' : ((osmVenues && osmVenues.length > 0) ? 'osm' : 'brave_search');
+        const usedOsm = osmVenues && osmVenues.length > 0;
+        const usedBrave = braveVenues && braveVenues.length > 0;
+        fallbackSource = (usedOsm && usedBrave) ? 'osm+brave' : (usedOsm ? 'osm' : 'brave_search');
       }
     }
 
