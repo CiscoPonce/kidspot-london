@@ -1,6 +1,6 @@
 # KidSpot London - Project Context
 
-## Project Summary
+## What This Is
 KidSpot London is a hyper-local, community-driven search engine for child-friendly venues in London. It solves the data fragmentation problem by combining public datasets, intelligent LLM-powered scraping, and real-time web search fallbacks.
 
 ## Problem Statement
@@ -10,7 +10,7 @@ Finding a venue for a child's birthday party in London is highly inefficient:
 - **Zero-Result Frustration**: Existing directories yield zero results for specific postcodes
 - **Lack of Geo-Context**: Parents need distance, parking, and nearby amenities
 
-## Solution
+## Core Value
 A unified, geo-aware directory that:
 1. Aggregates public datasets (London Datastore), open-source mapping (OSM), and unstructured web data
 2. Guarantees results with live API fallbacks
@@ -21,7 +21,7 @@ A unified, geo-aware directory that:
 - **The Organizer** (Secondary): PTA member, nursery manager. Needs advanced filtering, map view for logistics
 - **The Venue Owner** (Tertiary/Future): Local church admin, soft-play manager. Needs simple listing management
 
-## Core Features (V1)
+## Requirements
 1. **Smart Search Bar**: Powered by Photon/Nominatim with auto-suggest for London boroughs and postcodes
 2. **Dynamic Map View**: Toggle between list and map view using MapLibre GL JS with pin clustering
 3. **Never Zero Engine**: Fallback to external web search if no local results

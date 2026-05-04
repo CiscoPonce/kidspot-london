@@ -10,10 +10,8 @@ const VENUE_CATEGORIES = [
   { value: 'softplay', label: 'Soft play' },
   { value: 'park', label: 'Parks & playgrounds' },
   { value: 'museum', label: 'Museums' },
+  { value: 'community_hall', label: 'Party rooms' },
   { value: 'library', label: 'Libraries' },
-  { value: 'community_hall', label: 'Community halls' },
-  { value: 'leisure_centre', label: 'Leisure centres' },
-  { value: 'cafe', label: 'Child-friendly cafes' },
 ];
 
 function SearchPill() {
@@ -169,7 +167,7 @@ export function Hero() {
         </h1>
 
         <p className="mt-5 text-base sm:text-lg text-on-surface-variant max-w-xl mx-auto leading-relaxed">
-          Soft play, parks, museums, libraries and party venues — all
+          Soft play, parks, museums, libraries and party rooms — all
           checked for safety, vibe, and how much fun your kids will have.
         </p>
 

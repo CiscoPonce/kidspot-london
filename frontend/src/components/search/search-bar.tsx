@@ -17,11 +17,8 @@ const VENUE_TYPES = [
   { value: 'softplay', label: 'Soft Play' },
   { value: 'park', label: 'Parks & Playgrounds' },
   { value: 'museum', label: 'Museums' },
+  { value: 'community_hall', label: 'Party Rooms' },
   { value: 'library', label: 'Libraries' },
-  { value: 'community_hall', label: 'Community Halls' },
-  { value: 'leisure_centre', label: 'Leisure Centres' },
-  { value: 'cafe', label: 'Child-friendly Cafes' },
-  { value: 'other', label: 'Other' },
 ];
 
 export function SearchBar({ onSearch }: SearchBarProps) {

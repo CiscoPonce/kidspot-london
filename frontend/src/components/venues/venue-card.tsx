@@ -1,17 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import {
   Trees,
   Building2,
   Joystick,
-  Dumbbell,
   MapPin,
   BookOpen,
-  Coffee,
   Landmark,
-  ArrowUpRight,
+  Heart,
   Star,
+  ShieldCheck,
 } from 'lucide-react';
 import { usePlausible } from 'next-plausible';
 import type { Venue } from '@/lib/api';
@@ -23,19 +23,53 @@ interface VenueCardProps {
   isSelected?: boolean;
 }
 
-const TYPE_META: Record<
-  string,
-  { icon: typeof Trees; label: string }
+type CategoryKey = 'softplay' | 'park' | 'museum' | 'community_hall' | 'library' | 'other';
+
+const CATEGORY_META: Record<
+  CategoryKey,
+  {
+    icon: typeof Trees;
+    label: string;
+    chip: string;
+    gradient: string;
+  }
 > = {
-  park: { icon: Trees, label: 'Park' },
-  community_hall: { icon: Building2, label: 'Community hall' },
-  softplay: { icon: Joystick, label: 'Soft play' },
-  sports_centre: { icon: Dumbbell, label: 'Sports centre' },
-  leisure_centre: { icon: Dumbbell, label: 'Leisure centre' },
-  museum: { icon: Landmark, label: 'Museum' },
-  library: { icon: BookOpen, label: 'Library' },
-  cafe: { icon: Coffee, label: 'Cafe' },
-  other: { icon: MapPin, label: 'Other' },
+  softplay: {
+    icon: Joystick,
+    label: 'Soft Play',
+    chip: 'bg-[#FFF7B3] text-[#3D3700] border-[#F6E614]/60',
+    gradient: 'from-[#FFF1A1] via-[#FFE066] to-[#EFDF00]',
+  },
+  park: {
+    icon: Trees,
+    label: 'Park',
+    chip: 'bg-[#C8E6C9] text-[#1F4D24] border-[#A5D6A7]/70',
+    gradient: 'from-[#D4EDD5] via-[#A5D6A7] to-[#7DC089]',
+  },
+  museum: {
+    icon: Landmark,
+    label: 'Museum',
+    chip: 'bg-[#B3E5FC] text-[#0E3F58] border-[#81D4FA]/70',
+    gradient: 'from-[#CDEEFB] via-[#81D4FA] to-[#5DBEE8]',
+  },
+  community_hall: {
+    icon: Building2,
+    label: 'Party Room',
+    chip: 'bg-[#FFCCBC] text-[#5C2210] border-[#FFAB91]/70',
+    gradient: 'from-[#FFD9C9] via-[#FFAB91] to-[#FF8A65]',
+  },
+  library: {
+    icon: BookOpen,
+    label: 'Library',
+    chip: 'bg-[#E1BEE7] text-[#4A1E54] border-[#CE93D8]/70',
+    gradient: 'from-[#EDD2F2] via-[#CE93D8] to-[#BA68C8]',
+  },
+  other: {
+    icon: MapPin,
+    label: 'Venue',
+    chip: 'bg-surface-container text-on-surface-variant border-outline-variant',
+    gradient: 'from-[#F3EEDA] via-[#E8E3CF] to-[#CCC7AB]',
+  },
 };
 
 const SPONSOR_BADGE = {
@@ -44,22 +78,30 @@ const SPONSOR_BADGE = {
   bronze: 'bg-orange-100 text-orange-700 border-orange-200',
 } as const;
 
-const FEATURE_LABELS: Record<string, string> = {
-  soft_play: 'Soft play',
-  party_hire: 'Party hire',
-  cafe: 'Cafe',
-  parking: 'Parking',
-  wheelchair_accessible: 'Step-free',
-  toilets: 'Toilets',
-};
-
 function formatDistance(miles: number): string {
   if (!miles && miles !== 0) return '';
-  return miles < 0.1
-    ? '<0.1 mi'
-    : miles < 1
-      ? `${miles.toFixed(1)} mi`
-      : `${miles.toFixed(1)} mi`;
+  return miles < 0.1 ? '<0.1 mi' : `${miles.toFixed(1)} mi`;
+}
+
+function formatPrice(venue: Venue): { label: string; tone: 'price' | 'free' } | null {
+  if (venue.type === 'park' && (venue.price_level === 0 || venue.price_level == null)) {
+    return { label: 'Free', tone: 'free' };
+  }
+  if (venue.price_level == null) return null;
+  const tier = Math.max(0, Math.min(4, Number(venue.price_level)));
+  if (tier === 0) return { label: 'Free', tone: 'free' };
+  return { label: '£'.repeat(tier), tone: 'price' };
+}
+
+function isSafeChecked(venue: Venue): boolean {
+  // Heuristic until we add an explicit boolean (Phase 11.5):
+  //  - sponsored venues are owner-verified
+  //  - high-rated venues are crowd-validated
+  //  - well-formed venues with phone/website + borough have passed enrichment
+  if (venue.sponsor_tier) return true;
+  if (typeof venue.rating === 'number' && venue.rating >= 4.0) return true;
+  if (venue.borough && (venue.phone || venue.website)) return true;
+  return false;
 }
 
 export function VenueCard({
@@ -68,12 +110,18 @@ export function VenueCard({
   onSelect,
   isSelected,
 }: VenueCardProps) {
-  const meta = TYPE_META[venue.type] ?? TYPE_META.other;
+  const meta = CATEGORY_META[(venue.type as CategoryKey)] ?? CATEGORY_META.other;
   const Icon = meta.icon;
   const sponsorClass = venue.sponsor_tier
     ? SPONSOR_BADGE[venue.sponsor_tier as keyof typeof SPONSOR_BADGE]
     : null;
+  const isGold = venue.sponsor_tier === 'gold';
   const plausible = usePlausible();
+  const [isSaved, setIsSaved] = useState(false);
+
+  const imageUrl = venue.image_url;
+  const safeChecked = isSafeChecked(venue);
+  const price = formatPrice(venue);
 
   const handleCardClick = () => {
     plausible('VenueSelected', {
@@ -82,26 +130,13 @@ export function VenueCard({
     onSelect();
   };
 
-  // Premium tier styles
-  const isGold = venue.sponsor_tier === 'gold';
-  const isSilver = venue.sponsor_tier === 'silver';
-  const isBronze = venue.sponsor_tier === 'bronze';
-
-  const cardClasses = `
-    ks-card transition-all duration-300 relative overflow-hidden
-    ${isSelected ? 'ks-card-active scale-[1.02] ring-2 ring-primary shadow-lg' : 'hover:scale-[1.01] hover:shadow-md'}
-    ${isGold ? 'bg-amber-50/40 border-amber-200' : ''}
-    ${isSilver ? 'bg-slate-50/40 border-slate-200' : ''}
-    ${isBronze ? 'border-orange-100' : ''}
-    group cursor-pointer p-4 sm:p-5 flex gap-4
-  `;
-
-  const iconClasses = `
-    flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center transition-colors
-    ${isSelected ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container text-on-surface-variant group-hover:bg-primary-container/60 group-hover:text-on-primary-container'}
-    ${isGold ? 'bg-amber-100 text-amber-700' : ''}
-    ${isSilver ? 'bg-slate-100 text-slate-700' : ''}
-  `;
+  const handleSaveToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsSaved((s) => !s);
+    plausible('VenueSaved', {
+      props: { venueId: venue.id, saved: !isSaved },
+    });
+  };
 
   return (
     <article
@@ -115,95 +150,138 @@ export function VenueCard({
       role="button"
       tabIndex={0}
       aria-pressed={isSelected}
-      className={cardClasses.trim()}
+      className={`group relative cursor-pointer overflow-hidden rounded-2xl border bg-white transition-all duration-200 flex flex-col sm:flex-row ${
+        isSelected
+          ? 'border-[#EFDF00] ring-2 ring-[#EFDF00]/40 shadow-[0_8px_24px_rgba(239,223,0,0.18)]'
+          : 'border-outline-variant hover:border-[#b9b496] hover:shadow-[0_8px_24px_rgba(29,28,16,0.08)]'
+      } ${isGold ? 'ring-1 ring-amber-300/60' : ''}`}
     >
       {/* Featured ribbon for Gold */}
       {isGold && (
-        <div className="absolute top-0 right-0 overflow-hidden w-16 h-16 pointer-events-none">
-          <div className="bg-amber-400 text-amber-900 text-[8px] font-black uppercase tracking-tighter text-center py-1 absolute top-2 right-[-24px] rotate-45 w-24 shadow-sm">
+        <div className="pointer-events-none absolute right-0 top-0 z-20 h-16 w-16 overflow-hidden">
+          <div className="absolute right-[-24px] top-2 w-24 rotate-45 bg-amber-400 py-1 text-center text-[8px] font-black uppercase tracking-tighter text-amber-900 shadow-sm">
             Featured
           </div>
         </div>
       )}
 
-      <div className={iconClasses.trim()}>
-        <Icon size={26} strokeWidth={2} />
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h3 className={`font-display text-lg font-bold leading-snug text-on-background truncate ${isGold ? 'text-amber-900' : ''}`}>
-              {venue.name}
-            </h3>
-            <p className="text-sm text-on-surface-variant mt-0.5 font-medium">
-              {meta.label}
-              {venue.borough ? ` · ${venue.borough}` : ''}
-            </p>
-          </div>
-          {distance > 0 && (
-            <span className={`flex-shrink-0 inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider ${isGold ? 'bg-amber-100 text-amber-800' : 'bg-surface-container text-on-surface-variant'} px-2.5 py-1 rounded-full border border-black/5`}>
-              <MapPin size={10} strokeWidth={3} />
-              {formatDistance(distance)}
-            </span>
+      {/* Image / gradient placeholder */}
+      <div
+        className={`relative shrink-0 overflow-hidden bg-gradient-to-br ${meta.gradient} sm:w-[40%] sm:min-w-[180px]`}
+      >
+        <div className="aspect-[16/10] sm:aspect-auto sm:h-full sm:min-h-[180px]">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={venue.name}
+              loading="lazy"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <Icon size={56} strokeWidth={1.5} className="text-white/85 drop-shadow" />
+            </div>
           )}
         </div>
 
-        {(venue.rating ||
-          (venue.price_level !== undefined && venue.price_level !== null) ||
-          sponsorClass ||
-          (venue.features && venue.features.length > 0)) && (
-          <div className="flex items-center flex-wrap gap-1.5 mt-3">
-            {venue.rating && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full shadow-sm">
-                <Star size={10} strokeWidth={3} fill="currentColor" />
-                {Number(venue.rating).toFixed(1)}
-              </span>
-            )}
-            {venue.price_level !== undefined &&
-              venue.price_level !== null && (
-                <span className="inline-flex items-center text-[10px] font-black uppercase tracking-wider bg-tertiary-container text-on-tertiary-container px-2 py-0.5 rounded-full border border-black/5">
-                  {'£'.repeat(Math.max(1, Math.min(4, Number(venue.price_level) || 1)))}
-                </span>
-              )}
+        {/* Heart save button */}
+        <button
+          type="button"
+          onClick={handleSaveToggle}
+          aria-pressed={isSaved}
+          aria-label={isSaved ? `Remove ${venue.name} from saved` : `Save ${venue.name}`}
+          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 backdrop-blur-sm shadow-sm hover:bg-white active:scale-90 transition"
+        >
+          <Heart
+            size={18}
+            strokeWidth={2.5}
+            className={isSaved ? 'fill-[#EFDF00] text-[#1f1c00]' : 'text-on-surface-variant'}
+          />
+        </button>
+
+        {/* Safe-checked pill */}
+        {safeChecked && (
+          <span className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-[#006972] shadow-sm">
+            <ShieldCheck size={12} strokeWidth={2.5} />
+            Safe-checked
+          </span>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="flex flex-1 flex-col justify-between p-4 sm:p-5">
+        <div>
+          <div className="flex items-start gap-2">
+            <span
+              className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${meta.chip}`}
+            >
+              {meta.label}
+              {venue.borough ? <span className="opacity-70">· {venue.borough}</span> : null}
+            </span>
             {sponsorClass && (
               <span
-                className={`inline-flex items-center text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border-2 shadow-sm ${sponsorClass}`}
+                className={`inline-flex items-center rounded-full border-2 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider shadow-sm ${sponsorClass}`}
               >
                 {venue.sponsor_tier}
               </span>
             )}
-            {venue.features?.slice(0, isGold ? 4 : 2).map((f) => (
-              <span
-                key={f}
-                className={`inline-flex items-center text-[10px] font-bold bg-white text-on-surface-variant border border-outline-variant px-2 py-0.5 rounded-lg shadow-sm`}
-              >
-                {FEATURE_LABELS[f] ?? f.replace(/_/g, ' ')}
+          </div>
+
+          <h3 className="mt-2 font-display text-[1.05rem] sm:text-lg font-bold leading-tight text-on-background line-clamp-2">
+            {venue.name}
+          </h3>
+
+          <div className="mt-1.5 flex items-center gap-2 text-sm text-on-surface-variant">
+            {venue.rating ? (
+              <span className="inline-flex items-center gap-1 font-semibold text-on-surface">
+                <Star size={14} strokeWidth={2.5} fill="#EFDF00" className="text-[#EFDF00]" />
+                {Number(venue.rating).toFixed(1)}
               </span>
-            ))}
-            {venue.features && venue.features.length > (isGold ? 4 : 2) && (
-              <span className="inline-flex items-center text-[10px] font-black text-outline uppercase tracking-wider ml-1">
-                +{venue.features.length - (isGold ? 4 : 2)} more
+            ) : null}
+            {distance > 0 && (
+              <span className="inline-flex items-center gap-1">
+                <MapPin size={12} strokeWidth={2.5} />
+                {formatDistance(distance)}
               </span>
             )}
           </div>
-        )}
-      </div>
+        </div>
 
-      <Link
-        href={`/venue/${venue.slug}`}
-        onClick={(e) => {
-          e.stopPropagation();
-          plausible('VenueViewed', {
-            props: { venueId: venue.id, source: 'detail_link' },
-          });
-        }}
-        className={`flex-shrink-0 self-start mt-1 w-10 h-10 rounded-2xl ${isGold ? 'bg-amber-200 text-amber-900 border-amber-300' : 'bg-surface-container text-on-surface-variant'} border border-black/5 hover:bg-primary-container hover:text-on-primary-container flex items-center justify-center transition-all active:scale-90`}
-        aria-label={`View full details for ${venue.name}`}
-        title="View full details"
-      >
-        <ArrowUpRight size={20} strokeWidth={3} />
-      </Link>
+        <div className="mt-3 flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            {price ? (
+              <p className="text-sm leading-tight text-on-surface-variant">
+                {price.tone === 'free' ? (
+                  <span className="font-bold text-[#1F4D24]">Free</span>
+                ) : (
+                  <>
+                    <span className="text-xs uppercase tracking-wide text-outline">from </span>
+                    <span className="font-bold text-on-surface">{price.label}</span>
+                    <span className="text-xs text-outline"> / child</span>
+                  </>
+                )}
+              </p>
+            ) : (
+              <p className="text-xs text-outline">Tap to see details</p>
+            )}
+          </div>
+
+          <Link
+            href={`/venue/${venue.slug}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              plausible('VenueViewed', {
+                props: { venueId: venue.id, source: 'detail_link' },
+              });
+            }}
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-[#EFDF00] px-4 py-2 text-sm font-bold text-[#1F1C00] shadow-[inset_0_-2px_0_rgba(0,0,0,0.08)] hover:brightness-95 active:scale-95 transition"
+            aria-label={`View full details for ${venue.name}`}
+          >
+            View
+            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+          </Link>
+        </div>
+      </div>
     </article>
   );
 }

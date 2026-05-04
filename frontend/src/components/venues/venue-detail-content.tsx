@@ -56,8 +56,10 @@ export function SponsorBadge({ tier }: { tier: string }) {
 export function TypeBadge({ type }: { type: string }) {
   const labels: Record<string, string> = {
     softplay: 'Soft Play',
-    community_hall: 'Community Hall',
+    community_hall: 'Party Room',
     park: 'Park',
+    museum: 'Museum',
+    library: 'Library',
     other: 'Other',
   };
   
@@ -72,7 +74,6 @@ export function FeatureBadge({ feature }: { feature: string }) {
   const labels: Record<string, string> = {
     soft_play: 'Soft Play',
     party_hire: 'Party Hire',
-    cafe: 'Cafe',
     wheelchair_accessible: 'Wheelchair',
     parking: 'Parking',
   };

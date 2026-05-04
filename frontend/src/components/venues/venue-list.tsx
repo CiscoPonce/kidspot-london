@@ -12,20 +12,21 @@ interface VenueListProps {
 
 function LoadingSkeleton() {
   return (
-    <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
+    <div className="flex flex-col gap-4">
+      {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="ks-card animate-pulse p-4 sm:p-5 flex gap-4"
+          className="overflow-hidden rounded-2xl border border-outline-variant bg-white animate-pulse flex flex-col sm:flex-row"
           aria-hidden="true"
         >
-          <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-surface-variant" />
-          <div className="flex-1 space-y-2">
-            <div className="h-4 w-2/3 bg-surface-variant rounded" />
-            <div className="h-3 w-1/3 bg-surface-variant rounded" />
-            <div className="flex gap-1.5 mt-2">
-              <div className="h-5 w-12 bg-surface-variant rounded-full" />
-              <div className="h-5 w-16 bg-surface-variant rounded-full" />
+          <div className="aspect-[16/10] sm:aspect-auto sm:w-[40%] sm:min-h-[180px] bg-surface-variant" />
+          <div className="flex-1 p-5 space-y-3">
+            <div className="h-5 w-20 rounded-full bg-surface-variant" />
+            <div className="h-5 w-2/3 bg-surface-variant rounded" />
+            <div className="h-4 w-1/3 bg-surface-variant rounded" />
+            <div className="mt-4 flex justify-between gap-3">
+              <div className="h-4 w-20 bg-surface-variant rounded" />
+              <div className="h-9 w-20 bg-surface-variant rounded-full" />
             </div>
           </div>
         </div>
@@ -118,7 +119,11 @@ export function VenueList({ onVenueSelect, selectedId }: VenueListProps) {
   }
 
   return (
-    <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+    <div className="flex flex-col gap-4">
+      <p className="text-sm text-on-surface-variant">
+        Showing <span className="font-semibold text-on-surface">{sortedVenues.length}</span>{' '}
+        {sortedVenues.length === 1 ? 'venue' : 'venues'}
+      </p>
       {sortedVenues.map((venue) => (
         <VenueCard
           key={venue.id}

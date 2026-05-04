@@ -73,6 +73,6 @@ Scale the platform across more UK cities and optimize search relevance with AI.
 ---
 
 ## Next Steps
-1. Create implementation plans for Phase 08.5.
-2. Verify "Open Now" logic and UI display for venues.
-3. Implement outbound click tracking for venues.
+1. Define implementation plans for Phase 11 - Scale & Expansion.
+2. Research multi-city data sources for UK-wide scaling.
+3. Audit AI search relevance ranking for current London data.

@@ -113,6 +113,17 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ---
 
+## Phase 11: Scale & Expansion (Weeks 27+)
+**Status**: **ACTIVE**
+**Goal**: Scale the platform across more UK cities and optimize search relevance with AI.
+
+**Requirements**:
+- **SCALE-01**: Multi-city data ingestion pipelines.
+- **AI-SRCH-01**: AI-enhanced search relevance ranking.
+- **UI-OPT-01**: Frontend performance optimization for large datasets.
+
+---
+
 ## Requirements Index (New Additions)
 
 ### Phase 8.5: UX & Quality

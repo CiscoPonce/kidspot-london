@@ -38,12 +38,10 @@ export type LondonArea = typeof LONDON_AREAS[number];
 
 export const VENUE_TYPES = [
   { id: 'soft-play', label: 'Soft Play', value: 'softplay' },
-  { id: 'community-hall', label: 'Community Halls', value: 'community_hall' },
-  { id: 'leisure-centre', label: 'Leisure Centres', value: 'leisure_centre' },
-  { id: 'library', label: 'Libraries', value: 'library' },
   { id: 'park', label: 'Parks & Playgrounds', value: 'park' },
   { id: 'museum', label: 'Museums', value: 'museum' },
-  { id: 'cafe', label: 'Child-Friendly Cafes', value: 'cafe' }
+  { id: 'community-hall', label: 'Party Rooms', value: 'community_hall' },
+  { id: 'library', label: 'Libraries', value: 'library' }
 ] as const;
 
 export type VenueType = typeof VENUE_TYPES[number]['id'];
