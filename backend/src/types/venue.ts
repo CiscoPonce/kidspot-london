@@ -191,3 +191,43 @@ export interface VenueDetailsResponse {
     is_fallback?: boolean;
   };
 }
+
+export interface BoroughCsvSource {
+  id: number;
+  borough_name: string;
+  dataset_name: string;
+  dataset_url: string;
+  dataset_type: string;
+  licence_name: string | null;
+  licence_url: string | null;
+  last_fetched_at: Date | null;
+  last_imported_at: Date | null;
+  record_count: number;
+  is_active: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface BoroughCsvRecord {
+  id: number;
+  borough_csv_source_id: number;
+  external_id: string | null;
+  name: string;
+  address: string | null;
+  postcode: string | null;
+  lat: number | null;
+  lon: number | null;
+  venue_id: number | null;
+  raw_data: any;
+  imported_at: Date;
+}
+
+export interface ParsedCsvRecord {
+  external_id?: string;
+  name: string;
+  address?: string;
+  postcode?: string;
+  lat?: number;
+  lon?: number;
+  raw: any;
+}

@@ -13,10 +13,14 @@ import {
   VenueFacet,
   FacetSearchQuery,
   FacetSearchResponse,
-  FhrsEstablishment
+  FhrsEstablishment,
+  BoroughCsvSource,
+  BoroughCsvRecord,
+  ParsedCsvRecord
 } from '../types/venue.js';
 import { yelpService } from './yelpService.js';
 import { fhrsService } from './fhrsService.js';
+import { boroughCsvService } from './boroughCsvService.js';
 import env from '../config/env.js';
 import { calculateDistanceMiles } from '../utils/distance.js';
 
