@@ -232,3 +232,53 @@ export interface ParsedCsvRecord {
   lon?: number;
   raw: any;
 }
+
+export interface OpenActiveFeed {
+  id: number;
+  publisher_name: string;
+  feed_url: string;
+  feed_type: string;
+  licence_name: string | null;
+  licence_url: string | null;
+  refresh_cadence: string;
+  last_fetched_at: Date | null;
+  last_imported_at: Date | null;
+  session_count: number;
+  is_active: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface OpenActiveLocation {
+  id: number;
+  openactive_feed_id: number;
+  external_id: string;
+  name: string;
+  description: string | null;
+  address: string | null;
+  postcode: string | null;
+  lat: number | null;
+  lon: number | null;
+  url: string | null;
+  venue_id: number | null;
+  raw_data: any;
+  imported_at: Date;
+}
+
+export interface OpenActiveSession {
+  id: number;
+  openactive_location_id: number;
+  external_id: string;
+  name: string;
+  description: string | null;
+  activity_type: string | null;
+  age_range: string | null;
+  start_date: Date | null;
+  end_date: Date | null;
+  schedule: string | null;
+  price: string | null;
+  booking_url: string | null;
+  availability_status: string | null;
+  raw_data: any;
+  imported_at: Date;
+}
