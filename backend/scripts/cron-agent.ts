@@ -15,6 +15,7 @@ export interface StaleVenueIngestMetrics {
   deactivated: number;
   failed: number;
   skipped: number;
+  conflicts: number;
   sources: Record<string, number>;
   dry_run: boolean;
   duration_ms: number;
@@ -88,7 +89,52 @@ async function updateVenue(venue: any) {
       return { status: 'deactivated', message: 'Venue permanently closed' };
     }
 
+    // Check if venue is editor_locked before updating type
+    const venueCheck = await db.query('SELECT editor_locked, manual_source, type FROM venues WHERE id = $1', [venueId]);
+    const isEditorLocked = venueCheck.rows[0]?.editor_locked || false;
+    const isManualSource = venueCheck.rows[0]?.manual_source === 'manual';
+    const currentType = venueCheck.rows[0]?.type;
+
     const newType = mapVenueType(details.categories || []);
+
+    if (isEditorLocked || isManualSource) {
+      // Log provenance but do not update type
+      await db.query('SELECT log_venue_change($1, $2, $3, $4, $5, $6, $7)', [
+        venueId,
+        'type',
+        currentType,
+        newType,
+        'yelp_fusion',
+        'system:cron-agent',
+        'Skipped: editor_locked or manual_source'
+      ]);
+      await db.query('SELECT update_venue_scrape_time($1)', [venueId]);
+      return { status: 'skipped', message: 'Venue editor_locked or manual_source - type not updated' };
+    }
+
+    // Check for conflicts with other sources
+    const conflictCheck = await db.query(
+      'SELECT source FROM venue_provenance_log WHERE venue_id = $1 AND field_name = $2 AND source != $3 ORDER BY created_at DESC LIMIT 1',
+      [venueId, 'type', 'yelp_fusion']
+    );
+
+    if (conflictCheck.rows.length > 0) {
+      const otherSource = conflictCheck.rows[0].source;
+      if ((otherSource === 'osm' || otherSource === 'fhrs' || otherSource === 'manual') && newType !== currentType) {
+        // Log conflict for review
+        await db.query('SELECT log_venue_change($1, $2, $3, $4, $5, $6, $7)', [
+          venueId,
+          'type',
+          currentType,
+          newType,
+          'yelp_fusion',
+          'system:cron-agent',
+          `Conflict: ${otherSource} disagrees with Yelp`
+        ]);
+        // Do not update type - prefer structured/manual sources
+        return { status: 'conflict', message: `Type conflict with ${otherSource} - not updated` };
+      }
+    }
 
     // Map Yelp price string ("$", "$$", "$$$", "$$$$") to number (1-4)
     const priceLevel = details.price ? details.price.length : null;
@@ -108,6 +154,17 @@ async function updateVenue(venue: any) {
        WHERE id = $7`,
       [newType, details.rating || null, details.review_count || null, priceLevel, kidScore, details.id, venueId],
     );
+
+    // Log the change
+    await db.query('SELECT log_venue_change($1, $2, $3, $4, $5, $6, $7)', [
+      venueId,
+      'type',
+      currentType,
+      newType,
+      'yelp_fusion',
+      'system:cron-agent',
+      'Updated via Yelp Fusion API'
+    ]);
 
     return { status: 'updated', type: newType, kidScore, message: 'Updated via Yelp' };
   } catch (error: any) {
@@ -134,6 +191,7 @@ export async function processStaleVenues(options?: {
     deactivated: 0,
     failed: 0,
     skipped: 0,
+    conflicts: 0,
     sources: {},
     dry_run: dryRun,
     duration_ms: 0,
@@ -178,6 +236,8 @@ export async function processStaleVenues(options?: {
     let processed = 0;
     let updated = 0;
     let deactivated = 0;
+    let skipped = 0;
+    let conflicts = 0;
     let errors = 0;
 
     const CONCURRENCY = 5;
@@ -196,6 +256,12 @@ export async function processStaleVenues(options?: {
       } else if (res.status === 'deactivated') {
         deactivated++;
         console.log(`  ⚠ Deactivated: ${res.message}`);
+      } else if (res.status === 'skipped') {
+        skipped++;
+        console.log(`  ⚐ Skipped: ${res.message}`);
+      } else if (res.status === 'conflict') {
+        conflicts++;
+        console.log(`  ⚠ Conflict: ${res.message}`);
       } else {
         errors++;
         console.log(`  ✗ Error: ${res.message}`);
@@ -221,12 +287,16 @@ export async function processStaleVenues(options?: {
     metrics.processed = processed;
     metrics.updated = updated;
     metrics.deactivated = deactivated;
+    metrics.skipped = skipped;
+    metrics.conflicts = conflicts;
     metrics.failed = errors;
 
     console.log('\n=== Processing Summary ===');
     console.log(`Total processed: ${processed}`);
     console.log(`Updated: ${updated}`);
     console.log(`Deactivated: ${deactivated}`);
+    console.log(`Skipped (Locked/Manual): ${skipped}`);
+    console.log(`Conflicts: ${conflicts}`);
     console.log(`Errors: ${errors}`);
   } catch (error) {
     console.error('Error processing stale venues:', error);
