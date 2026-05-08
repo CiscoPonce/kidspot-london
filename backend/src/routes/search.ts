@@ -4,6 +4,18 @@ import { searchController } from '../controllers/searchController.js';
 const router = express.Router();
 
 /**
+ * @route GET /api/search/facets
+ * @desc Get list of available facets
+ */
+router.get('/facets', searchController.getFacets);
+
+/**
+ * @route GET /api/search/facets/venues
+ * @desc Search venues by facets
+ */
+router.get('/facets/venues', searchController.searchByFacets);
+
+/**
  * @route GET /api/search/slugs
  * @desc Get all venue slugs for sitemap
  */
