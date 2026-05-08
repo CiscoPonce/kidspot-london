@@ -48,7 +48,7 @@ CREATE INDEX IF NOT EXISTS idx_openactive_locations_feed ON openactive_locations
 CREATE INDEX IF NOT EXISTS idx_openactive_locations_venue ON openactive_locations(venue_id);
 CREATE INDEX IF NOT EXISTS idx_openactive_locations_postcode ON openactive_locations(postcode);
 CREATE INDEX IF NOT EXISTS idx_openactive_locations_location ON openactive_locations USING GIST(
-  ST_MakePoint(lon, lat)::geography
+  (ST_MakePoint(lon, lat)::geography)
 ) WHERE lat IS NOT NULL AND lon IS NOT NULL;
 
 -- 5. Create OpenActive sessions table

@@ -2,13 +2,14 @@
 
 ## Current Position
 **Phase**: 12 - Party Portal Reliability
-**Wave**: 4 - Borough CSV Pack
+**Wave**: 5 - OpenActive Pilot
 **Status**: 
 - **Phase 11 Complete**: Search Experience V2 live.
 - **Guardrails Live**: Phase 12-01 completed.
 - **Multi-Facet Model Live**: Phase 12-02 completed.
 - **FHRS Integrated**: Phase 12-03 completed.
-- **Borough CSV Ingest Live**: Phase 12-04 completed; automated ingestion of council datasets for parks, halls, and leisure centres active.
+- **Borough CSV Ingest Live**: Phase 12-04 completed.
+- **OpenActive Pilot Live**: Phase 12-05 completed; real-time activity feeds and scheduled sessions integrated for leisure centres.
 **Last Updated**: May 8, 2026
 
 ## Completed Phases
@@ -35,8 +36,9 @@ Implement multi-source data architecture with provenance tracking and enrichment
 - ✅ **Provenance Log**: Audit table and database trigger active.
 - ✅ **Multi-Facet Search**: `parent_facets` implemented with OR semantics.
 - ✅ **FHRS Convergence**: Automated matching with FSA data.
-- ✅ **Borough CSV Pack**: Automated ingestion of high-value council datasets with Postcodes.io geocoding and license tracking.
-- ✅ **Metadata Persistence**: Added `address`, `postcode`, `phone`, and `website` columns to the venues table.
+- ✅ **Borough CSV Pack**: Automated ingestion of high-value council datasets.
+- ✅ **OpenActive Pilot**: Real-time activity feeds integrated for Better Leisure and Everyone Active.
+- ✅ **Session-Aware UX**: `activity_session` facet and automated matching active.
 
 ### Decisions
 - **2026-05-02**: Moving to Phase 10 to focus on sponsor value delivery (D-10-01).

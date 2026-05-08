@@ -16,11 +16,15 @@ import {
   FhrsEstablishment,
   BoroughCsvSource,
   BoroughCsvRecord,
-  ParsedCsvRecord
+  ParsedCsvRecord,
+  OpenActiveFeed,
+  OpenActiveLocation,
+  OpenActiveSession
 } from '../types/venue.js';
 import { yelpService } from './yelpService.js';
 import { fhrsService } from './fhrsService.js';
 import { boroughCsvService } from './boroughCsvService.js';
+import { openactiveService } from './openactiveService.js';
 import env from '../config/env.js';
 import { calculateDistanceMiles } from '../utils/distance.js';
 
@@ -1493,6 +1497,207 @@ const baseVenueService = {
    */
   async getBoroughCsvSources(): Promise<BoroughCsvSource[]> {
     return boroughCsvService.getActiveSources();
+  },
+
+  /**
+   * Match an OpenActive location to an existing venue
+   */
+  async matchOpenActiveLocationToVenue(
+    locationId: number
+  ): Promise<{ venueId: number; confidence: 'high' | 'medium' | 'low' } | null> {
+    try {
+      // Get OpenActive location details
+      const locationResult = await db.query(
+        'SELECT * FROM openactive_locations WHERE id = $1',
+        [locationId]
+      );
+
+      if (locationResult.rows.length === 0) {
+        throw new Error('OpenActive location not found');
+      }
+
+      const location = locationResult.rows[0];
+
+      // Try exact name + postcode match
+      if (location.postcode) {
+        const result = await db.query(
+          `SELECT id FROM venues
+           WHERE name = $1 AND postcode = $2 AND is_active = TRUE
+           LIMIT 1`,
+          [location.name, location.postcode]
+        );
+
+        if (result.rows.length > 0) {
+          return { venueId: result.rows[0].id, confidence: 'high' };
+        }
+      }
+
+      // Try fuzzy name + postcode match
+      if (location.postcode) {
+        const result = await db.query(
+          `SELECT id, name FROM venues
+           WHERE postcode = $1 AND is_active = TRUE
+           LIMIT 10`,
+          [location.postcode]
+        );
+
+        for (const venue of result.rows) {
+          const similarity = openactiveService.calculateNameSimilarity(location.name, venue.name);
+          if (similarity > 0.8) {
+            return { venueId: venue.id, confidence: 'medium' };
+          }
+        }
+      }
+
+      // Try location match (within 50 meters)
+      if (location.lat && location.lon) {
+        const result = await db.query(
+          `SELECT id, name FROM venues
+           WHERE ST_DWithin(ST_MakePoint(lon, lat)::geography, ST_MakePoint($1, $2)::geography, 50)
+           AND is_active = TRUE
+           LIMIT 10`,
+          [location.lon, location.lat]
+        );
+
+        for (const venue of result.rows) {
+          const similarity = openactiveService.calculateNameSimilarity(location.name, venue.name);
+          if (similarity > 0.8) {
+            return { venueId: venue.id, confidence: 'low' };
+          }
+        }
+      }
+
+      return null;
+    } catch (error) {
+      logger.error({ err: error, locationId }, 'Error matching OpenActive location');
+      return null;
+    }
+  },
+
+  /**
+   * Update venue details from an OpenActive location
+   */
+  async updateVenueFromOpenActive(
+    venueId: number,
+    location: OpenActiveLocation
+  ): Promise<void> {
+    try {
+      // Check if editor_locked
+      const isLocked = await checkEditorLocked(venueId);
+      if (isLocked) {
+        logger.info({ venueId }, 'Venue editor_locked - not updating from OpenActive');
+        return;
+      }
+
+      // Get current venue data
+      const currentVenue = await this.getVenueById(venueId);
+      if (!currentVenue) return;
+
+      // Add activity_session facet
+      const currentFacets = await this.getVenueFacets(venueId);
+      const newFacets = Array.from(new Set([...currentFacets, 'activity_session' as VenueFacet]));
+
+      // Update venue with OpenActive data
+      await db.query(
+        `UPDATE venues
+         SET address = COALESCE(NULLIF($1, ''), address),
+             postcode = COALESCE(NULLIF($2, ''), postcode),
+             lat = COALESCE($3, lat),
+             lon = COALESCE($4, lon),
+             parent_facets = $5,
+             updated_at = NOW()
+         WHERE id = $6`,
+        [
+          location.address || null,
+          location.postcode || null,
+          location.lat || null,
+          location.lon || null,
+          newFacets,
+          venueId,
+        ]
+      );
+
+      // Log provenance
+      await logProvenance({
+        venue_id: venueId,
+        field_name: 'openactive_import',
+        old_value: JSON.stringify({ address: currentVenue.address, postcode: currentVenue.postcode, facets: currentFacets }),
+        new_value: JSON.stringify({ address: location.address, postcode: location.postcode, facets: newFacets }),
+        source: 'openactive',
+        changed_by: 'system:openactive-import',
+        reason: 'Updated from OpenActive location data',
+      });
+
+      logger.info({ venueId }, 'Venue updated from OpenActive');
+    } catch (error) {
+      logger.error({ err: error, venueId, locationId: location.id }, 'Error updating venue from OpenActive');
+    }
+  },
+
+  /**
+   * Get sessions for a venue
+   */
+  async getVenueSessions(venueId: number, limit: number = 10): Promise<OpenActiveSession[]> {
+    return openactiveService.getSessionsForVenue(venueId, limit);
+  },
+
+  /**
+   * Batch match OpenActive locations to venues
+   */
+  async batchMatchOpenActiveLocations(limit: number = 100): Promise<{
+    processed: number;
+    matched: number;
+    skipped: number;
+    failed: number;
+  }> {
+    const metrics = { processed: 0, matched: 0, skipped: 0, failed: 0 };
+
+    try {
+      // Get OpenActive locations without venue match
+      const locations = await db.query(
+        `SELECT id FROM openactive_locations
+         WHERE venue_id IS NULL
+         LIMIT $1`,
+        [limit]
+      );
+
+      for (const row of locations.rows) {
+        metrics.processed++;
+
+        try {
+          const match = await this.matchOpenActiveLocationToVenue(row.id);
+
+          if (match) {
+            // Update openactive_location with venue_id
+            await db.query(
+              'UPDATE openactive_locations SET venue_id = $1 WHERE id = $2',
+              [match.venueId, row.id]
+            );
+
+            // Get location details
+            const locationResult = await db.query(
+              'SELECT * FROM openactive_locations WHERE id = $1',
+              [row.id]
+            );
+
+            // Update venue from OpenActive
+            await this.updateVenueFromOpenActive(match.venueId, locationResult.rows[0]);
+
+            metrics.matched++;
+          } else {
+            metrics.skipped++;
+          }
+        } catch (error) {
+          logger.error({ err: error, locationId: row.id }, 'Failed to match OpenActive location to venue');
+          metrics.failed++;
+        }
+      }
+
+      return metrics;
+    } catch (error) {
+      logger.error({ err: error }, 'Error in batch OpenActive matching');
+      return metrics;
+    }
   }
 };
 
@@ -1501,6 +1706,10 @@ export const {
   matchBoroughCsvRecordToVenue,
   updateVenueFromBoroughCsv,
   getBoroughCsvSources,
+  matchOpenActiveLocationToVenue,
+  updateVenueFromOpenActive,
+  getVenueSessions,
+  batchMatchOpenActiveLocations,
 } = baseVenueService;
 
 export const venueService = {
