@@ -61,6 +61,36 @@ export interface Venue {
   editor_locked?: boolean;
   manual_source?: string | null;
   primary_label?: string | null;
+  fhrs_establishment_id?: number | null;
+}
+
+export interface FhrsEstablishment {
+  id: number;
+  business_name: string;
+  business_type: string;
+  business_type_id: number;
+  address_line1?: string;
+  address_line2?: string;
+  address_line3?: string;
+  address_line4?: string;
+  postcode?: string;
+  rating_value?: string;
+  rating_key?: string;
+  rating_date?: string | Date;
+  local_authority_name?: string;
+  lat?: number;
+  lon?: number;
+  scores_hygiene?: number;
+  scores_structural?: number;
+  scores_confidence_in_management?: number;
+  last_updated?: string | Date;
+}
+
+export interface FhrsMatchResult {
+  fhrs_id: number;
+  score: number;
+  establishment: FhrsEstablishment;
+  is_likely_match: boolean;
 }
 
 export interface VenueProvenanceLog {
