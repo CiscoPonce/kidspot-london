@@ -124,6 +124,44 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ---
 
+## Phase 12: Party Portal Reliability (Weeks 28+)
+**Status**: **PLANNING**
+**Goal**: Implement multi-source data architecture with provenance tracking and enrichment guardrails to become the main London portal for kids' parties.
+
+**Requirements**:
+- **REL-12-01**: Zero silent facet/label regressions for manual or editor_locked venues
+- **REL-12-02**: Enrichment guardrails prevent batch jobs from overwriting protected fields
+- **REL-12-03**: Provenance tracking for all venue data changes
+- **REL-12-04**: Multi-facet party model replacing single type as sole filter
+- **REL-12-05**: Search filters become OR over facets with optional primary_label for UI chips
+- **REL-12-06**: Migration keeps type for backward compatibility during transition
+- **REL-12-07**: FHRS convergence with curated business-type allowlist
+- **REL-12-08**: FHRS data used for address normalisation and postcode cleanup
+- **REL-12-09**: FHRS as convergence layer boosting trust score
+- **REL-12-10**: Party-adjacent filter with explicit allowlist of FHRS business types
+- **REL-12-11**: London Borough Ingest Pack for automated CSV downloads
+- **REL-12-12**: Borough CSV datasets for adventure playgrounds, play areas, leisure centres
+- **REL-12-13**: Licence headers stored per dataset
+- **REL-12-14**: Postcodes.io geocoding for CSV records without coordinates
+- **REL-12-15**: OpenActive pilot with 1-2 enumerated feeds
+- **REL-12-16**: Ingest OpenActive Locations + ScheduledSession where available
+- **REL-12-17**: Show "this centre runs kids sessions" even when OSM is thin
+- **REL-12-18**: Record feed publisher name, base URL, licence, refresh cadence
+- **REL-12-19**: Operator integration with partnership-first approach
+- **REL-12-20**: Partner CSV first; allowlist crawler only after legal review
+- **REL-12-21**: Store listing URL, last_verified_at, ToS version for crawled data
+- **REL-12-22**: Operator data stored in venue_source_claims for provenance
+
+**Plans**:
+- [ ] 12-01-PLAN.md — **Guardrails**: Stop silent regressions with editor_locked and provenance tracking
+- [ ] 12-02-PLAN.md — **Multi-Facet Schema**: Replace single type with parent_facets array and OR search
+- [ ] 12-03-PLAN.md — **FHRS Convergence**: Curated business-type allowlist and address normalisation
+- [ ] 12-04-PLAN.md — **Borough CSV Pack**: Automated CSV downloads with licence tracking
+- [ ] 12-05-PLAN.md — **OpenActive Pilot**: Session-aware UX with feed enumeration
+- [ ] 12-06-PLAN.md — **Operator Integration**: Partnership-first data ingestion with legal review
+
+---
+
 ## Requirements Index (New Additions)
 
 ### Phase 8.5: UX & Quality
@@ -136,4 +174,4 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 ---
 
 ## Last Updated
-April 24, 2026
+May 8, 2026
