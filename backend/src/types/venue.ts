@@ -1,6 +1,33 @@
 export type VenueType = 'softplay' | 'community_hall' | 'leisure_centre' | 'library' | 'park' | 'museum' | 'cafe' | 'other';
 export type SponsorTier = 'gold' | 'silver' | 'bronze';
 
+export type VenueFacet =
+  | 'soft_play'
+  | 'trampoline'
+  | 'party_room'
+  | 'activity_session'
+  | 'farm_venue'
+  | 'museum_programme'
+  | 'hall_hire'
+  | 'outdoor_play'
+  | 'cafe'
+  | 'wheelchair_accessible'
+  | 'parking';
+
+export const FACET_LABELS: Record<VenueFacet, string> = {
+  soft_play: 'Soft Play',
+  trampoline: 'Trampoline Park',
+  party_room: 'Party Room',
+  activity_session: 'Activity Sessions',
+  farm_venue: 'Farm Park',
+  museum_programme: 'Museum Programme',
+  hall_hire: 'Hall Hire',
+  outdoor_play: 'Outdoor Play',
+  cafe: 'Café',
+  wheelchair_accessible: 'Wheelchair Accessible',
+  parking: 'Parking',
+};
+
 export interface Venue {
   id: number | string;
   name: string;
@@ -28,6 +55,7 @@ export interface Venue {
   kid_score?: number;
   enriched_at?: string | Date;
   features?: string[];
+  parent_facets?: VenueFacet[];
   
   // Guardrail fields
   editor_locked?: boolean;
@@ -68,9 +96,14 @@ export interface SearchQuery {
   lon?: number;
   radius_miles?: number;
   type?: VenueType;
+  facets?: VenueFacet[];
   limit?: number;
   borough?: string;
   postcode?: string;
+}
+
+export interface FacetSearchQuery extends Omit<SearchQuery, 'type'> {
+  facets?: VenueFacet[];
 }
 
 export interface SearchResponse {
@@ -94,6 +127,7 @@ export interface SearchResponse {
       radius_miles: number;
       radius_meters: number;
       type: string | null;
+      facets?: VenueFacet[];
       borough: string | null;
     };
     sponsor_info: {
@@ -105,6 +139,14 @@ export interface SearchResponse {
     fallback_source?: string | null;
     fallback_count?: number;
     fallback_triggered?: boolean;
+  };
+}
+
+export interface FacetSearchResponse extends SearchResponse {
+  meta: SearchResponse['meta'] & {
+    search: SearchResponse['meta']['search'] & {
+      facets: VenueFacet[];
+    };
   };
 }
 
