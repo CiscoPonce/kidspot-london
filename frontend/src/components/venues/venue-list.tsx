@@ -61,12 +61,12 @@ function StateCard({
 }
 
 export function VenueList({ onVenueSelect, selectedId }: VenueListProps) {
-  const { lat, lon, radius, venueType, postcode } = useSearch();
+  const { lat, lon, radius, venueType, facets, postcode } = useSearch();
 
   const { data: venuesResponse, isLoading, error, refetch } = useQuery({
-    queryKey: ['venues', lat, lon, radius, venueType, postcode],
+    queryKey: ['venues', lat, lon, radius, venueType, facets, postcode],
     queryFn: () =>
-      fetchVenues(lat!, lon!, radius, venueType || undefined, postcode || undefined),
+      fetchVenues(lat!, lon!, radius, venueType || undefined, postcode || undefined, 50, facets),
     enabled: lat !== null && lon !== null,
   });
 

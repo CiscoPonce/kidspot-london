@@ -22,17 +22,19 @@ function MapPanel({
 }: {
   onVenueSelect: (venue: Venue) => void;
 }) {
-  const { lat, lon, radius, venueType, postcode } = useSearch();
+  const { lat, lon, radius, venueType, facets, postcode } = useSearch();
 
   const { data: venuesResponse, isLoading } = useQuery({
-    queryKey: ['venues', lat, lon, radius, venueType, postcode],
+    queryKey: ['venues', lat, lon, radius, venueType, facets, postcode],
     queryFn: () =>
       fetchVenues(
         lat!,
         lon!,
         radius,
         venueType || undefined,
-        postcode || undefined
+        postcode || undefined,
+        50,
+        facets
       ),
     enabled: lat !== null && lon !== null,
   });

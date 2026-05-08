@@ -9,23 +9,26 @@ import { geocodePostcode } from '@/hooks/use-location';
 import { usePlausible } from 'next-plausible';
 
 interface SearchBarProps {
-  onSearch?: (lat: number, lon: number, radius: number, type?: string | null) => void;
+  onSearch?: (lat: number, lon: number, radius: number, type?: string | null, facets?: string[]) => void;
 }
 
-const VENUE_TYPES = [
-  { value: null, label: 'All Categories' },
-  { value: 'softplay', label: 'Soft Play' },
-  { value: 'park', label: 'Parks & Playgrounds' },
-  { value: 'museum', label: 'Museums' },
-  { value: 'community_hall', label: 'Party Rooms' },
+const FACET_OPTIONS = [
+  { value: 'soft_play', label: 'Soft Play' },
+  { value: 'party_room', label: 'Party Rooms' },
+  { value: 'hall_hire', label: 'Hall Hire' },
+  { value: 'activity_session', label: 'Activities' },
+  { value: 'museum_programme', label: 'Museums' },
+  { value: 'outdoor_play', label: 'Parks' },
   { value: 'library', label: 'Libraries' },
+  { value: 'farm_venue', label: 'Farm Parks' },
+  { value: 'trampoline', label: 'Trampoline' },
 ];
 
 export function SearchBar({ onSearch }: SearchBarProps) {
   const [postcodeInput, setPostcodeInput] = useState('');
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [debouncedPostcode, setDebouncedPostcode] = useState('');
-  const { lat, lon, radius, venueType, setSearchLocation, setPostcode, setRadius, setVenueType } = useSearch();
+  const { lat, lon, radius, venueType, facets, setSearchLocation, setPostcode, setRadius, setVenueType, toggleFacet, clearFacets } = useSearch();
   const plausible = usePlausible();
 
   // Debounce postcode input (500ms)
@@ -42,19 +45,19 @@ export function SearchBar({ onSearch }: SearchBarProps) {
     setSearchLocation(newLat, newLon);
     setPostcode('');
     plausible('SearchPerformed', { 
-      props: { type: venueType || 'all', radius, method: 'geolocation' } 
+      props: { type: venueType || 'all', radius, method: 'geolocation', facets: facets.join(',') } 
     });
     if (onSearch) {
-      onSearch(newLat, newLon, radius, venueType);
+      onSearch(newLat, newLon, radius, venueType, facets);
     }
-  }, [setSearchLocation, setPostcode, onSearch, radius, venueType, plausible]);
+  }, [setSearchLocation, setPostcode, onSearch, radius, venueType, facets, plausible]);
 
   // Handle search submission
   const handleSearch = async () => {
     if (!debouncedPostcode.trim()) {
       // If no postcode but we have location, just trigger search with current location/type
       if (lat && lon && onSearch) {
-        onSearch(lat, lon, radius, venueType);
+        onSearch(lat, lon, radius, venueType, facets);
       }
       return;
     }
@@ -65,10 +68,10 @@ export function SearchBar({ onSearch }: SearchBarProps) {
       setSearchLocation(result.lat, result.lon);
       setPostcode(debouncedPostcode);
       plausible('SearchPerformed', { 
-        props: { type: venueType || 'all', radius, method: 'postcode' } 
+        props: { type: venueType || 'all', radius, method: 'postcode', facets: facets.join(',') } 
       });
       if (onSearch) {
-        onSearch(result.lat, result.lon, radius, venueType);
+        onSearch(result.lat, result.lon, radius, venueType, facets);
       }
     } catch (error) {
       console.error('Geocoding failed:', error);
@@ -81,17 +84,23 @@ export function SearchBar({ onSearch }: SearchBarProps) {
   const handleRadiusChange = (newRadius: number) => {
     setRadius(newRadius);
     if (lat && lon && onSearch) {
-      onSearch(lat, lon, newRadius, venueType);
+      onSearch(lat, lon, newRadius, venueType, facets);
     }
   };
 
-  // Handle type change
-  const handleTypeChange = (newType: string | null) => {
-    setVenueType(newType);
-    if (lat && lon && onSearch) {
-      onSearch(lat, lon, radius, newType);
-    }
+  // Handle facet toggle
+  const handleFacetToggle = (facet: string) => {
+    toggleFacet(facet);
+    // Note: Due to state batching, the facets in onSearch might be stale if we call it immediately
+    // but the parent component usually listens to state changes or we trigger it manually
   };
+
+  // Trigger search when facets change
+  useEffect(() => {
+    if (lat && lon && onSearch) {
+      onSearch(lat, lon, radius, venueType, facets);
+    }
+  }, [facets, lat, lon, onSearch, radius, venueType]);
 
   // Handle form submit
   const handleSubmit = (e: React.FormEvent) => {
@@ -105,7 +114,7 @@ export function SearchBar({ onSearch }: SearchBarProps) {
   return (
     <div className="w-full">
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Postcode and Category input row */}
+        {/* Postcode input row */}
         <div className="flex flex-col gap-4">
           <div className="relative group">
             <input
@@ -125,38 +134,40 @@ export function SearchBar({ onSearch }: SearchBarProps) {
               <div className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             )}
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
-            <select
-              value={venueType || ''}
-              onChange={(e) => handleTypeChange(e.target.value || null)}
-              aria-label="Select venue category"
-              className="w-full px-5 py-4 rounded-2xl bg-secondary/50 border border-white/10
-                text-text-main appearance-none cursor-pointer
-                focus:bg-secondary/80 focus:border-primary/50 focus:outline-none
-                transition-all duration-300"
-            >
-              {VENUE_TYPES.map((type) => (
-                <option key={type.value || 'all'} value={type.value || ''} className="bg-secondary text-text-main">
-                  {type.label}
-                </option>
-              ))}
-            </select>
+        </div>
 
+        {/* Facet Chips */}
+        <div className="flex flex-wrap gap-2">
+          {FACET_OPTIONS.map((option) => {
+            const isActive = facets.includes(option.value);
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleFacetToggle(option.value)}
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300
+                  ${isActive 
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105' 
+                    : 'bg-secondary/50 text-text-muted hover:bg-secondary border border-white/5'}`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+          {facets.length > 0 && (
             <button
-              type="submit"
-              disabled={isGeocoding}
-              className="px-8 py-4 bg-primary text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-[10px]
-                hover:shadow-lg hover:shadow-primary/20 active:scale-95 disabled:opacity-50 transition-all duration-300"
+              type="button"
+              onClick={clearFacets}
+              className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-primary transition-colors underline"
             >
-              Search
+              Clear
             </button>
-          </div>
+          )}
         </div>
 
         {/* Location status or button */}
         <div className="pt-2">
-          {hasLocation ? (
+...          {hasLocation ? (
             <div className="flex items-center justify-between px-4 py-3 bg-primary/10 border border-primary/20 rounded-xl">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />

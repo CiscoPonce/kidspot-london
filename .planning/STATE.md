@@ -2,11 +2,11 @@
 
 ## Current Position
 **Phase**: 12 - Party Portal Reliability
-**Wave**: 1 - Guardrails
+**Wave**: 2 - Multi-Facet Schema
 **Status**: 
-- **Phase 11 Complete**: Search Experience V2 live with multi-color chips and image-rich cards.
-- **Guardrails Live**: Phase 12-01 completed; database protects manual seeds and editor-locked venues from being overwritten by batch jobs.
-- **Audit Ready**: Provenance tracking active for all critical venue changes.
+- **Phase 11 Complete**: Search Experience V2 live.
+- **Guardrails Live**: Phase 12-01 completed.
+- **Multi-Facet Model Live**: Phase 12-02 completed; venues support multiple parent-facing facets with optimized search.
 **Last Updated**: May 8, 2026
 
 ## Completed Phases
@@ -30,9 +30,9 @@ Implement multi-source data architecture with provenance tracking and enrichment
 
 ### Accomplishments (May 8, 2026)
 - ✅ **Guardrails Schema**: `editor_locked` and `manual_source` columns added to venues.
-- ✅ **Provenance Log**: Audit table and database trigger capturing all `type` and `features` changes.
-- ✅ **Cron Protection**: `cron-agent.ts` skips locked/manual venues and logs conflicts.
-- ✅ **Type Health**: Resolved project-wide TypeScript errors in controllers and middleware.
+- ✅ **Provenance Log**: Audit table and database trigger active.
+- ✅ **Multi-Facet Search**: `parent_facets` array implemented with OR semantics and frontend filter chips.
+- ✅ **API v2**: New facet-based search endpoints live.
 
 ### Decisions
 - **2026-05-02**: Moving to Phase 10 to focus on sponsor value delivery (D-10-01).
@@ -73,6 +73,6 @@ Implement multi-source data architecture with provenance tracking and enrichment
 ---
 
 ## Next Steps
-1. Define implementation plans for Phase 11 - Scale & Expansion.
-2. Research multi-city data sources for UK-wide scaling.
-3. Audit AI search relevance ranking for current London data.
+1. Proceed to Phase 12-03: FHRS Convergence.
+2. Conduct data audit for multi-purpose venues.
+3. Research multi-city data sources for UK-wide scaling.

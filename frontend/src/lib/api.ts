@@ -74,6 +74,7 @@ export interface VenueSearchParams {
   lon?: number;
   radiusMiles?: number;
   type?: string;
+  facets?: string[];
   postcode?: string;
   borough?: string;
   limit?: number;
@@ -147,7 +148,8 @@ export async function fetchVenues(
   radiusMiles: number,
   type?: string,
   postcode?: string,
-  limit: number = 50
+  limit: number = 50,
+  facets?: string[]
 ): Promise<VenueResponse> {
   const params = new URLSearchParams({
     lat: lat.toString(),
@@ -158,6 +160,12 @@ export async function fetchVenues(
 
   if (type) params.set('type', type);
   if (postcode) params.set('postcode', postcode);
+
+  // If facets are provided, use the facets search endpoint
+  if (facets && facets.length > 0) {
+    params.set('facets', facets.join(','));
+    return fetchApi<VenueResponse>(`/search/facets/venues?${params.toString()}`);
+  }
 
   return fetchApi<VenueResponse>(`/search/venues?${params.toString()}`);
 }

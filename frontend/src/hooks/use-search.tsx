@@ -9,6 +9,7 @@ export interface SearchState {
   radius: number;
   postcode: string;
   venueType: string | null;
+  facets: string[];
 }
 
 interface SearchContextValue extends SearchState {
@@ -16,6 +17,9 @@ interface SearchContextValue extends SearchState {
   setPostcode: (postcode: string) => void;
   setRadius: (radius: number) => void;
   setVenueType: (type: string | null) => void;
+  setFacets: (facets: string[]) => void;
+  toggleFacet: (facet: string) => void;
+  clearFacets: () => void;
   clearSearch: () => void;
 }
 
@@ -30,6 +34,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   const [radius, setRadiusState] = useState(DEFAULT_RADIUS);
   const [postcode, setPostcodeState] = useState('');
   const [venueType, setVenueTypeState] = useState<string | null>(null);
+  const [facets, setFacetsState] = useState<string[]>([]);
 
   const setSearchLocation = useCallback((newLat: number, newLon: number) => {
     setLat(newLat);
@@ -51,12 +56,32 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     plausible('TypeChange', { props: { type: newType } });
   }, [plausible]);
 
+  const setFacets = useCallback((newFacets: string[]) => {
+    setFacetsState(newFacets);
+    plausible('FacetsChange', { props: { facets: newFacets.join(',') } });
+  }, [plausible]);
+
+  const toggleFacet = useCallback((facet: string) => {
+    setFacetsState(prev => {
+      const next = prev.includes(facet)
+        ? prev.filter(f => f !== facet)
+        : [...prev, facet];
+      plausible('FacetToggle', { props: { facet, active: next.includes(facet) } });
+      return next;
+    });
+  }, [plausible]);
+
+  const clearFacets = useCallback(() => {
+    setFacetsState([]);
+  }, []);
+
   const clearSearch = useCallback(() => {
     setLat(null);
     setLon(null);
     setPostcodeState('');
     setRadiusState(DEFAULT_RADIUS);
     setVenueTypeState(null);
+    setFacetsState([]);
   }, []);
 
   return (
@@ -67,10 +92,14 @@ export function SearchProvider({ children }: { children: ReactNode }) {
         radius,
         postcode,
         venueType,
+        facets,
         setSearchLocation,
         setPostcode,
         setRadius,
         setVenueType,
+        setFacets,
+        toggleFacet,
+        clearFacets,
         clearSearch,
       }}
     >
