@@ -2,11 +2,12 @@
 
 ## Current Position
 **Phase**: 12 - Party Portal Reliability
-**Wave**: 2 - Multi-Facet Schema
+**Wave**: 3 - FHRS Convergence
 **Status**: 
 - **Phase 11 Complete**: Search Experience V2 live.
 - **Guardrails Live**: Phase 12-01 completed.
-- **Multi-Facet Model Live**: Phase 12-02 completed; venues support multiple parent-facing facets with optimized search.
+- **Multi-Facet Model Live**: Phase 12-02 completed.
+- **FHRS Integrated**: Phase 12-03 completed; authoritative food hygiene data used for address normalization and trust boosting.
 **Last Updated**: May 8, 2026
 
 ## Completed Phases
@@ -31,7 +32,8 @@ Implement multi-source data architecture with provenance tracking and enrichment
 ### Accomplishments (May 8, 2026)
 - ✅ **Guardrails Schema**: `editor_locked` and `manual_source` columns added to venues.
 - ✅ **Provenance Log**: Audit table and database trigger active.
-- ✅ **Multi-Facet Search**: `parent_facets` array implemented with OR semantics and frontend filter chips.
+- ✅ **Multi-Facet Search**: `parent_facets` implemented with OR semantics and frontend filter chips.
+- ✅ **FHRS Convergence**: Automated matching with FSA data for trust boosting and address cleanup.
 - ✅ **API v2**: New facet-based search endpoints live.
 
 ### Decisions
@@ -73,6 +75,6 @@ Implement multi-source data architecture with provenance tracking and enrichment
 ---
 
 ## Next Steps
-1. Proceed to Phase 12-03: FHRS Convergence.
-2. Conduct data audit for multi-purpose venues.
-3. Research multi-city data sources for UK-wide scaling.
+1. Proceed to Phase 12-04: Borough CSV Pack.
+2. Run full FHRS backfill for all London venues.
+3. Conduct data audit for multi-purpose venues.
