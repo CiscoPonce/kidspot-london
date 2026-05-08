@@ -2,12 +2,13 @@
 
 ## Current Position
 **Phase**: 12 - Party Portal Reliability
-**Wave**: 3 - FHRS Convergence
+**Wave**: 4 - Borough CSV Pack
 **Status**: 
 - **Phase 11 Complete**: Search Experience V2 live.
 - **Guardrails Live**: Phase 12-01 completed.
 - **Multi-Facet Model Live**: Phase 12-02 completed.
-- **FHRS Integrated**: Phase 12-03 completed; authoritative food hygiene data used for address normalization and trust boosting.
+- **FHRS Integrated**: Phase 12-03 completed.
+- **Borough CSV Ingest Live**: Phase 12-04 completed; automated ingestion of council datasets for parks, halls, and leisure centres active.
 **Last Updated**: May 8, 2026
 
 ## Completed Phases
@@ -30,11 +31,12 @@
 Implement multi-source data architecture with provenance tracking and enrichment guardrails to become the main London portal for kids' parties.
 
 ### Accomplishments (May 8, 2026)
-- ✅ **Guardrails Schema**: `editor_locked` and `manual_source` columns added to venues.
+- ✅ **Guardrails Schema**: `editor_locked` and `manual_source` columns added.
 - ✅ **Provenance Log**: Audit table and database trigger active.
-- ✅ **Multi-Facet Search**: `parent_facets` implemented with OR semantics and frontend filter chips.
-- ✅ **FHRS Convergence**: Automated matching with FSA data for trust boosting and address cleanup.
-- ✅ **API v2**: New facet-based search endpoints live.
+- ✅ **Multi-Facet Search**: `parent_facets` implemented with OR semantics.
+- ✅ **FHRS Convergence**: Automated matching with FSA data.
+- ✅ **Borough CSV Pack**: Automated ingestion of high-value council datasets with Postcodes.io geocoding and license tracking.
+- ✅ **Metadata Persistence**: Added `address`, `postcode`, `phone`, and `website` columns to the venues table.
 
 ### Decisions
 - **2026-05-02**: Moving to Phase 10 to focus on sponsor value delivery (D-10-01).
@@ -75,6 +77,6 @@ Implement multi-source data architecture with provenance tracking and enrichment
 ---
 
 ## Next Steps
-1. Proceed to Phase 12-04: Borough CSV Pack.
-2. Run full FHRS backfill for all London venues.
-3. Conduct data audit for multi-purpose venues.
+1. Proceed to Phase 12-05: OpenActive Pilot.
+2. Curate additional borough CSV URLs for expanded coverage.
+3. Run full FHRS backfill for all London venues.

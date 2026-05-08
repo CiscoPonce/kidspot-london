@@ -49,6 +49,7 @@ export interface Venue {
   website?: string;
   domain?: string;
   address?: string;
+  postcode?: string;
   phone?: string;
   rating?: number;
   user_ratings_total?: number;

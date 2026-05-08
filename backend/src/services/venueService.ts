@@ -497,7 +497,7 @@ const fetchOSMDetails = async (osmId: string) => {
   }
 };
 
-export const venueService = {
+const baseVenueService = {
   /**
    * Search venues based on criteria
    */
@@ -1282,5 +1282,227 @@ export const venueService = {
       logger.error({ err: error }, 'Error in batch FHRS matching');
       return { matched: 0, total: 0 };
     }
+  },
+
+  /**
+   * Import records from a borough CSV source and match them to venues
+   */
+  async importBoroughCsv(sourceId: number): Promise<{
+    imported: number;
+    matched: number;
+    skipped: number;
+    failed: number;
+  }> {
+    const metrics = { imported: 0, matched: 0, skipped: 0, failed: 0 };
+
+    try {
+      // Get source details
+      const source = await boroughCsvService.getSource(sourceId);
+      if (!source) {
+        throw new Error('Borough CSV source not found');
+      }
+
+      // Download and parse CSV
+      const records = await boroughCsvService.downloadAndParseCsv(source.dataset_url);
+
+      // Import records into borough_csv_records table
+      const importResult = await boroughCsvService.importRecords(sourceId, records);
+      metrics.imported = importResult.imported;
+      metrics.skipped = importResult.skipped;
+      metrics.failed = importResult.failed;
+
+      // Match imported records to existing venues
+      for (const record of records) {
+        try {
+          // Try to match to existing venue
+          const match = await this.matchBoroughCsvRecordToVenue(record, source.dataset_type);
+
+          if (match) {
+            // Update borough_csv_record with venue_id
+            await db.query(
+              'UPDATE borough_csv_records SET venue_id = $1 WHERE borough_csv_source_id = $2 AND external_id = $3',
+              [match.venueId, sourceId, record.external_id || null]
+            );
+
+            // Update venue with borough data if needed
+            await this.updateVenueFromBoroughCsv(match.venueId, record, source.dataset_type);
+
+            metrics.matched++;
+          }
+        } catch (error) {
+          logger.error({ err: error, record }, 'Failed to match borough CSV record to venue');
+        }
+      }
+
+      // Update source last_fetched_at
+      await db.query(
+        'UPDATE borough_csv_sources SET last_fetched_at = NOW() WHERE id = $1',
+        [sourceId]
+      );
+
+      return metrics;
+    } catch (error) {
+      logger.error({ err: error, sourceId }, 'Error importing borough CSV');
+      throw error;
+    }
+  },
+
+  /**
+   * Match a borough CSV record to an existing venue
+   */
+  async matchBoroughCsvRecordToVenue(
+    record: ParsedCsvRecord,
+    datasetType: string
+  ): Promise<{ venueId: number; confidence: 'high' | 'medium' | 'low' } | null> {
+    try {
+      // Try exact name + postcode match
+      if (record.postcode) {
+        const result = await db.query(
+          `SELECT id FROM venues
+           WHERE name = $1 AND postcode = $2 AND is_active = TRUE
+           LIMIT 1`,
+          [record.name, record.postcode]
+        );
+
+        if (result.rows.length > 0) {
+          return { venueId: result.rows[0].id, confidence: 'high' };
+        }
+      }
+
+      // Try fuzzy name + postcode match
+      if (record.postcode) {
+        const result = await db.query(
+          `SELECT id, name FROM venues
+           WHERE postcode = $1 AND is_active = TRUE
+           LIMIT 10`,
+          [record.postcode]
+        );
+
+        for (const venue of result.rows) {
+          const similarity = boroughCsvService.calculateNameSimilarity(record.name, venue.name);
+          if (similarity > 0.8) {
+            return { venueId: venue.id, confidence: 'medium' };
+          }
+        }
+      }
+
+      // Try location match (within 50 meters)
+      if (record.lat && record.lon) {
+        const result = await db.query(
+          `SELECT id, name FROM venues
+           WHERE ST_DWithin(ST_MakePoint(lon, lat)::geography, ST_MakePoint($1, $2)::geography, 50)
+           AND is_active = TRUE
+           LIMIT 10`,
+          [record.lon, record.lat]
+        );
+
+        for (const venue of result.rows) {
+          const similarity = boroughCsvService.calculateNameSimilarity(record.name, venue.name);
+          if (similarity > 0.8) {
+            return { venueId: venue.id, confidence: 'low' };
+          }
+        }
+      }
+
+      return null;
+    } catch (error) {
+      logger.error({ err: error, record }, 'Error matching borough CSV record');
+      return null;
+    }
+  },
+
+  /**
+   * Update venue details from a borough CSV record
+   */
+  async updateVenueFromBoroughCsv(
+    venueId: number,
+    record: ParsedCsvRecord,
+    datasetType: string
+  ): Promise<void> {
+    try {
+      // Check if editor_locked
+      const isLocked = await checkEditorLocked(venueId);
+      if (isLocked) {
+        logger.info({ venueId, datasetType }, 'Venue editor_locked - not updating from borough CSV');
+        return;
+      }
+
+      // Get current venue data
+      const currentVenue = await this.getVenueById(venueId);
+      if (!currentVenue) return;
+
+      // Determine facets based on dataset type
+      const facetsToAdd: VenueFacet[] = [];
+      switch (datasetType) {
+        case 'leisure_centres':
+          facetsToAdd.push('activity_session');
+          break;
+        case 'adventure_playgrounds':
+          facetsToAdd.push('outdoor_play');
+          break;
+        case 'play_areas':
+          facetsToAdd.push('outdoor_play');
+          break;
+        case 'community_halls':
+          facetsToAdd.push('hall_hire');
+          break;
+      }
+
+      // Update venue with borough data
+      const currentFacets = await this.getVenueFacets(venueId);
+      const newFacets = Array.from(new Set([...currentFacets, ...facetsToAdd]));
+
+      await db.query(
+        `UPDATE venues
+         SET address = COALESCE(NULLIF($1, ''), address),
+             postcode = COALESCE(NULLIF($2, ''), postcode),
+             lat = COALESCE($3, lat),
+             lon = COALESCE($4, lon),
+             parent_facets = $5,
+             updated_at = NOW()
+         WHERE id = $6`,
+        [
+          record.address || null,
+          record.postcode || null,
+          record.lat || null,
+          record.lon || null,
+          newFacets,
+          venueId,
+        ]
+      );
+
+      // Log provenance
+      await logProvenance({
+        venue_id: venueId,
+        field_name: 'borough_csv_import',
+        old_value: JSON.stringify({ address: currentVenue.address, postcode: currentVenue.postcode, facets: currentFacets }),
+        new_value: JSON.stringify({ address: record.address, postcode: record.postcode, facets: newFacets }),
+        source: `borough_csv:${datasetType}`,
+        changed_by: 'system:borough-csv-import',
+        reason: `Updated from borough CSV dataset: ${datasetType}`,
+      });
+
+      logger.info({ venueId, datasetType }, 'Venue updated from borough CSV');
+    } catch (error) {
+      logger.error({ err: error, venueId, record }, 'Error updating venue from borough CSV');
+    }
+  },
+
+  /**
+   * Get all active borough CSV sources
+   */
+  async getBoroughCsvSources(): Promise<BoroughCsvSource[]> {
+    return boroughCsvService.getActiveSources();
   }
+};
+
+export const {
+  importBoroughCsv,
+  matchBoroughCsvRecordToVenue,
+  updateVenueFromBoroughCsv,
+  getBoroughCsvSources,
+} = baseVenueService;
+
+export const venueService = {
+  ...baseVenueService,
 };
