@@ -28,6 +28,39 @@ export interface Venue {
   kid_score?: number;
   enriched_at?: string | Date;
   features?: string[];
+  
+  // Guardrail fields
+  editor_locked?: boolean;
+  manual_source?: string | null;
+  primary_label?: string | null;
+}
+
+export interface VenueProvenanceLog {
+  id: number;
+  venue_id: number;
+  field_name: string;
+  old_value: string | null;
+  new_value: string | null;
+  source: string;
+  changed_by: string;
+  reason: string | null;
+  created_at: Date;
+}
+
+export interface VenueWithGuardrails extends Venue {
+  editor_locked: boolean;
+  manual_source: string | null;
+  primary_label: string | null;
+}
+
+export interface ProvenanceChange {
+  venue_id: number;
+  field_name: string;
+  old_value: string | null;
+  new_value: string | null;
+  source: string;
+  changed_by: string;
+  reason?: string;
 }
 
 export interface SearchQuery {
