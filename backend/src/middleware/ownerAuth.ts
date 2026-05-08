@@ -42,7 +42,7 @@ export const ownerAuth = (req: OwnerRequest, res: Response, next: NextFunction) 
  * Middleware to ensure the owner has access to the requested venue
  */
 export const ensureVenueAccess = (req: OwnerRequest, res: Response, next: NextFunction) => {
-  const venueId = parseInt(req.params.id);
+  const venueId = parseInt(req.params.id as string);
 
   if (!req.owner || !req.owner.venueIds.includes(venueId)) {
     return res.status(403).json({

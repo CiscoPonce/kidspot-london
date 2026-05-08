@@ -131,8 +131,8 @@ export const searchController = {
    */
   async trackClick(req: Request, res: Response) {
     try {
-      const { id } = req.params;
-      const { type } = req.body; // 'website', 'booking', etc.
+      const id = req.params.id as string;
+      const type = req.body.type as string; // 'website', 'booking', etc.
       
       const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown';
       const userAgent = req.headers['user-agent'] || 'unknown';

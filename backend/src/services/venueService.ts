@@ -3,10 +3,61 @@ import { db } from '../clients/db.js';
 import { redis } from '../clients/redis.js';
 import { braveSearchLimiter } from '../middleware/rateLimit.js';
 import { logger } from '../config/logger.js';
-import { Venue, SearchQuery, SearchResponse, VenueDetailsResponse } from '../types/venue.js';
+import { Venue, SearchQuery, SearchResponse, VenueDetailsResponse, VenueProvenanceLog, ProvenanceChange } from '../types/venue.js';
 import { yelpService } from './yelpService.js';
 import env from '../config/env.js';
 import { calculateDistanceMiles } from '../utils/distance.js';
+
+/**
+ * Log a change to a venue field for provenance tracking
+ */
+export async function logProvenance(change: ProvenanceChange): Promise<void> {
+  try {
+    await db.query(
+      'SELECT log_venue_change($1, $2, $3, $4, $5, $6, $7)',
+      [
+        change.venue_id,
+        change.field_name,
+        change.old_value,
+        change.new_value,
+        change.source,
+        change.changed_by,
+        change.reason || null
+      ]
+    );
+  } catch (error) {
+    logger.error({ err: error, change }, 'Error logging venue provenance');
+  }
+}
+
+/**
+ * Check if a venue is locked for manual/editor changes
+ */
+export async function checkEditorLocked(venueId: number): Promise<boolean> {
+  try {
+    const result = await db.query('SELECT editor_locked FROM venues WHERE id = $1', [venueId]);
+    return result.rows[0]?.editor_locked || false;
+  } catch (error) {
+    logger.error({ err: error, venueId }, 'Error checking editor_locked status');
+    return false;
+  }
+}
+
+/**
+ * Get provenance history for a venue
+ */
+export async function getVenueProvenance(venueId: number, limit: number = 50): Promise<VenueProvenanceLog[]> {
+  try {
+    const result = await db.query(
+      'SELECT * FROM venue_provenance_log WHERE venue_id = $1 ORDER BY created_at DESC LIMIT $2',
+      [venueId, limit]
+    );
+    return result.rows;
+  } catch (error) {
+    logger.error({ err: error, venueId }, 'Error fetching venue provenance history');
+    return [];
+  }
+}
 
 // Cache TTLs
 const CACHE_TTL = {
@@ -808,6 +859,26 @@ export const venueService = {
     } catch (error) {
       logger.error({ err: error, venueId }, 'Error tracking venue impression');
       return false;
+    }
+  },
+
+  logProvenance,
+  checkEditorLocked,
+  getVenueProvenance,
+
+  /**
+   * Get basic venue info by ID
+   */
+  async getVenueById(id: number): Promise<Venue | null> {
+    try {
+      const result = await db.query(
+        'SELECT * FROM venues WHERE id = $1',
+        [id]
+      );
+      return result.rows[0] || null;
+    } catch (error) {
+      logger.error({ err: error, id }, 'Error fetching venue by ID');
+      return null;
     }
   }
 };

@@ -1,52 +1,28 @@
-# Next Actions: Phase 11 — Search Experience V2
+# Next Actions: Phase 12 — Party Portal Reliability
 
-Phase 8.5, 9, and 10 are **100% complete**.
+Phase 8.5, 9, 10, and 11 are **100% complete**.
 
-## Recently landed (May 4, 2026)
+## Recently landed (May 8, 2026)
 
-- **Phase 11 plan** — `.planning/phases/11-search-experience-v2/11-CONTEXT.md`
-  (objectives, success criteria, two implementation waves, risks, demo).
-- **Frontend redesign (Wave 1 + 2)** — multi-color filter chips
-  (Soft Play / Parks / Museums / Party Rooms / Libraries), image-top venue
-  cards with heart + Safe-checked + price, 50/50 desktop map+results split,
-  mobile "View Map" floating pill. Cafés and leisure-centres / pools removed
-  from every user-facing surface.
-- **Material Symbols icon font fix** — moved to a real `<link>` in
-  `app/layout.tsx` (Turbopack was dropping the CSS `@import`).
-- **Search quality** — Brave fallback is now gated on `DB + OSM === 0`,
-  with a listicle / aggregator filter even when it does fire. The OSM
-  softplay query was broadened to also catch named council leisure centres
-  (Atherton, Mile End, etc.) without polluting with adult-only chains.
-- **Migration 012** — seeds `Atherton Leisure Centre` (E15 4JF) as a
-  soft-play venue so E15 users see a close, verified result regardless of
-  Overpass health.
+- **Phase 12-01: Enrichment Guardrails** — implemented `editor_locked`, `manual_source`, and provenance tracking to stop silent regressions.
+- **Frontend redesign (Phase 11)** — multi-color filter chips, image-top cards, 50/50 desktop map+results split.
+- **Search quality** — Brave fallback gated, OSM softplay broadened, listicle filter active.
+- **TypeScript Health** — Project-wide typecheck passing with zero errors.
 
-## Upcoming (Phase 11.5 / 12 candidates)
+## Upcoming (Phase 12 Waves)
 
-1. **Promote Safe-checked to a column** — replace the heuristic
-   (`sponsor` ∨ `rating ≥ 4` ∨ `borough ∧ phone/website`) with an explicit
-   boolean populated by an enrichment pass.
-2. **Backfill OSM venue names** — ~9.8 k venues currently named
-   `OSM <id>`; run a batch enrichment via Yelp / Brave to give them real
-   names before they're shown.
-3. **De-dupe pass** — visible duplicates such as `Cookie's Island` × 2
-   slipped past `insert_venue_if_not_duplicate`. Tighten the function.
-4. **Council leisure-centre directory** — current
-   `source = 'leisure-centres'` rows are actually arts centres mislabelled.
-   Replace with a real GLL / Better / Everyone Active scrape.
-5. **Multi-city expansion** — start scoping Manchester / Birmingham as a
-   second deployable region once Phase 11 metrics confirm London is solid.
+1. **Phase 12-02: Multi-Facet Schema** — Replace single `type` with `parent_facets` array to support multi-purpose venues (e.g., Leisure Centre + Soft Play).
+2. **Phase 12-03: FHRS Convergence** — Integrate Food Hygiene Rating data for address normalization and trust boosting.
+3. **Phase 12-04: Borough CSV Pack** — Automate ingestion of high-value council datasets (parks, halls, libraries).
+4. **Phase 12-05: OpenActive Pilot** — Add session-aware UX using activity feeds.
+5. **Phase 12-06: Operator Integration** — Formal partnerships with leisure operators for clean data.
 
 ## Verification commands
 
 ```bash
-# Confirm v2 search works for the canonical E15 4GH soft-play test
-curl -s "http://localhost:4000/api/search/venues?lat=51.54297&lon=0.012152&radius=5&type=softplay&limit=24" \
-  | jq '.data.regular.venues[] | {source, name, distance_miles}' | head -30
+# Check provenance log for a specific venue
+psql -c "SELECT * FROM venue_provenance_log WHERE venue_id = <ID> ORDER BY created_at DESC LIMIT 5;"
 
-# Phase 11 plan
-cat .planning/phases/11-search-experience-v2/11-CONTEXT.md
-
-# Health
-curl http://localhost:4000/ready
+# Confirm typecheck health
+cd backend && npm run typecheck
 ```

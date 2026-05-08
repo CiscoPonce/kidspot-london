@@ -1,14 +1,13 @@
 # KidSpot London - Project State
 
 ## Current Position
-**Phase**: 11 - Scale & Expansion
-**Wave**: Post-Launch Optimization
+**Phase**: 12 - Party Portal Reliability
+**Wave**: 1 - Guardrails
 **Status**: 
-- **Phase 10 Complete**: Premium sponsor features are fully operational, including the owner dashboard, impression tracking, and hourly ranking rotation.
-- **Commercial Loop Closed**: System handles everything from discovery -> claim -> subscription -> visibility -> analytics.
-- **Codebase Solid**: Full TypeScript coverage, automated CI/CD, and robust Docker environment.
-- **Next Goal**: Scale the platform across more UK cities and optimize search relevance with AI.
-**Last Updated**: May 2, 2026
+- **Phase 11 Complete**: Search Experience V2 live with multi-color chips and image-rich cards.
+- **Guardrails Live**: Phase 12-01 completed; database protects manual seeds and editor-locked venues from being overwritten by batch jobs.
+- **Audit Ready**: Provenance tracking active for all critical venue changes.
+**Last Updated**: May 8, 2026
 
 ## Completed Phases
 - 01 - Data Foundation
@@ -23,16 +22,17 @@
 - 08.5 - UX & Data Quality Verification
 - 09.0 - Sponsorship & Revenue
 - 10.0 - Sponsor Features & Engagement
+- 11.0 - Search Experience V2
 
-## Active Phase: 11 - Scale & Expansion
+## Active Phase: 12 - Party Portal Reliability
 ### Objective
-Scale the platform across more UK cities and optimize search relevance with AI.
+Implement multi-source data architecture with provenance tracking and enrichment guardrails to become the main London portal for kids' parties.
 
-### Accomplishments (May 2, 2026)
-- ✅ **Sponsor Dashboard Live**: Owners can log in via OTP to view real-time clicks and views.
-- ✅ **Impression Tracking**: New `venue_views` infrastructure implemented and active.
-- ✅ **Premium Ranking**: Hourly rotation for Gold/Silver/Bronze sponsors implemented in PostgreSQL.
-- ✅ **Discovery ESM Fix**: Resolved silent failures in background ingestion scripts.
+### Accomplishments (May 8, 2026)
+- ✅ **Guardrails Schema**: `editor_locked` and `manual_source` columns added to venues.
+- ✅ **Provenance Log**: Audit table and database trigger capturing all `type` and `features` changes.
+- ✅ **Cron Protection**: `cron-agent.ts` skips locked/manual venues and logs conflicts.
+- ✅ **Type Health**: Resolved project-wide TypeScript errors in controllers and middleware.
 
 ### Decisions
 - **2026-05-02**: Moving to Phase 10 to focus on sponsor value delivery (D-10-01).

@@ -81,7 +81,7 @@ export const ownerController = {
    */
   async getVenueStats(req: Request, res: Response) {
     try {
-      const venueId = parseInt(req.params.id);
+      const venueId = parseInt(req.params.id as string);
       
       // Verification that the owner owns this venue is handled by middleware
       const stats = await ownerService.getVenueStats(venueId);
