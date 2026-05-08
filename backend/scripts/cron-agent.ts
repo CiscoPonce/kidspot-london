@@ -3,6 +3,8 @@
 import { db } from '../src/clients/db.js';
 import dotenv from 'dotenv';
 import { runAllDiscovery } from './discovery/run-discovery.js';
+import { venueService } from '../src/services/venueService.js';
+import { fhrsService } from '../src/services/fhrsService.js';
 dotenv.config();
 
 // Configuration
@@ -166,10 +168,49 @@ async function updateVenue(venue: any) {
       'Updated via Yelp Fusion API'
     ]);
 
+    // Try FHRS matching if not already matched
+    if (!venue.fhrs_establishment_id) {
+      const fhrsMatch = await venueService.matchVenueToFhrs(venueId);
+      if (fhrsMatch) {
+        console.log(`  ✓ FHRS Match found: ${fhrsMatch.business_name} (${fhrsMatch.rating_value})`);
+        await venueService.updateVenueFromFhrs(venueId, fhrsMatch.id);
+      }
+    }
+
     return { status: 'updated', type: newType, kidScore, message: 'Updated via Yelp' };
   } catch (error: any) {
     console.error(`Error updating venue ${venueId}:`, error.message);
     return { status: 'error', message: error.message };
+  }
+}
+
+/**
+ * Run standalone batch matching for FHRS
+ */
+export async function runFhrsBatchMatching(options?: {
+  limit?: number;
+  dryRun?: boolean;
+}) {
+  const startMs = Date.now();
+  const limit = options?.limit || 100;
+  const dryRun = Boolean(options?.dryRun);
+
+  console.log('Starting FHRS batch matching...');
+  console.log(`Options: limit=${limit}, dry_run=${dryRun}\n`);
+
+  try {
+    const result = await venueService.batchMatchVenuesToFhrs(limit);
+    const duration = Date.now() - startMs;
+    
+    console.log('\n=== FHRS Batch Matching Summary ===');
+    console.log(`Processed: ${result.total}`);
+    console.log(`Matched & Updated: ${result.matched}`);
+    console.log(`Duration: ${Math.round(duration / 1000)}s`);
+    
+    return result;
+  } catch (error) {
+    console.error('Error in FHRS batch matching:', error);
+    throw error;
   }
 }
 
@@ -337,10 +378,25 @@ import { fileURLToPath } from 'url';
 const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
 
 if (isMainModule) {
-  runCronAgent()
-    .then(() => process.exit(0))
-    .catch((error) => {
-      console.error('Fatal error:', error);
-      process.exit(1);
-    });
+  // Handle CLI commands
+  const command = process.argv[2];
+
+  if (command === 'fhrs-match') {
+    const limit = process.argv[3] ? parseInt(process.argv[3]) : 100;
+    const dryRun = process.argv.includes('--dry-run');
+
+    runFhrsBatchMatching({ limit, dryRun })
+      .then(() => process.exit(0))
+      .catch((error) => {
+        console.error('Fatal error:', error);
+        process.exit(1);
+      });
+  } else {
+    runCronAgent()
+      .then(() => process.exit(0))
+      .catch((error) => {
+        console.error('Fatal error:', error);
+        process.exit(1);
+      });
+  }
 }
