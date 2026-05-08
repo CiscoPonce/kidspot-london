@@ -12,9 +12,11 @@ import {
   ProvenanceChange,
   VenueFacet,
   FacetSearchQuery,
-  FacetSearchResponse
+  FacetSearchResponse,
+  FhrsEstablishment
 } from '../types/venue.js';
 import { yelpService } from './yelpService.js';
+import { fhrsService } from './fhrsService.js';
 import env from '../config/env.js';
 import { calculateDistanceMiles } from '../utils/distance.js';
 
@@ -1085,6 +1087,196 @@ export const venueService = {
     } catch (error) {
       logger.error({ err: error, id }, 'Error fetching venue by ID');
       return null;
+    }
+  },
+
+  /**
+   * Match a venue to FHRS establishment and store it
+   */
+  async matchVenueToFhrs(venueId: number): Promise<FhrsEstablishment | null> {
+    const venue = await this.getVenueById(venueId);
+    if (!venue) return null;
+
+    // Use name and address/postcode if available for matching
+    const match = await fhrsService.matchFhrsToVenue({
+      name: venue.name,
+      postcode: venue.address?.match(/[A-Z]{1,2}[0-9][A-Z0-9]? [0-9][A-Z]{2}/)?.[0],
+      latitude: venue.lat || undefined,
+      longitude: venue.lon || undefined,
+    });
+
+    if (match) {
+      await this.storeFhrsEstablishment(match);
+      
+      // Update venue with FHRS ID
+      await db.query(
+        'UPDATE venues SET fhrs_establishment_id = $1 WHERE id = $2',
+        [match.id, venueId]
+      );
+      
+      return match;
+    }
+
+    return null;
+  },
+
+  /**
+   * Store FHRS establishment details in database
+   */
+  async storeFhrsEstablishment(est: FhrsEstablishment): Promise<void> {
+    try {
+      await db.query(
+        `INSERT INTO fhrs_establishments (
+          id, business_name, business_type, business_type_id,
+          address_line1, address_line2, address_line3, address_line4,
+          postcode, rating_value, rating_key, rating_date,
+          local_authority_name, lat, lon,
+          scores_hygiene, scores_structural, scores_confidence_in_management,
+          last_updated
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
+        ) ON CONFLICT (id) DO UPDATE SET
+          business_name = EXCLUDED.business_name,
+          business_type = EXCLUDED.business_type,
+          business_type_id = EXCLUDED.business_type_id,
+          address_line1 = EXCLUDED.address_line1,
+          address_line2 = EXCLUDED.address_line2,
+          address_line3 = EXCLUDED.address_line3,
+          address_line4 = EXCLUDED.address_line4,
+          postcode = EXCLUDED.postcode,
+          rating_value = EXCLUDED.rating_value,
+          rating_key = EXCLUDED.rating_key,
+          rating_date = EXCLUDED.rating_date,
+          local_authority_name = EXCLUDED.local_authority_name,
+          lat = EXCLUDED.lat,
+          lon = EXCLUDED.lon,
+          scores_hygiene = EXCLUDED.scores_hygiene,
+          scores_structural = EXCLUDED.scores_structural,
+          scores_confidence_in_management = EXCLUDED.scores_confidence_in_management,
+          last_updated = EXCLUDED.last_updated`,
+        [
+          est.id, est.business_name, est.business_type, est.business_type_id,
+          est.address_line1, est.address_line2, est.address_line3, est.address_line4,
+          est.postcode, est.rating_value, est.rating_key, est.rating_date,
+          est.local_authority_name, est.lat, est.lon,
+          est.scores_hygiene, est.scores_structural, est.scores_confidence_in_management,
+          est.last_updated
+        ]
+      );
+    } catch (error) {
+      logger.error({ err: error, fhrsId: est.id }, 'Error storing FHRS establishment');
+    }
+  },
+
+  /**
+   * Update venue details from FHRS data (respects guardrails)
+   */
+  async updateVenueFromFhrs(venueId: number, fhrsId: number): Promise<boolean> {
+    try {
+      const isLocked = await checkEditorLocked(venueId);
+      if (isLocked) {
+        logger.info({ venueId }, 'Skipping FHRS update for locked venue');
+        return false;
+      }
+
+      const est = await fhrsService.getEstablishment(fhrsId);
+      if (!est) return false;
+
+      // Update FHRS data in our DB first
+      await this.storeFhrsEstablishment(est);
+
+      // Only update address/postcode if they are missing or likely better
+      const venue = await this.getVenueById(venueId);
+      if (!venue) return false;
+
+      const updates: Record<string, any> = {};
+      const provenanceLogs: any[] = [];
+
+      // Combine FHRS address lines
+      const fhrsAddress = [est.address_line1, est.address_line2, est.address_line3, est.address_line4]
+        .filter(Boolean)
+        .join(', ');
+
+      if (fhrsAddress && (!venue.address || venue.address.length < 10)) {
+        updates.address = fhrsAddress;
+        provenanceLogs.push({ field: 'address', old: venue.address, new: fhrsAddress });
+      }
+
+      // Update trust score boost if relevant
+      const relevanceResult = await db.query(
+          'SELECT trust_boost_multiplier FROM fhrs_business_type_allowlist WHERE business_type = $1 AND is_party_relevant = TRUE',
+          [est.business_type]
+      );
+      
+      if (relevanceResult.rows.length > 0) {
+          const multiplier = parseFloat(relevanceResult.rows[0].trust_boost_multiplier);
+          if (venue.kid_score) {
+              const newScore = Math.min(10, Math.round(venue.kid_score * multiplier * 10) / 10);
+              if (newScore !== venue.kid_score) {
+                updates.kid_score = newScore;
+                provenanceLogs.push({ field: 'kid_score', old: venue.kid_score, new: newScore });
+              }
+          }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        const setClause = Object.keys(updates).map((k, i) => `${k} = $${i + 1}`).join(', ');
+        const values = Object.values(updates);
+        values.push(venueId);
+
+        await db.query(
+          `UPDATE venues SET ${setClause}, updated_at = NOW() WHERE id = $${values.length}`,
+          values
+        );
+
+        for (const log of provenanceLogs) {
+          await logProvenance({
+            venue_id: venueId,
+            field_name: log.field,
+            old_value: String(log.old),
+            new_value: String(log.new),
+            source: 'fhrs_enrichment',
+            changed_by: 'system',
+            reason: 'Enriched from FHRS'
+          });
+        }
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      logger.error({ err: error, venueId, fhrsId }, 'Error updating venue from FHRS');
+      return false;
+    }
+  },
+
+  /**
+   * Batch match venues to FHRS establishments
+   */
+  async batchMatchVenuesToFhrs(limit: number = 100): Promise<{ matched: number; total: number }> {
+    try {
+      const result = await db.query(
+        `SELECT id FROM venues 
+         WHERE fhrs_establishment_id IS NULL 
+         AND editor_locked = FALSE 
+         LIMIT $1`,
+        [limit]
+      );
+
+      let matchedCount = 0;
+      for (const row of result.rows) {
+        const match = await this.matchVenueToFhrs(row.id);
+        if (match) {
+          matchedCount++;
+          await this.updateVenueFromFhrs(row.id, match.id);
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      return { matched: matchedCount, total: result.rows.length };
+    } catch (error) {
+      logger.error({ err: error }, 'Error in batch FHRS matching');
+      return { matched: 0, total: 0 };
     }
   }
 };
