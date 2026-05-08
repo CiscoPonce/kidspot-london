@@ -3,7 +3,17 @@ import { db } from '../clients/db.js';
 import { redis } from '../clients/redis.js';
 import { braveSearchLimiter } from '../middleware/rateLimit.js';
 import { logger } from '../config/logger.js';
-import { Venue, SearchQuery, SearchResponse, VenueDetailsResponse, VenueProvenanceLog, ProvenanceChange } from '../types/venue.js';
+import { 
+  Venue, 
+  SearchQuery, 
+  SearchResponse, 
+  VenueDetailsResponse, 
+  VenueProvenanceLog, 
+  ProvenanceChange,
+  VenueFacet,
+  FacetSearchQuery,
+  FacetSearchResponse
+} from '../types/venue.js';
 import { yelpService } from './yelpService.js';
 import env from '../config/env.js';
 import { calculateDistanceMiles } from '../utils/distance.js';
@@ -512,7 +522,7 @@ export const venueService = {
     if (borough) {
       const result = await db.query(
         `SELECT id, source, source_id, name, type, lat, lon, rating, price_level,
-                NULL as distance_miles, sponsor_tier, sponsor_priority, slug
+                NULL as distance_miles, sponsor_tier, sponsor_priority, slug, parent_facets
          FROM venues
          WHERE is_active = TRUE
          AND LOWER(borough) = LOWER($1)
@@ -539,7 +549,7 @@ export const venueService = {
     } else {
       const result = await db.query(
         `SELECT id, source, source_id, name, type, lat, lon, rating, price_level,
-                NULL as distance_miles, sponsor_tier, sponsor_priority, slug
+                NULL as distance_miles, sponsor_tier, sponsor_priority, slug, parent_facets
          FROM venues
          WHERE is_active = TRUE
          AND ($1::TEXT IS NULL OR type = $1::TEXT)
@@ -858,6 +868,202 @@ export const venueService = {
       return true;
     } catch (error) {
       logger.error({ err: error, venueId }, 'Error tracking venue impression');
+      return false;
+    }
+  },
+
+  /**
+   * Geocode a borough name to approximate lat/lon
+   */
+  async geocodeBorough(borough: string): Promise<{ lat: number; lon: number } | null> {
+    const boroughs: Record<string, { lat: number; lon: number }> = {
+      'newham': { lat: 51.53, lon: 0.04 },
+      'tower hamlets': { lat: 51.51, lon: -0.01 },
+      'hackney': { lat: 51.54, lon: -0.06 },
+      'greenwich': { lat: 51.48, lon: 0.01 },
+      'islington': { lat: 51.54, lon: -0.10 },
+      'camden': { lat: 51.54, lon: -0.14 },
+      'southwark': { lat: 51.48, lon: -0.08 },
+      'lambeth': { lat: 51.46, lon: -0.11 },
+      'wandsworth': { lat: 51.45, lon: -0.19 },
+      'lewisham': { lat: 51.44, lon: -0.02 },
+    };
+    return boroughs[borough.toLowerCase()] || null;
+  },
+
+  /**
+   * Geocode a postcode to approximate lat/lon (Mock/Minimal for London)
+   */
+  async geocodePostcode(postcode: string): Promise<{ lat: number; lon: number } | null> {
+    const pc = postcode.toUpperCase().replace(/\s+/g, '');
+    if (pc.startsWith('E15')) return { lat: 51.54, lon: 0.00 };
+    if (pc.startsWith('EC1')) return { lat: 51.52, lon: -0.09 };
+    if (pc.startsWith('N1')) return { lat: 51.53, lon: -0.10 };
+    if (pc.startsWith('SE1')) return { lat: 51.50, lon: -0.08 };
+    if (pc.startsWith('SW1')) return { lat: 51.49, lon: -0.14 };
+    if (pc.startsWith('W1')) return { lat: 51.51, lon: -0.14 };
+    return null;
+  },
+
+  /**
+   * Search venues by facets with proximity support
+   */
+  async searchVenuesByFacets(query: FacetSearchQuery): Promise<FacetSearchResponse> {
+    const { lat, lon, radius_miles = 5, facets = [], limit = 50, borough, postcode } = query;
+    let searchLat = lat;
+    let searchLon = lon;
+
+    // Resolve lat/lon from borough/postcode if missing
+    if (searchLat === undefined || searchLon === undefined) {
+      if (postcode) {
+        const geo = await this.geocodePostcode(postcode);
+        if (geo) {
+          searchLat = geo.lat;
+          searchLon = geo.lon;
+        }
+      } else if (borough) {
+        const geo = await this.geocodeBorough(borough);
+        if (geo) {
+          searchLat = geo.lat;
+          searchLon = geo.lon;
+        }
+      }
+    }
+
+    const radiusMeters = radius_miles * 1609.34;
+    const cacheKey = `search:facets:${facets.sort().join(',')}:${searchLat?.toFixed(4)}:${searchLon?.toFixed(4)}:${radius_miles}:${borough || 'noboro'}:${postcode || 'nopc'}`;
+
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        const parsedCache = JSON.parse(cached) as FacetSearchResponse;
+        return {
+          ...parsedCache,
+          meta: { ...parsedCache.meta, cache_hit: true }
+        };
+      }
+    } catch (e) {
+      logger.warn({ err: e }, 'Cache read error for facet search');
+    }
+
+    let rows: Venue[] = [];
+
+    if (searchLat !== undefined && searchLon !== undefined) {
+      const result = await db.query(
+        'SELECT * FROM search_venues_by_facets($1, $2, $3, $4, $5)',
+        [searchLat, searchLon, radiusMeters, facets.length > 0 ? facets : null, limit]
+      );
+      rows = result.rows;
+    } else {
+      const result = await db.query(
+        `SELECT id, source, source_id, name, type, lat, lon, rating, price_level,
+                NULL as distance_miles, sponsor_tier, sponsor_priority, slug, parent_facets
+         FROM venues
+         WHERE is_active = TRUE
+         AND ($1::TEXT[] IS NULL OR parent_facets && $1::TEXT[])
+         AND ($2::TEXT IS NULL OR LOWER(borough) = LOWER($2))
+         ORDER BY
+             CASE
+                 WHEN sponsor_tier = 'gold' THEN 1
+                 WHEN sponsor_tier = 'silver' THEN 2
+                 WHEN sponsor_tier = 'bronze' THEN 3
+                 ELSE 4
+             END,
+             sponsor_priority DESC NULLS LAST,
+             name ASC
+         LIMIT $3`,
+        [facets.length > 0 ? facets : null, borough || null, limit]
+      );
+      rows = result.rows;
+    }
+
+    const sponsored = rows.filter(v => v.sponsor_tier);
+    const regular = rows.filter(v => !v.sponsor_tier);
+
+    const response: FacetSearchResponse = {
+      success: true,
+      data: {
+        total: rows.length,
+        sponsored: { count: sponsored.length, venues: sponsored },
+        regular: { count: regular.length, venues: regular },
+        all: rows
+      },
+      meta: {
+        search: {
+          lat: searchLat || null,
+          lon: searchLon || null,
+          radius_miles: radius_miles,
+          radius_meters: radiusMeters,
+          type: null,
+          facets: facets,
+          borough: borough || null
+        },
+        sponsor_info: {
+          gold_count: sponsored.filter(v => v.sponsor_tier === 'gold').length,
+          silver_count: sponsored.filter(v => v.sponsor_tier === 'silver').length,
+          bronze_count: sponsored.filter(v => v.sponsor_tier === 'bronze').length
+        },
+        cache_hit: false
+      }
+    };
+
+    try {
+      await redis.set(cacheKey, JSON.stringify(response), 'EX', CACHE_TTL.SEARCH);
+    } catch (e) {
+      logger.warn({ err: e }, 'Cache write error for facet search');
+    }
+
+    return response;
+  },
+
+  /**
+   * Get facets for a venue
+   */
+  async getVenueFacets(venueId: number): Promise<VenueFacet[]> {
+    try {
+      const result = await db.query(
+        'SELECT parent_facets FROM venues WHERE id = $1',
+        [venueId]
+      );
+      return result.rows[0]?.parent_facets || [];
+    } catch (error) {
+      logger.error({ err: error, venueId }, 'Error fetching venue facets');
+      return [];
+    }
+  },
+
+  /**
+   * Update facets for a venue (respects guardrails)
+   */
+  async updateVenueFacets(venueId: number, facets: VenueFacet[], changedBy: string): Promise<boolean> {
+    try {
+      const isLocked = await checkEditorLocked(venueId);
+      if (isLocked && changedBy !== 'system_admin') {
+        logger.warn({ venueId, changedBy }, 'Attempted to update facets on locked venue');
+        return false;
+      }
+
+      const oldFacetsResult = await db.query('SELECT parent_facets FROM venues WHERE id = $1', [venueId]);
+      const oldFacets = oldFacetsResult.rows[0]?.parent_facets || [];
+
+      await db.query(
+        'UPDATE venues SET parent_facets = $1, updated_at = NOW() WHERE id = $2',
+        [facets, venueId]
+      );
+
+      await logProvenance({
+        venue_id: venueId,
+        field_name: 'parent_facets',
+        old_value: JSON.stringify(oldFacets),
+        new_value: JSON.stringify(facets),
+        source: 'manual_update',
+        changed_by: changedBy,
+        reason: 'Updated facets via admin/editor'
+      });
+
+      return true;
+    } catch (error) {
+      logger.error({ err: error, venueId }, 'Error updating venue facets');
       return false;
     }
   },
