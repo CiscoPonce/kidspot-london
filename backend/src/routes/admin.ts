@@ -7,6 +7,10 @@ import { StaleIngestLockedError, withStaleIngestLock } from '../services/ingestL
 import { processStaleVenues } from '../../scripts/cron-agent.js';
 // @ts-ignore
 import { processPartyVenues } from '../../scripts/discovery/party-venues-discovery.js';
+// @ts-ignore
+import { processVenueExpansion } from '../../scripts/discovery/venue-expansion.js';
+// @ts-ignore
+import { processEnrichment } from '../../scripts/discovery/data-enrichment.js';
 
 const router = express.Router();
 
@@ -94,6 +98,68 @@ router.post('/ingest/parties', verifyHmac, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Internal server error while processing party venues',
+      job_id: jobId,
+    });
+  }
+});
+
+router.post('/ingest/expansion', verifyHmac, async (req, res) => {
+  const jobId = randomUUID();
+  const { dryRun } = parseIngestBody(req.body);
+
+  try {
+    const metrics = await withStaleIngestLock(() =>
+      processVenueExpansion(dryRun),
+    );
+    res.status(200).json({
+      success: true,
+      job_id: jobId,
+      ...metrics
+    });
+  } catch (error: unknown) {
+    if (error instanceof StaleIngestLockedError) {
+      return res.status(409).json({
+        success: false,
+        error: 'ingest_already_running',
+        message: (error as Error).message,
+        job_id: jobId,
+      });
+    }
+    logger.error({ err: error }, 'Error processing venue expansion');
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while processing venue expansion',
+      job_id: jobId,
+    });
+  }
+});
+
+router.post('/ingest/enrichment', verifyHmac, async (req, res) => {
+  const jobId = randomUUID();
+  const { dryRun } = parseIngestBody(req.body);
+
+  try {
+    const metrics = await withStaleIngestLock(() =>
+      processEnrichment(dryRun),
+    );
+    res.status(200).json({
+      success: true,
+      job_id: jobId,
+      ...metrics
+    });
+  } catch (error: unknown) {
+    if (error instanceof StaleIngestLockedError) {
+      return res.status(409).json({
+        success: false,
+        error: 'ingest_already_running',
+        message: (error as Error).message,
+        job_id: jobId,
+      });
+    }
+    logger.error({ err: error }, 'Error processing data enrichment');
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while processing data enrichment',
       job_id: jobId,
     });
   }

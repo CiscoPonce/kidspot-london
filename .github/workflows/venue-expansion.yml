@@ -1,0 +1,78 @@
+name: Venue Expansion Pipeline (Schools & Churches)
+
+on:
+  schedule:
+    # Run every 12 hours (06:00, 18:00 UTC)
+    - cron: '0 6,18 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (fetch data but do not write to DB)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: venue-expansion-pipeline
+  cancel-in-progress: false
+
+jobs:
+  expand:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Validate environment
+        env:
+          INGEST_SIGNING_SECRET: ${{ secrets.INGEST_SIGNING_SECRET }}
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          set -euo pipefail
+          : "${INGEST_SIGNING_SECRET:?missing INGEST_SIGNING_SECRET secret}"
+          : "${API_URL:?missing API_URL variable}"
+
+      - name: Trigger venue expansion
+        id: ingest
+        env:
+          INGEST_SIGNING_SECRET: ${{ secrets.INGEST_SIGNING_SECRET }}
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          set -euo pipefail
+          DRY_RUN="${{ github.event.inputs.dry_run == 'true' && 'true' || 'false' }}"
+          BODY=$(printf '%s' "{\"dry_run\":${DRY_RUN}}")
+          TS=$(date -u +%s)
+          PAYLOAD="${TS}.${BODY}"
+          SIG=$(printf '%s' "$PAYLOAD" | openssl dgst -sha256 -hmac "$INGEST_SIGNING_SECRET" -r | awk '{print $1}')
+
+          RESPONSE=$(curl -sS \
+            --retry 3 --retry-all-errors --retry-delay 15 \
+            --connect-timeout 10 --max-time 600 \
+            -o /tmp/response.json -w "%{http_code}" \
+            -X POST "${API_URL%/}/api/admin/ingest/expansion" \
+            -H "x-ingest-timestamp: ${TS}" \
+            -H "x-ingest-signature: sha256=${SIG}" \
+            -H "Content-Type: application/json" \
+            --data "$BODY")
+
+          echo "--- Response (HTTP $RESPONSE) ---"
+          cat /tmp/response.json
+          echo ""
+          if [ "$RESPONSE" -ne 200 ]; then
+            exit 1
+          fi
+
+      - name: Open issue on scheduled failure
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Venue Expansion failed (${new Date().toISOString().slice(0, 10)})`;
+            const body = `Scheduled run failed.\n\nRun: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+            });
