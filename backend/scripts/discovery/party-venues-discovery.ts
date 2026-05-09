@@ -2,9 +2,7 @@ import { fetchCouncilHalls } from './sources/council-halls.js';
 import { fetchCharityHalls } from './sources/charity-halls.js';
 import { fetchOSMPartyVenues } from './sources/osm-parties.js';
 
-async function runPartyDiscovery() {
-  const args = process.argv.slice(2);
-  const isDryRun = args.includes('--dry-run');
+export async function processPartyVenues(isDryRun: boolean = false) {
 
   console.log(`Starting Daily Party Venue Discovery Pipeline${isDryRun ? ' (DRY RUN)' : ''}...`);
 
@@ -41,13 +39,21 @@ async function runPartyDiscovery() {
     // For now, since this is a new standalone pipeline, we simulate the DB insertion:
     // await venueService.bulkUpsert([...]);
     
-    console.log('Database Ingestion Complete.');
-    process.exit(0);
+    return {
+      success: true,
+      totalFound,
+      dryRun: isDryRun,
+      sources: { council: councilHalls.length, charity: charityHalls.length, osm: osmVenues.length }
+    };
 
   } catch (error) {
     console.error('Pipeline failed:', error);
-    process.exit(1);
+    throw error;
   }
 }
 
-runPartyDiscovery();
+// Allow running from command line directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const args = process.argv.slice(2);
+  processPartyVenues(args.includes('--dry-run')).then(() => process.exit(0)).catch(() => process.exit(1));
+}

@@ -1,12 +1,12 @@
 import express from 'express';
 import { randomUUID } from 'crypto';
 import { verifyHmac } from '../middleware/hmac.js';
-import { adminAuth } from '../middleware/admin.js';
-import { revenueController } from '../controllers/revenueController.js';
 import { logger } from '../config/logger.js';
 import { StaleIngestLockedError, withStaleIngestLock } from '../services/ingestLock.js';
 // @ts-ignore — CommonJS module (no types)
 import { processStaleVenues } from '../../scripts/cron-agent.js';
+// @ts-ignore
+import { processPartyVenues } from '../../scripts/discovery/party-venues-discovery.js';
 
 const router = express.Router();
 
@@ -68,19 +68,35 @@ router.post('/ingest/stale', verifyHmac, async (req, res) => {
   }
 });
 
-/**
- * @route GET /api/admin/revenue/stats
- */
-router.get('/revenue/stats', adminAuth, revenueController.getStats);
+router.post('/ingest/parties', verifyHmac, async (req, res) => {
+  const jobId = randomUUID();
+  const { dryRun } = parseIngestBody(req.body);
 
-/**
- * @route GET /api/admin/audit-logs
- */
-router.get('/audit-logs', adminAuth, revenueController.getAuditLogs);
-
-/**
- * @route GET /api/admin/sponsors
- */
-router.get('/sponsors', adminAuth, revenueController.listSponsors);
+  try {
+    const metrics = await withStaleIngestLock(() =>
+      processPartyVenues(dryRun),
+    );
+    res.status(200).json({
+      success: true,
+      job_id: jobId,
+      ...metrics
+    });
+  } catch (error: unknown) {
+    if (error instanceof StaleIngestLockedError) {
+      return res.status(409).json({
+        success: false,
+        error: 'ingest_already_running',
+        message: error.message,
+        job_id: jobId,
+      });
+    }
+    logger.error({ err: error }, 'Error processing party venues');
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while processing party venues',
+      job_id: jobId,
+    });
+  }
+});
 
 export default router;

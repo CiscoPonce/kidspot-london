@@ -42,18 +42,45 @@ jobs:
 
       - name: Validate environment
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          INGEST_SIGNING_SECRET: ${{ secrets.INGEST_SIGNING_SECRET }}
+          API_URL: ${{ vars.API_URL }}
         run: |
           set -euo pipefail
-          : "${DATABASE_URL:?missing DATABASE_URL secret}"
+          : "${INGEST_SIGNING_SECRET:?missing INGEST_SIGNING_SECRET secret}"
+          : "${API_URL:?missing API_URL variable}"
+          case "$API_URL" in
+            https://*) ;;
+            http://*) echo "::notice::API_URL uses http — OK for dev/IP; prefer https in production." ;;
+            *) echo "::error::API_URL must start with http:// or https:// (got: $API_URL)"; exit 1 ;;
+          esac
 
-      - name: Run Party Venue Discovery
-        id: run_discovery
+      - name: Trigger ingestion
+        id: ingest
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          INGEST_SIGNING_SECRET: ${{ secrets.INGEST_SIGNING_SECRET }}
+          API_URL: ${{ vars.API_URL }}
         run: |
-          DRY_RUN="${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}"
-          npx tsx scripts/discovery/party-venues-discovery.ts $DRY_RUN
+          set -euo pipefail
+          DRY_RUN="${{ github.event.inputs.dry_run == 'true' && 'true' || 'false' }}"
+          BODY=$(printf '%s' "{\"dry_run\":${DRY_RUN}}")
+          TS=$(date -u +%s)
+          PAYLOAD="${TS}.${BODY}"
+          SIG=$(printf '%s' "$PAYLOAD" | openssl dgst -sha256 -hmac "$INGEST_SIGNING_SECRET" -r | awk '{print $1}')
+
+          HTTP_STATUS=$(curl -sS \
+            --retry 5 --retry-all-errors --retry-delay 20 \
+            --connect-timeout 10 --max-time 900 \
+            -w "%{http_code}" \
+            -X POST "${API_URL%/}/api/admin/ingest/parties" \
+            -H "x-ingest-timestamp: ${TS}" \
+            -H "x-ingest-signature: sha256=${SIG}" \
+            -H "Content-Type: application/json" \
+            --data "$BODY")
+
+          echo "--- Response (HTTP $HTTP_STATUS) ---"
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            exit 1
+          fi
 
       - name: Open issue on scheduled failure
         if: failure() && github.event_name == 'schedule'
