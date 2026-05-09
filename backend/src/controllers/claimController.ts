@@ -10,7 +10,7 @@ export const claimController = {
    */
   async initiateClaim(req: Request, res: Response) {
     try {
-      const venueId = parseInt(req.params.id as string);
+      const venueId = parseInt(String(req.params.id ?? ''), 10);
       const { email, fullName } = req.body;
 
       if (isNaN(venueId) || !email || !fullName) {
@@ -20,7 +20,7 @@ export const claimController = {
         });
       }
 
-      // Get venue name for email
+      // Get venue name for email (numeric id supplied by route param)
       const venue = await venueService.getVenueById(venueId);
       if (!venue) {
         return res.status(404).json({
@@ -89,7 +89,7 @@ export const claimController = {
    */
   async approveClaim(req: Request, res: Response) {
     try {
-      const claimId = parseInt(req.params.id as string);
+      const claimId = parseInt(String(req.params.id ?? ''), 10);
 
       if (isNaN(claimId)) {
         return res.status(400).json({

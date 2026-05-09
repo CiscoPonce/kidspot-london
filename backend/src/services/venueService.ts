@@ -1596,7 +1596,9 @@ const baseVenueService = {
       const currentVenue = await this.getVenueById(venueId);
       if (!currentVenue) return;
 
-      // Add activity_session facet
+      // Phase 12-07: facets are additive only. Never strip a more specific
+      // facet (soft_play, party_room, trampoline) while attaching an
+      // activity_session signal. Set semantics dedupe.
       const currentFacets = await this.getVenueFacets(venueId);
       const newFacets = Array.from(new Set([...currentFacets, 'activity_session' as VenueFacet]));
 
@@ -1897,8 +1899,14 @@ export const {
   matchOperatorVenueToVenue,
   updateVenueFromOperator,
   batchMatchOperatorVenues,
+  getVenueById,
+  getVenueFacets,
+  updateVenueFacets,
 } = baseVenueService;
 
-export const venueService = {
+// Phase 12-07: type-pin so the public surface mirrors baseVenueService.
+// Without this, TS narrows the inferred shape on `{ ...baseVenueService }`
+// and downstream callers (e.g. claimController.getVenueById) lose method types.
+export const venueService: typeof baseVenueService = {
   ...baseVenueService,
 };

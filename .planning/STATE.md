@@ -2,7 +2,7 @@
 
 ## Current Position
 **Phase**: 12 - Party Portal Reliability
-**Wave**: 6 - Operator Integration
+**Wave**: 7 - Verification & Exposure (engine-complete)
 **Status**: 
 - **Phase 11 Complete**: Search Experience V2 live.
 - **Guardrails Live**: Phase 12-01 completed.
@@ -11,6 +11,7 @@
 - **Borough CSV Ingest Live**: Phase 12-04 completed.
 - **OpenActive Pilot Live**: Phase 12-05 completed; real-time activity feeds and scheduled sessions integrated for leisure centres.
 - **Operator Integration Live**: Phase 12-06 completed; partnership-first ingestion for leisure chains and trampoline parks implemented.
+- **Verification & Exposure**: Phase 12-07 completed; manual seeds auto-locked, `parent_facets` exposed in spatial search, `venue_source_claims` table created, Atherton soft-play regression repaired, 50/50 panel coverage baselined.
 **Last Updated**: May 9, 2026
 
 ## Completed Phases
@@ -41,6 +42,7 @@ Implement multi-source data architecture with provenance tracking and enrichment
 - ✅ **OpenActive Pilot**: Real-time activity feeds integrated for Better Leisure and Everyone Active.
 - ✅ **Session-Aware UX**: `activity_session` facet and automated matching active.
 - ✅ **Operator Integration**: Partnership-first ingestion for leisure chains and trampoline parks.
+- ✅ **Verification & Exposure (12-07)**: Auto-lock for `source = 'manual'`, `parent_facets` returned by `search_venues_by_radius`, `venue_source_claims` table created, Atherton repair, 50-postcode coverage harness producing 100% pass baseline (`baselines/2026-05-09.json`).
 
 ### Decisions
 - **2026-05-02**: Moving to Phase 10 to focus on sponsor value delivery (D-10-01).
@@ -81,5 +83,10 @@ Implement multi-source data architecture with provenance tracking and enrichment
 ---
 
 ## Next Steps
-1. Verify Phase 12 and close.
-2. Proceed to Phase 13 (Search Experience V2 enhancements or next milestone).
+1. **Phase 12 product-complete (Wave 13.x):**
+   - Backfill FHRS for the §11 panel + ≥ 50% of active venues.
+   - Run real OpenActive feed ingestion (confirm publisher URLs first).
+   - Smoke-test borough CSV URLs and ingest the 3 seeded sources end-to-end.
+   - Standardise non-operator enrichment paths to write `venue_source_claims`.
+2. Re-run `coverage-eval.ts` and improve panel pass rate by ≥ 10 pp over the 2026-05-09 baseline.
+3. Proceed to Phase 13 (Search Experience V2 enhancements or next milestone) once metrics are met.

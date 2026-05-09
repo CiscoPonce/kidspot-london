@@ -1,0 +1,984 @@
+{
+  "generated_at": "2026-05-09T20:43:14.840Z",
+  "panel": "/app/eval-panel.csv",
+  "api": "http://localhost:4000",
+  "radius_miles": 5,
+  "overall": {
+    "total": 50,
+    "passed": 50,
+    "by_stratum": {
+      "inner_dense": {
+        "total": 15,
+        "passed": 15
+      },
+      "outer_suburban": {
+        "total": 15,
+        "passed": 15
+      },
+      "commuter_belt": {
+        "total": 10,
+        "passed": 10
+      },
+      "thin_seed": {
+        "total": 10,
+        "passed": 10
+      }
+    }
+  },
+  "results": [
+    {
+      "postcode": "E15 4GH",
+      "stratum": "inner_dense",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 10,
+        "party_room": 24,
+        "museum": 23,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Atherton Leisure Centre",
+        "distance_miles": 0.18308269704972224,
+        "facets": [
+          "soft_play",
+          "party_room",
+          "activity_session"
+        ]
+      }
+    },
+    {
+      "postcode": "E1 6AN",
+      "stratum": "inner_dense",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 11,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Play Centre",
+        "distance_miles": 0.9681375106316875,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "E2 9PB",
+      "stratum": "inner_dense",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 11,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Play Centre",
+        "distance_miles": 1.0877990186349684,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "E8 3DL",
+      "stratum": "inner_dense",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 13,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Gymboree Play & Music",
+        "distance_miles": 1.3438947667491024,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "N1 9GU",
+      "stratum": "inner_dense",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 11,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Gymboree Play & Music",
+        "distance_miles": 1.3808238192116025,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "SE1 9SG",
+      "stratum": "inner_dense",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 10,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Soft Play Hiring",
+        "distance_miles": 1.512857853977407,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "SW1A 1AA",
+      "stratum": "inner_dense",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 13,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Test Soft Play Centre",
+        "distance_miles": 0.0062497175115264645,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "SW3 4HZ",
+      "stratum": "inner_dense",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 10,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Test Soft Play Centre",
+        "distance_miles": 1.3911307648787703,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "W1D 3QF",
+      "stratum": "inner_dense",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 11,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Soft Play Hiring",
+        "distance_miles": 0.5691671960430984,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "W2 1JU",
+      "stratum": "inner_dense",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 12,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Dancing Cherubs",
+        "distance_miles": 1.1149128918625026,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "NW1 2DB",
+      "stratum": "inner_dense",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 14,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Soft Play Hiring",
+        "distance_miles": 1.447224850305094,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "NW3 3EE",
+      "stratum": "inner_dense",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 16,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Ceramic Circle",
+        "distance_miles": 1.557806489088695,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "SE10 8XJ",
+      "stratum": "inner_dense",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 13,
+        "party_room": 24,
+        "museum": 18,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Meridian Adventure Play Centre",
+        "distance_miles": 0.6923133946462526,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "SE15 5JR",
+      "stratum": "inner_dense",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 12,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Discovery Planet",
+        "distance_miles": 1.715564061037444,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "EC1V 4AB",
+      "stratum": "inner_dense",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 15,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Gymboree Play & Music",
+        "distance_miles": 1.4717873853318753,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "HA0 4UH",
+      "stratum": "outer_suburban",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 14,
+        "party_room": 24,
+        "museum": 4,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Partyman World of Play",
+        "distance_miles": 0.9194312940584339,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "HA8 7BJ",
+      "stratum": "outer_suburban",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 9,
+        "party_room": 24,
+        "museum": 4,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Inflata Nation",
+        "distance_miles": 1.6394357516373173,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "EN5 5XY",
+      "stratum": "outer_suburban",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 8,
+        "party_room": 24,
+        "museum": 2,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Red Stairs Soft Play",
+        "distance_miles": 0.29607417683646714,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "N20 0DA",
+      "stratum": "outer_suburban",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 12,
+        "party_room": 24,
+        "museum": 3,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "The Kids' Kitchen",
+        "distance_miles": 1.0764006005753912,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "SM1 1EA",
+      "stratum": "outer_suburban",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 1,
+        "party_room": 24,
+        "museum": 6,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Rascals Softplay Epsom",
+        "distance_miles": 3.67926799426473,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "KT2 6QL",
+      "stratum": "outer_suburban",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 4,
+        "party_room": 24,
+        "museum": 7,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Thames Young Mariners",
+        "distance_miles": 1.2227608693936645,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "TW1 3BG",
+      "stratum": "outer_suburban",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 8,
+        "party_room": 24,
+        "museum": 9,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Thames Young Mariners",
+        "distance_miles": 1.1331532224141574,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "UB8 1JF",
+      "stratum": "outer_suburban",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 1,
+        "party_room": 24,
+        "museum": 2,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Gymboree Play & Music",
+        "distance_miles": 0.051872996781289225,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "RM1 3ER",
+      "stratum": "outer_suburban",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 3,
+        "party_room": 24,
+        "museum": 4,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Kidspace Romford",
+        "distance_miles": 0.2438748012601439,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "IG1 1NN",
+      "stratum": "outer_suburban",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 6,
+        "party_room": 24,
+        "museum": 8,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Cookie's Island",
+        "distance_miles": 0.05155877750506419,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "CR0 1RL",
+      "stratum": "outer_suburban",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 2,
+        "party_room": 24,
+        "museum": 3,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Gambado",
+        "distance_miles": 4.348567967533275,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "BR1 1JE",
+      "stratum": "outer_suburban",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 6,
+        "party_room": 24,
+        "museum": 3,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Clip Theare",
+        "distance_miles": 0.15260065720108865,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "DA1 1LP",
+      "stratum": "outer_suburban",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 4,
+        "party_room": 24,
+        "museum": 2,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Dinotropolis",
+        "distance_miles": 2.524067754495632,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "SE9 5PT",
+      "stratum": "outer_suburban",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 11,
+        "party_room": 24,
+        "museum": 6,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Tot’s Play Room",
+        "distance_miles": 0.4487101902146221,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "HA9 0WS",
+      "stratum": "outer_suburban",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 14,
+        "party_room": 24,
+        "museum": 2,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Partyman World of Play",
+        "distance_miles": 1.6131917110492502,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "WD17 1AS",
+      "stratum": "commuter_belt",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 2,
+        "party_room": 19,
+        "museum": 3,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Parents Paradise",
+        "distance_miles": 0.39702981926752584,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "HA1 2RR",
+      "stratum": "commuter_belt",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 9,
+        "party_room": 24,
+        "museum": 3,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Partyman World of Play",
+        "distance_miles": 1.885615565728808,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "SL3 7QQ",
+      "stratum": "commuter_belt",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 3,
+        "party_room": 21,
+        "museum": 1,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Snakes and Ladders",
+        "distance_miles": 3.6387271767494753,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "EN1 1TF",
+      "stratum": "commuter_belt",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 8,
+        "party_room": 24,
+        "museum": 5,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Rainbow Centre",
+        "distance_miles": 3.650913489660358,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "EN3 4FQ",
+      "stratum": "commuter_belt",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 1,
+        "party_room": 24,
+        "museum": 7,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Krazy Kidz Fun Forest",
+        "distance_miles": 2.6719119848260777,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "TW20 9RR",
+      "stratum": "commuter_belt",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 1,
+        "party_room": 24,
+        "museum": 2,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Stop & Play",
+        "distance_miles": 4.951772958343172,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "KT12 2DH",
+      "stratum": "commuter_belt",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 2,
+        "party_room": 24,
+        "museum": 6,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "OSM 161783603",
+        "distance_miles": 2.191601966843551,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "KT13 8AY",
+      "stratum": "commuter_belt",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 2,
+        "party_room": 24,
+        "museum": 5,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Stop & Play",
+        "distance_miles": 1.457658499888153,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "TN16 1HB",
+      "stratum": "commuter_belt",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 1,
+        "party_room": 24,
+        "museum": 2,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Playtown",
+        "distance_miles": 4.5885359979184015,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "DA8 1AB",
+      "stratum": "commuter_belt",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 4,
+        "party_room": 24,
+        "museum": 6,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Game Raiders",
+        "distance_miles": 2.302110989082481,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "SE28 0NS",
+      "stratum": "thin_seed",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 9,
+        "party_room": 24,
+        "museum": 7,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Plumstead Adventure Play Centre",
+        "distance_miles": 1.0925288655349399,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "RM10 8DR",
+      "stratum": "thin_seed",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 5,
+        "party_room": 24,
+        "museum": 6,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Cookie's Island",
+        "distance_miles": 3.0048495853455455,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "IG11 7BT",
+      "stratum": "thin_seed",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 6,
+        "party_room": 24,
+        "museum": 9,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Cookie's Island",
+        "distance_miles": 1.2353106795953621,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "E13 8SJ",
+      "stratum": "thin_seed",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 11,
+        "party_room": 24,
+        "museum": 17,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Atherton Leisure Centre",
+        "distance_miles": 1.185706374669119,
+        "facets": [
+          "soft_play",
+          "party_room",
+          "activity_session"
+        ]
+      }
+    },
+    {
+      "postcode": "E16 1XL",
+      "stratum": "thin_seed",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 11,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Oxygen ActivePlay",
+        "distance_miles": 0.9262057437831659,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "SE16 7DX",
+      "stratum": "thin_seed",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 11,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Discovery Planet",
+        "distance_miles": 0.06971681852187854,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "N17 9LN",
+      "stratum": "thin_seed",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 9,
+        "party_room": 24,
+        "museum": 8,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Campsbourne Play Centre",
+        "distance_miles": 2.364139594908472,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "N15 4QQ",
+      "stratum": "thin_seed",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 10,
+        "party_room": 24,
+        "museum": 15,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Campsbourne Play Centre",
+        "distance_miles": 1.8568941514906734,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "NW10 7XR",
+      "stratum": "thin_seed",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 15,
+        "party_room": 24,
+        "museum": 10,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Smart Raspberry West London",
+        "distance_miles": 0.7793793950004351,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    },
+    {
+      "postcode": "SW8 1RN",
+      "stratum": "thin_seed",
+      "passed": true,
+      "by_chip": {
+        "soft_play": 13,
+        "party_room": 24,
+        "museum": 24,
+        "park": 24,
+        "all": 24
+      },
+      "closest_match": {
+        "name": "Lydie Children Parties",
+        "distance_miles": 1.072735688965663,
+        "facets": [
+          "soft_play"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+postcode,expected_lat,expected_lon,stratum,notes
+E15 4GH,51.54297,0.012152,inner_dense,Atherton Leisure Centre regression test
+E1 6AN,51.5167,-0.0728,inner_dense,Whitechapel
+E2 9PB,51.5298,-0.0581,inner_dense,Bethnal Green
+E8 3DL,51.5444,-0.0628,inner_dense,Hackney Central
+N1 9GU,51.5341,-0.1078,inner_dense,Kings Cross
+SE1 9SG,51.5044,-0.0865,inner_dense,Bermondsey
+SW1A 1AA,51.5014,-0.1419,inner_dense,Westminster
+SW3 4HZ,51.4877,-0.1655,inner_dense,Chelsea
+W1D 3QF,51.5135,-0.1325,inner_dense,Soho
+W2 1JU,51.5179,-0.1779,inner_dense,Paddington
+NW1 2DB,51.5256,-0.1442,inner_dense,Camden
+NW3 3EE,51.555,-0.1769,inner_dense,Hampstead
+SE10 8XJ,51.4769,-0.0005,inner_dense,Greenwich
+SE15 5JR,51.4738,-0.0664,inner_dense,Peckham
+EC1V 4AB,51.5304,-0.0972,inner_dense,Old Street
+HA0 4UH,51.5499,-0.2998,outer_suburban,Wembley
+HA8 7BJ,51.612,-0.276,outer_suburban,Edgware
+EN5 5XY,51.6515,-0.198,outer_suburban,Barnet
+N20 0DA,51.6304,-0.1672,outer_suburban,Whetstone
+SM1 1EA,51.3618,-0.1939,outer_suburban,Sutton
+KT2 6QL,51.4163,-0.3067,outer_suburban,Kingston
+TW1 3BG,51.4476,-0.328,outer_suburban,Twickenham
+UB8 1JF,51.5462,-0.4787,outer_suburban,Uxbridge
+RM1 3ER,51.5793,0.1822,outer_suburban,Romford
+IG1 1NN,51.5589,0.0709,outer_suburban,Ilford
+CR0 1RL,51.3722,-0.0935,outer_suburban,Croydon
+BR1 1JE,51.4051,0.0151,outer_suburban,Bromley
+DA1 1LP,51.4452,0.2137,outer_suburban,Dartford
+SE9 5PT,51.4419,0.0517,outer_suburban,Eltham
+HA9 0WS,51.5586,-0.279,outer_suburban,Wembley Stadium
+WD17 1AS,51.6573,-0.3941,commuter_belt,Watford
+HA1 2RR,51.5805,-0.3417,commuter_belt,Harrow
+SL3 7QQ,51.5028,-0.5407,commuter_belt,Slough boundary
+EN1 1TF,51.6523,-0.0807,commuter_belt,Enfield Town
+EN3 4FQ,51.6655,-0.0245,commuter_belt,Enfield Highway
+TW20 9RR,51.4232,-0.5658,commuter_belt,Egham boundary
+KT12 2DH,51.3853,-0.4151,commuter_belt,Walton-on-Thames
+KT13 8AY,51.3744,-0.4519,commuter_belt,Weybridge boundary
+TN16 1HB,51.3092,0.0589,commuter_belt,Westerham boundary
+DA8 1AB,51.4793,0.176,commuter_belt,Erith
+SE28 0NS,51.4934,0.0939,thin_seed,Thamesmead - sparse
+RM10 8DR,51.5384,0.143,thin_seed,Dagenham East
+IG11 7BT,51.5347,0.0815,thin_seed,Barking
+E13 8SJ,51.5277,0.0164,thin_seed,Plaistow
+E16 1XL,51.5167,0.0083,thin_seed,Canning Town
+SE16 7DX,51.4948,-0.046,thin_seed,Surrey Quays
+N17 9LN,51.6054,-0.0688,thin_seed,Tottenham Hale
+N15 4QQ,51.5854,-0.0773,thin_seed,Seven Sisters
+NW10 7XR,51.541,-0.262,thin_seed,Park Royal
+SW8 1RN,51.4793,-0.1244,thin_seed,Vauxhall - sparse soft play

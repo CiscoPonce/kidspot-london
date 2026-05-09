@@ -106,7 +106,7 @@ export const searchController = {
 
       return res.json(response);
     } catch (error) {
-      logger.error({ err: error, slug: req.params.slug }, 'Error in getVenueDetailsBySlug controller');
+      logger.error({ err: error, slug: String(req.params.slug ?? '') }, 'Error in getVenueDetailsBySlug controller');
       return res.status(500).json({
         success: false,
         error: 'Failed to fetch venue details'
@@ -143,7 +143,7 @@ export const searchController = {
 
       return res.json(response);
     } catch (error) {
-      logger.error({ err: error, id: req.params.id }, 'Error in getVenueDetailsById controller');
+      logger.error({ err: error, id: String(req.params.id ?? '') }, 'Error in getVenueDetailsById controller');
       return res.status(500).json({
         success: false,
         error: 'Failed to fetch venue details'
