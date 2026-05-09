@@ -51,7 +51,12 @@ export async function processPartyVenues(isDryRun: boolean = false) {
     for (const venue of allVenues) {
       try {
         const slug = generateSlug(venue.name, venue.id || Math.random().toString(36).substring(7));
-        const venueType = venue.type || 'party_venue';
+        
+        // Map to valid DB enum ('softplay', 'park', 'leisure_centre', 'community_hall', 'other')
+        let venueType = 'other';
+        if (venue.type === 'community_centre' || venue.type === 'village_hall') venueType = 'community_hall';
+        if (venue.type === 'indoor_play') venueType = 'softplay';
+        if (venue.type === 'trampoline_park') venueType = 'leisure_centre';
         
         await db.query(
           `INSERT INTO venues (source, source_id, name, type, lat, lon, slug, last_scraped, is_active)
