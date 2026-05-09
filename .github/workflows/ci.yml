@@ -56,6 +56,7 @@ jobs:
       run: |
         cd backend
         PGPASSWORD=pass psql -h localhost -U user -d db -f db/schema.sql
+        for file in db/migrations/*.sql; do PGPASSWORD=pass psql -h localhost -U user -d db -f "$file"; done
         NODE_ENV=test npm test
       env:
         DATABASE_URL: postgres://user:pass@localhost:5432/db
