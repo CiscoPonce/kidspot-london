@@ -203,8 +203,8 @@ export const openactiveService = {
 
     // Extract address
     const addressData = locationData.address;
-    let address = typeof addressData === 'string' ? addressData : addressData?.streetAddress;
-    let postcode = typeof addressData === 'string' ? null : addressData?.postalCode;
+    const address = typeof addressData === 'string' ? addressData : addressData?.streetAddress;
+    const postcode = typeof addressData === 'string' ? null : addressData?.postalCode;
 
     // Insert or update location
     await db.query(

@@ -111,7 +111,7 @@ const fetchOsmSearchResults = async (lat: number, lon: number, radiusMiles: numb
     // Build a list of clause groups. Each group is a tag selector applied to
     // node/way/relation. Multiple groups are unioned in a single Overpass
     // query.
-    let clauses: string[] = [];
+    const clauses: string[] = [];
 
     if (type === 'softplay') {
       // 1) Dedicated indoor play centres
