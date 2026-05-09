@@ -55,6 +55,7 @@ jobs:
     - name: Backend Tests
       run: |
         cd backend
+        PGPASSWORD=pass psql -h localhost -U user -d db -f db/schema.sql
         NODE_ENV=test npm test
       env:
         DATABASE_URL: postgres://user:pass@localhost:5432/db
