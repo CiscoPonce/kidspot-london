@@ -1,0 +1,72 @@
+name: Party Venue Discovery Pipeline
+
+on:
+  schedule:
+    # Run daily at 3:00 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (fetch data but do not write to DB)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: party-discovery-pipeline
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate environment
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          : "${DATABASE_URL:?missing DATABASE_URL secret}"
+
+      - name: Run Party Venue Discovery
+        id: run_discovery
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          DRY_RUN="${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}"
+          npx tsx scripts/discovery/party-venues-discovery.ts $DRY_RUN
+
+      - name: Open issue on scheduled failure
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Party Venue Discovery failed (${new Date().toISOString().slice(0, 10)})`;
+            const body = `Scheduled run failed.
+            
+            Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+            });
