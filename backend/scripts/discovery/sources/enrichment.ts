@@ -1,4 +1,4 @@
-import { db } from '../../src/clients/db.js';
+import { db } from '../../../src/clients/db.js';
 
 export interface EnrichmentResult {
   enriched: number;
