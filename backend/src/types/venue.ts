@@ -282,3 +282,50 @@ export interface OpenActiveSession {
   raw_data: any;
   imported_at: Date;
 }
+
+export interface OperatorPartnership {
+  id: number;
+  operator_name: string;
+  operator_type: string;
+  partnership_type: string;
+  data_source_url: string | null;
+  data_source_type: string | null;
+  licence_name: string | null;
+  licence_url: string | null;
+  contact_email: string | null;
+  is_active: boolean;
+  confidence_level: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface OperatorCrawlLog {
+  id: number;
+  operator_partnership_id: number;
+  crawl_url: string;
+  tos_version: string | null;
+  user_agent: string | null;
+  crawl_status: string;
+  venues_found: number;
+  venues_imported: number;
+  error_message: string | null;
+  crawled_at: Date;
+}
+
+export interface OperatorVenue {
+  id: number;
+  operator_partnership_id: number;
+  external_id: string;
+  name: string;
+  address: string | null;
+  postcode: string | null;
+  lat: number | null;
+  lon: number | null;
+  phone: string | null;
+  website: string | null;
+  listing_url: string | null;
+  last_verified_at: Date | null;
+  venue_id: number | null;
+  raw_data: any;
+  imported_at: Date;
+}

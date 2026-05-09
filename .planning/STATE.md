@@ -2,7 +2,7 @@
 
 ## Current Position
 **Phase**: 12 - Party Portal Reliability
-**Wave**: 5 - OpenActive Pilot
+**Wave**: 6 - Operator Integration
 **Status**: 
 - **Phase 11 Complete**: Search Experience V2 live.
 - **Guardrails Live**: Phase 12-01 completed.
@@ -10,7 +10,8 @@
 - **FHRS Integrated**: Phase 12-03 completed.
 - **Borough CSV Ingest Live**: Phase 12-04 completed.
 - **OpenActive Pilot Live**: Phase 12-05 completed; real-time activity feeds and scheduled sessions integrated for leisure centres.
-**Last Updated**: May 8, 2026
+- **Operator Integration Live**: Phase 12-06 completed; partnership-first ingestion for leisure chains and trampoline parks implemented.
+**Last Updated**: May 9, 2026
 
 ## Completed Phases
 - 01 - Data Foundation
@@ -31,7 +32,7 @@
 ### Objective
 Implement multi-source data architecture with provenance tracking and enrichment guardrails to become the main London portal for kids' parties.
 
-### Accomplishments (May 8, 2026)
+### Accomplishments (May 9, 2026)
 - ✅ **Guardrails Schema**: `editor_locked` and `manual_source` columns added.
 - ✅ **Provenance Log**: Audit table and database trigger active.
 - ✅ **Multi-Facet Search**: `parent_facets` implemented with OR semantics.
@@ -39,6 +40,7 @@ Implement multi-source data architecture with provenance tracking and enrichment
 - ✅ **Borough CSV Pack**: Automated ingestion of high-value council datasets.
 - ✅ **OpenActive Pilot**: Real-time activity feeds integrated for Better Leisure and Everyone Active.
 - ✅ **Session-Aware UX**: `activity_session` facet and automated matching active.
+- ✅ **Operator Integration**: Partnership-first ingestion for leisure chains and trampoline parks.
 
 ### Decisions
 - **2026-05-02**: Moving to Phase 10 to focus on sponsor value delivery (D-10-01).
@@ -79,6 +81,5 @@ Implement multi-source data architecture with provenance tracking and enrichment
 ---
 
 ## Next Steps
-1. Proceed to Phase 12-05: OpenActive Pilot.
-2. Curate additional borough CSV URLs for expanded coverage.
-3. Run full FHRS backfill for all London venues.
+1. Verify Phase 12 and close.
+2. Proceed to Phase 13 (Search Experience V2 enhancements or next milestone).

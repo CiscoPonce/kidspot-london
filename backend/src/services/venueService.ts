@@ -19,12 +19,15 @@ import {
   ParsedCsvRecord,
   OpenActiveFeed,
   OpenActiveLocation,
-  OpenActiveSession
+  OpenActiveSession,
+  OperatorVenue,
+  OperatorPartnership
 } from '../types/venue.js';
 import { yelpService } from './yelpService.js';
 import { fhrsService } from './fhrsService.js';
 import { boroughCsvService } from './boroughCsvService.js';
 import { openactiveService } from './openactiveService.js';
+import { operatorService } from './operatorService.js';
 import env from '../config/env.js';
 import { calculateDistanceMiles } from '../utils/distance.js';
 
@@ -1698,6 +1701,187 @@ const baseVenueService = {
       logger.error({ err: error }, 'Error in batch OpenActive matching');
       return metrics;
     }
+  },
+
+  /**
+   * Match an operator venue to an existing venue
+   */
+  async matchOperatorVenueToVenue(
+    operatorVenueId: number
+  ): Promise<{ venueId: number; confidence: 'high' | 'medium' | 'low' } | null> {
+    try {
+      const result = await db.query(
+        'SELECT * FROM operator_venues WHERE id = $1',
+        [operatorVenueId]
+      );
+
+      if (result.rows.length === 0) return null;
+      const opVenue = result.rows[0] as OperatorVenue;
+
+      // Try exact name + postcode match
+      if (opVenue.postcode) {
+        const match = await db.query(
+          `SELECT id FROM venues
+           WHERE name = $1 AND postcode = $2 AND is_active = TRUE
+           LIMIT 1`,
+          [opVenue.name, opVenue.postcode]
+        );
+        if (match.rows.length > 0) return { venueId: match.rows[0].id, confidence: 'high' };
+      }
+
+      // Try fuzzy name + postcode match
+      if (opVenue.postcode) {
+        const matches = await db.query(
+          `SELECT id, name FROM venues
+           WHERE postcode = $1 AND is_active = TRUE
+           LIMIT 10`,
+          [opVenue.postcode]
+        );
+        for (const venue of matches.rows) {
+          const similarity = operatorService.calculateNameSimilarity(opVenue.name, venue.name);
+          if (similarity > 0.85) return { venueId: venue.id, confidence: 'medium' };
+        }
+      }
+
+      // Try location match (within 50 meters)
+      if (opVenue.lat && opVenue.lon) {
+        const matches = await db.query(
+          `SELECT id, name FROM venues
+           WHERE ST_DWithin(ST_MakePoint(lon, lat)::geography, ST_MakePoint($1, $2)::geography, 50)
+           AND is_active = TRUE
+           LIMIT 10`,
+          [opVenue.lon, opVenue.lat]
+        );
+        for (const venue of matches.rows) {
+          const similarity = operatorService.calculateNameSimilarity(opVenue.name, venue.name);
+          if (similarity > 0.75) return { venueId: venue.id, confidence: 'low' };
+        }
+      }
+
+      return null;
+    } catch (error) {
+      logger.error({ err: error, operatorVenueId }, 'Error matching operator venue');
+      return null;
+    }
+  },
+
+  /**
+   * Update venue details from operator data
+   */
+  async updateVenueFromOperator(
+    venueId: number,
+    opVenue: OperatorVenue
+  ): Promise<void> {
+    try {
+      const isLocked = await checkEditorLocked(venueId);
+      if (isLocked) {
+        logger.info({ venueId }, 'Venue editor_locked - not updating from operator data');
+        return;
+      }
+
+      const venue = await this.getVenueById(venueId);
+      if (!venue) return;
+
+      const updates: Record<string, any> = {};
+      const provenanceLogs: any[] = [];
+
+      if (opVenue.phone && !venue.phone) {
+        updates.phone = opVenue.phone;
+        provenanceLogs.push({ field: 'phone', old: venue.phone, new: opVenue.phone });
+      }
+
+      if (opVenue.website && !venue.website) {
+        updates.website = opVenue.website;
+        provenanceLogs.push({ field: 'website', old: venue.website, new: opVenue.website });
+      }
+
+      // Add facets based on operator name/type
+      const opResult = await db.query(
+        'SELECT operator_type FROM operator_partnerships WHERE id = $1',
+        [opVenue.operator_partnership_id]
+      );
+      const opType = opResult.rows[0]?.operator_type;
+      
+      const facetsToAdd: VenueFacet[] = [];
+      if (opType === 'leisure') facetsToAdd.push('activity_session');
+      if (opType === 'trampoline') facetsToAdd.push('trampoline');
+
+      const currentFacets = await this.getVenueFacets(venueId);
+      const newFacets = Array.from(new Set([...currentFacets, ...facetsToAdd]));
+
+      if (newFacets.length !== currentFacets.length) {
+        updates.parent_facets = newFacets;
+        provenanceLogs.push({ field: 'parent_facets', old: currentFacets, new: newFacets });
+      }
+
+      if (Object.keys(updates).length > 0) {
+        const setClause = Object.keys(updates).map((k, i) => `${k} = $${i + 1}`).join(', ');
+        const values = Object.values(updates);
+        values.push(venueId);
+
+        await db.query(
+          `UPDATE venues SET ${setClause}, updated_at = NOW() WHERE id = $${values.length}`,
+          values
+        );
+
+        for (const log of provenanceLogs) {
+          await logProvenance({
+            venue_id: venueId,
+            field_name: log.field,
+            old_value: JSON.stringify(log.old),
+            new_value: JSON.stringify(log.new),
+            source: 'operator_enrichment',
+            changed_by: 'system:operator-import',
+            reason: 'Enriched from operator partner data'
+          });
+        }
+      }
+
+      // Record in venue_source_claims for audit
+      await db.query(
+        `INSERT INTO venue_source_claims (venue_id, source_name, external_id, claim_type, claim_data)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (venue_id, source_name, external_id) DO UPDATE SET
+           claim_data = EXCLUDED.claim_data,
+           updated_at = NOW()`,
+        [venueId, 'operator_partner', opVenue.id.toString(), 'enrichment', opVenue.raw_data]
+      );
+
+    } catch (error) {
+      logger.error({ err: error, venueId, opVenueId: opVenue.id }, 'Error updating venue from operator');
+    }
+  },
+
+  /**
+   * Batch match operator venues to existing venues
+   */
+  async batchMatchOperatorVenues(limit: number = 100): Promise<{ processed: number; matched: number }> {
+    const metrics = { processed: 0, matched: 0 };
+    try {
+      const result = await db.query(
+        'SELECT id FROM operator_venues WHERE venue_id IS NULL LIMIT $1',
+        [limit]
+      );
+
+      for (const row of result.rows) {
+        metrics.processed++;
+        const match = await this.matchOperatorVenueToVenue(row.id);
+        if (match) {
+          await db.query(
+            'UPDATE operator_venues SET venue_id = $1 WHERE id = $2',
+            [match.venueId, row.id]
+          );
+          
+          const opVenueResult = await db.query('SELECT * FROM operator_venues WHERE id = $1', [row.id]);
+          await this.updateVenueFromOperator(match.venueId, opVenueResult.rows[0]);
+          metrics.matched++;
+        }
+      }
+      return metrics;
+    } catch (error) {
+      logger.error({ err: error }, 'Error in batch operator matching');
+      return metrics;
+    }
   }
 };
 
@@ -1710,6 +1894,9 @@ export const {
   updateVenueFromOpenActive,
   getVenueSessions,
   batchMatchOpenActiveLocations,
+  matchOperatorVenueToVenue,
+  updateVenueFromOperator,
+  batchMatchOperatorVenues,
 } = baseVenueService;
 
 export const venueService = {
