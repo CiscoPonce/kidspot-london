@@ -14,8 +14,16 @@ const VENUE_CATEGORIES = [
   { value: 'library', label: 'Libraries' },
 ];
 
+const AGE_GROUPS = [
+  { value: '', label: 'Any age' },
+  { value: '0-2', label: 'Babies (0-2)' },
+  { value: '3-5', label: 'Toddlers (3-5)' },
+  { value: '6-12', label: 'Kids (6-12)' },
+];
+
 function SearchPill() {
   const [postcodeInput, setPostcodeInput] = useState('');
+  const [ageGroup, setAgeGroup] = useState('');
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { radius, venueType, setSearchLocation, setPostcode, setVenueType } =
@@ -66,11 +74,11 @@ function SearchPill() {
   return (
     <form
       onSubmit={handleSearch}
-      className="bg-surface-container-lowest border border-outline-variant rounded-3xl p-2 shadow-[0_12px_40px_rgba(29,28,16,0.10)] flex flex-col gap-2 w-full"
+      className="bg-surface-container-lowest rounded-[2rem] p-2 shadow-xl border border-outline-variant flex flex-col gap-2 w-full max-w-4xl mx-auto"
     >
       <div className="flex flex-col md:flex-row gap-2">
-        <label className="flex-1 flex items-center bg-surface px-4 py-3 rounded-2xl border border-outline-variant focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-container transition">
-          <span className="material-symbols-outlined text-outline mr-2 text-[22px]">
+        <label className="flex-1 flex items-center bg-surface hover:bg-surface-container-high border border-outline-variant focus-within:border-primary focus-within:bg-surface-container-highest px-5 py-3.5 rounded-full transition cursor-text group">
+          <span className="material-symbols-outlined text-outline group-focus-within:text-primary transition mr-3 text-[22px]">
             location_on
           </span>
           <input
@@ -80,21 +88,32 @@ function SearchPill() {
               setPostcodeInput(e.target.value);
               setError(null);
             }}
-            placeholder="Enter a postcode (e.g. SW1A 1AA)"
-            className="bg-transparent w-full text-base text-on-surface placeholder:text-outline outline-none"
+            placeholder="Enter a postcode"
+            className="bg-transparent w-full text-base text-on-background placeholder:text-on-surface-variant outline-none"
             disabled={isGeocoding}
             aria-label="Postcode"
           />
+          <button
+            type="button"
+            onClick={handleUseLocation}
+            disabled={locLoading}
+            title="Use my location"
+            className="ml-2 text-on-surface-variant hover:text-on-background transition p-1"
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              {locLoading ? 'progress_activity' : 'my_location'}
+            </span>
+          </button>
         </label>
 
-        <label className="md:w-56 flex items-center bg-surface px-4 py-3 rounded-2xl border border-outline-variant focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-container transition">
-          <span className="material-symbols-outlined text-outline mr-2 text-[22px]">
+        <label className="md:w-48 flex items-center bg-surface hover:bg-surface-container-high border border-outline-variant focus-within:border-primary focus-within:bg-surface-container-highest px-5 py-3.5 rounded-full transition cursor-pointer relative group">
+          <span className="material-symbols-outlined text-outline group-focus-within:text-primary transition mr-3 text-[22px]">
             category
           </span>
           <select
             value={venueType ?? ''}
             onChange={(e) => setVenueType(e.target.value || null)}
-            className="bg-transparent w-full text-base text-on-surface outline-none cursor-pointer appearance-none pr-2"
+            className="bg-transparent w-full text-base text-on-background outline-none cursor-pointer appearance-none pr-6"
             aria-label="Venue category"
           >
             {VENUE_CATEGORIES.map((c) => (
@@ -103,44 +122,50 @@ function SearchPill() {
               </option>
             ))}
           </select>
+          <span className="material-symbols-outlined text-outline absolute right-4 pointer-events-none">expand_more</span>
+        </label>
+
+        <label className="md:w-44 flex items-center bg-surface hover:bg-surface-container-high border border-outline-variant focus-within:border-primary focus-within:bg-surface-container-highest px-5 py-3.5 rounded-full transition cursor-pointer relative group">
+          <span className="material-symbols-outlined text-outline group-focus-within:text-primary transition mr-3 text-[22px]">
+            child_care
+          </span>
+          <select
+            value={ageGroup}
+            onChange={(e) => setAgeGroup(e.target.value)}
+            className="bg-transparent w-full text-base text-on-background outline-none cursor-pointer appearance-none pr-6"
+            aria-label="Age group"
+          >
+            {AGE_GROUPS.map((c) => (
+              <option key={c.value || 'any'} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+          <span className="material-symbols-outlined text-outline absolute right-4 pointer-events-none">expand_more</span>
         </label>
 
         <button
           type="submit"
           disabled={isGeocoding}
           aria-busy={isGeocoding}
-          aria-label={isGeocoding ? 'Searching...' : 'Search venues'}
-          className="bg-primary-container text-on-primary-container font-semibold rounded-2xl px-6 h-[52px] hover:brightness-95 active:scale-95 disabled:opacity-60 transition flex items-center justify-center gap-2 shadow-[inset_0_-2px_0_rgba(0,0,0,0.06)]"
+          aria-label={isGeocoding ? 'Searching...' : 'Search'}
+          className="bg-primary-container text-on-primary-container font-bold rounded-full px-8 h-[56px] hover:brightness-95 hover:shadow-md active:scale-95 disabled:opacity-60 transition-all duration-200 flex items-center justify-center gap-2"
         >
           {isGeocoding ? (
             <span className="w-4 h-4 border-2 border-on-primary-container/40 border-t-on-primary-container rounded-full animate-spin" />
           ) : (
-            <span className="material-symbols-outlined text-[22px]">search</span>
+            <span className="material-symbols-outlined text-[22px] font-bold">search</span>
           )}
           <span>Search</span>
         </button>
       </div>
 
-      <div className="flex items-center justify-between flex-wrap gap-2 px-2 py-1">
-        <button
-          type="button"
-          onClick={handleUseLocation}
-          disabled={locLoading}
-          aria-busy={locLoading}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-on-surface-variant hover:text-tertiary disabled:opacity-60 transition"
-        >
-          <span className="material-symbols-outlined text-[18px]">
-            {locLoading ? 'progress_activity' : 'my_location'}
+      <div aria-live="polite" className="px-4">
+        {error && (
+          <span className="text-sm font-medium text-[#ff6b6b]" role="alert">
+            {error}
           </span>
-          {locLoading ? 'Locating…' : 'Use my current location'}
-        </button>
-        <div aria-live="polite">
-          {error && (
-            <span className="text-sm font-medium text-error" role="alert">
-              {error}
-            </span>
-          )}
-        </div>
+        )}
       </div>
     </form>
   );
@@ -148,30 +173,36 @@ function SearchPill() {
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-container/70 via-tertiary-container/40 to-surface" />
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_20%_15%,rgba(255,255,255,0.7),transparent_45%),radial-gradient(circle_at_85%_85%,rgba(95,239,255,0.35),transparent_50%)]"
+    <section className="relative overflow-hidden bg-surface">
+      {/* Blurry Image Background */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center blur-sm transform scale-105 opacity-100"
+        style={{ backgroundImage: "url('/hero-bg.jpg')" }} 
       />
+      
+      {/* Very light white wash so the dark text remains readable, but the image is totally clear */}
+      <div className="absolute inset-0 bg-white/50" />
+      
+      {/* Gradient to smoothly fade the bottom into the next section */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-surface" />
 
-      <div className="relative mx-auto max-w-3xl px-4 sm:px-6 py-12 sm:py-20 text-center">
-        <span className="inline-flex items-center gap-2 text-xs font-bold tracking-wider uppercase text-on-primary-container bg-primary-container/80 px-3 py-1.5 rounded-full mb-5">
+      <div className="relative mx-auto max-w-4xl px-4 sm:px-6 py-16 sm:py-24 text-center">
+        <span className="inline-flex items-center gap-2 text-[11px] sm:text-xs font-bold tracking-widest uppercase text-on-primary-container bg-primary-container border border-primary-fixed px-5 py-2.5 rounded-full mb-8 shadow-sm">
           <span className="material-symbols-outlined text-[16px]">verified</span>
           Curated for London families
         </span>
 
-        <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-on-background leading-[1.05]">
-          Find brilliant places <br className="hidden sm:block" />
-          <span className="text-tertiary">for kids in London</span>
+        <h1 className="font-display text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-on-background leading-[1.05] mb-6">
+          Find the perfect London <br className="hidden sm:block" />
+          <span className="text-primary">kids' party venue</span> in seconds
         </h1>
 
-        <p className="mt-5 text-base sm:text-lg text-on-surface-variant max-w-xl mx-auto leading-relaxed">
+        <p className="mt-6 text-lg sm:text-xl text-on-surface-variant max-w-2xl mx-auto leading-relaxed mb-10">
           Soft play, parks, museums, libraries and party rooms — all
           checked for safety, vibe, and how much fun your kids will have.
         </p>
 
-        <div className="mt-8 sm:mt-10 max-w-2xl mx-auto">
+        <div className="mx-auto">
           <SearchPill />
         </div>
       </div>

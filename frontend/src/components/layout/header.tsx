@@ -25,36 +25,28 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-1 text-sm font-medium text-on-surface-variant">
+        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-on-surface-variant">
           <Link
             href="/"
-            className="px-3 py-2 rounded-full hover:bg-surface-container transition-colors"
+            className="hover:text-on-background transition-colors flex items-center gap-1.5"
           >
+            <span className="material-symbols-outlined text-[18px]">search</span>
             Explore
           </Link>
           <Link
-            href="/#trust"
-            className="px-3 py-2 rounded-full hover:bg-surface-container transition-colors"
+            href="/saved"
+            className="hover:text-on-background transition-colors flex items-center gap-1.5"
           >
-            How it works
+            <span className="material-symbols-outlined text-[18px]">favorite</span>
+            Saved
           </Link>
           <Link
-            href="/#footer"
-            className="px-3 py-2 rounded-full hover:bg-surface-container transition-colors"
+            href="/login"
+            className="hidden sm:inline-flex items-center gap-1.5 bg-primary-container text-on-primary-container text-sm font-semibold px-5 py-2 rounded-full hover:brightness-95 active:scale-95 transition"
           >
-            About
+            Sign In
           </Link>
         </nav>
-
-        <a
-          href="https://tally.so/r/n0XOXO"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hidden sm:inline-flex items-center gap-1.5 bg-primary-container text-on-primary-container text-sm font-semibold px-4 py-2 rounded-full hover:brightness-95 active:scale-95 transition"
-        >
-          <span className="material-symbols-outlined text-[18px]">chat_bubble</span>
-          Feedback
-        </a>
       </div>
     </header>
   );

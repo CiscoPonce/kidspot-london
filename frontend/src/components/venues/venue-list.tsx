@@ -16,7 +16,7 @@ function LoadingSkeleton() {
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="overflow-hidden rounded-2xl border border-outline-variant bg-white animate-pulse flex flex-col sm:flex-row"
+          className="ks-card animate-pulse flex flex-col sm:flex-row"
           aria-hidden="true"
         >
           <div className="aspect-[16/10] sm:aspect-auto sm:w-[40%] sm:min-h-[180px] bg-surface-variant" />
@@ -48,7 +48,7 @@ function StateCard({
 }) {
   return (
     <div className="ks-card flex flex-col items-center text-center px-6 py-12">
-      <div className="w-16 h-16 rounded-2xl bg-primary-container/60 text-on-primary-container flex items-center justify-center mb-5">
+      <div className="w-16 h-16 rounded-2xl bg-tertiary-container/70 text-on-tertiary-container flex items-center justify-center mb-5">
         <span className="material-symbols-outlined text-[32px]">{icon}</span>
       </div>
       <h3 className="font-display text-xl font-semibold text-on-background">
@@ -121,7 +121,7 @@ export function VenueList({ onVenueSelect, selectedId }: VenueListProps) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-on-surface-variant">
-        Showing <span className="font-semibold text-on-surface">{sortedVenues.length}</span>{' '}
+        Showing <span className="font-semibold text-on-background">{sortedVenues.length}</span>{' '}
         {sortedVenues.length === 1 ? 'venue' : 'venues'}
       </p>
       {sortedVenues.map((venue) => (

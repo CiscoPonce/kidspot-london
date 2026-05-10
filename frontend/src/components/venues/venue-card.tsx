@@ -31,44 +31,37 @@ const CATEGORY_META: Record<
     icon: typeof Trees;
     label: string;
     chip: string;
-    gradient: string;
   }
 > = {
   softplay: {
     icon: Joystick,
     label: 'Soft Play',
     chip: 'bg-[#FFF7B3] text-[#3D3700] border-[#F6E614]/60',
-    gradient: 'from-[#FFF1A1] via-[#FFE066] to-[#EFDF00]',
   },
   park: {
     icon: Trees,
     label: 'Park',
     chip: 'bg-[#C8E6C9] text-[#1F4D24] border-[#A5D6A7]/70',
-    gradient: 'from-[#D4EDD5] via-[#A5D6A7] to-[#7DC089]',
   },
   museum: {
     icon: Landmark,
     label: 'Museum',
     chip: 'bg-[#B3E5FC] text-[#0E3F58] border-[#81D4FA]/70',
-    gradient: 'from-[#CDEEFB] via-[#81D4FA] to-[#5DBEE8]',
   },
   community_hall: {
     icon: Building2,
     label: 'Party Room',
     chip: 'bg-[#FFCCBC] text-[#5C2210] border-[#FFAB91]/70',
-    gradient: 'from-[#FFD9C9] via-[#FFAB91] to-[#FF8A65]',
   },
   library: {
     icon: BookOpen,
     label: 'Library',
     chip: 'bg-[#E1BEE7] text-[#4A1E54] border-[#CE93D8]/70',
-    gradient: 'from-[#EDD2F2] via-[#CE93D8] to-[#BA68C8]',
   },
   other: {
     icon: MapPin,
     label: 'Venue',
-    chip: 'bg-surface-container text-on-surface-variant border-outline-variant',
-    gradient: 'from-[#F3EEDA] via-[#E8E3CF] to-[#CCC7AB]',
+    chip: 'ks-chip',
   },
 };
 
@@ -150,11 +143,11 @@ export function VenueCard({
       role="button"
       tabIndex={0}
       aria-pressed={isSelected}
-      className={`group relative cursor-pointer overflow-hidden rounded-2xl border bg-white transition-all duration-200 flex flex-col sm:flex-row ${
+      className={`group relative cursor-pointer overflow-hidden ks-card flex flex-col sm:flex-row ${
         isSelected
-          ? 'border-[#EFDF00] ring-2 ring-[#EFDF00]/40 shadow-[0_8px_24px_rgba(239,223,0,0.18)]'
-          : 'border-outline-variant hover:border-[#b9b496] hover:shadow-[0_8px_24px_rgba(29,28,16,0.08)]'
-      } ${isGold ? 'ring-1 ring-amber-300/60' : ''}`}
+          ? 'ks-card-active'
+          : ''
+      } ${isGold ? 'ring-2 ring-[#efdf00]' : ''}`}
     >
       {/* Featured ribbon for Gold */}
       {isGold && (
@@ -167,7 +160,7 @@ export function VenueCard({
 
       {/* Image / gradient placeholder */}
       <div
-        className={`relative shrink-0 overflow-hidden bg-gradient-to-br ${meta.gradient} sm:w-[40%] sm:min-w-[180px]`}
+        className="relative shrink-0 overflow-hidden bg-surface-variant sm:w-[40%] sm:min-w-[180px]"
       >
         <div className="aspect-[16/10] sm:aspect-auto sm:h-full sm:min-h-[180px]">
           {imageUrl ? (
@@ -179,7 +172,7 @@ export function VenueCard({
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
-              <Icon size={56} strokeWidth={1.5} className="text-white/85 drop-shadow" />
+              <Icon size={56} strokeWidth={1.5} className="text-on-surface-variant/40" />
             </div>
           )}
         </div>
@@ -190,18 +183,18 @@ export function VenueCard({
           onClick={handleSaveToggle}
           aria-pressed={isSaved}
           aria-label={isSaved ? `Remove ${venue.name} from saved` : `Save ${venue.name}`}
-          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 backdrop-blur-sm shadow-sm hover:bg-white active:scale-90 transition"
+          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-surface-container-lowest/90 backdrop-blur-sm shadow-sm hover:bg-surface-container-lowest active:scale-90 transition"
         >
           <Heart
             size={18}
             strokeWidth={2.5}
-            className={isSaved ? 'fill-[#EFDF00] text-[#1f1c00]' : 'text-on-surface-variant'}
+            className={isSaved ? 'fill-primary text-primary' : 'text-on-surface-variant'}
           />
         </button>
 
         {/* Safe-checked pill */}
         {safeChecked && (
-          <span className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-[#006972] shadow-sm">
+          <span className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1 rounded-full bg-tertiary-container text-on-tertiary-container px-2.5 py-1 text-[11px] font-semibold shadow-sm">
             <ShieldCheck size={12} strokeWidth={2.5} />
             Safe-checked
           </span>
@@ -231,13 +224,17 @@ export function VenueCard({
             {venue.name}
           </h3>
 
-          <div className="mt-1.5 flex items-center gap-2 text-sm text-on-surface-variant">
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-on-surface-variant">
             {venue.rating ? (
-              <span className="inline-flex items-center gap-1 font-semibold text-on-surface">
-                <Star size={14} strokeWidth={2.5} fill="#EFDF00" className="text-[#EFDF00]" />
+              <span className="inline-flex items-center gap-1 font-semibold text-on-background">
+                <Star size={14} strokeWidth={2.5} className="fill-primary text-primary" />
                 {Number(venue.rating).toFixed(1)}
               </span>
             ) : null}
+            <span className="inline-flex items-center gap-1">
+              <span className="material-symbols-outlined text-[16px]">child_care</span>
+              0-12 yrs {/* Mocked until data provides it */}
+            </span>
             {distance > 0 && (
               <span className="inline-flex items-center gap-1">
                 <MapPin size={12} strokeWidth={2.5} />
@@ -247,16 +244,16 @@ export function VenueCard({
           </div>
         </div>
 
-        <div className="mt-3 flex items-end justify-between gap-3">
+        <div className="mt-4 flex items-end justify-between gap-3">
           <div className="min-w-0">
             {price ? (
               <p className="text-sm leading-tight text-on-surface-variant">
                 {price.tone === 'free' ? (
-                  <span className="font-bold text-[#1F4D24]">Free</span>
+                  <span className="font-bold text-tertiary">Free</span>
                 ) : (
                   <>
                     <span className="text-xs uppercase tracking-wide text-outline">from </span>
-                    <span className="font-bold text-on-surface">{price.label}</span>
+                    <span className="font-bold text-on-background">{price.label}</span>
                     <span className="text-xs text-outline"> / child</span>
                   </>
                 )}
@@ -274,7 +271,7 @@ export function VenueCard({
                 props: { venueId: venue.id, source: 'detail_link' },
               });
             }}
-            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-[#EFDF00] px-4 py-2 text-sm font-bold text-[#1F1C00] shadow-[inset_0_-2px_0_rgba(0,0,0,0.08)] hover:brightness-95 active:scale-95 transition"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary-container text-on-primary-container px-5 py-2.5 text-sm font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
             aria-label={`View full details for ${venue.name}`}
           >
             View

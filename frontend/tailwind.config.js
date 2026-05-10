@@ -74,13 +74,13 @@ module.exports = {
         "stack-sm": "8px"
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
-        "headline-md": ["var(--font-space-grotesk)"],
-        "label-caps": ["var(--font-space-grotesk)"],
-        "display-lg": ["var(--font-space-grotesk)"],
-        "title-sm": ["var(--font-space-grotesk)"],
-        "body-md": ["var(--font-space-grotesk)"],
-        "space-grotesk": ["var(--font-space-grotesk)"]
+        sans: ['var(--font-jakarta)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-jakarta)', 'system-ui', 'sans-serif'],
+        "headline-md": ["var(--font-jakarta)"],
+        "label-caps": ["var(--font-jakarta)"],
+        "display-lg": ["var(--font-jakarta)"],
+        "title-sm": ["var(--font-jakarta)"],
+        "body-md": ["var(--font-jakarta)"],
       },
       fontSize: {
         "headline-md": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "600" }],

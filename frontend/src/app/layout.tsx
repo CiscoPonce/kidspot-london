@@ -1,19 +1,13 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Space_Grotesk } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import { AppProviders } from '@/providers';
 import { FeedbackButton } from '@/components/feedback-button';
 import './globals.css';
 
-const inter = Inter({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-inter',
-});
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-space-grotesk',
+  variable: '--font-jakarta',
 });
 
 export const metadata: Metadata = {
@@ -57,7 +51,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${spaceGrotesk.variable} bg-background text-on-background font-sans antialiased`}
+        className={`${plusJakartaSans.variable} bg-background text-on-background font-sans antialiased`}
       >
         <AppProviders>
           {children}
