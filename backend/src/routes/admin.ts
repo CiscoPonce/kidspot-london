@@ -165,4 +165,51 @@ router.post('/ingest/enrichment', verifyHmac, async (req, res) => {
   }
 });
 
+router.get('/enrichment-stats', verifyHmac, async (_req, res) => {
+  try {
+    const { db } = await import('../clients/db.js');
+    const { rows } = await db.query(`
+      SELECT
+        COUNT(*) AS total_active,
+        COUNT(*) FILTER (WHERE website IS NOT NULL AND website != '') AS has_website,
+        COUNT(*) FILTER (WHERE phone IS NOT NULL AND phone != '') AS has_phone,
+        COUNT(*) FILTER (WHERE email IS NOT NULL AND email != '') AS has_email,
+        COUNT(*) FILTER (WHERE booking_url IS NOT NULL AND booking_url != '') AS has_booking_url,
+        COUNT(*) FILTER (WHERE address IS NOT NULL AND address != '') AS has_address,
+        COUNT(*) FILTER (WHERE postcode IS NOT NULL AND postcode != '') AS has_postcode,
+        COUNT(*) FILTER (WHERE borough IS NOT NULL AND borough != '') AS has_borough,
+        COUNT(*) FILTER (WHERE contact_enriched_at IS NOT NULL) AS contact_enriched,
+        COUNT(*) FILTER (WHERE enriched_at IS NOT NULL) AS geo_enriched
+      FROM venues WHERE is_active = TRUE
+    `);
+    const stats = rows[0];
+    const total = parseInt(stats.total_active);
+    const pct = (n: string) => total > 0 ? ((parseInt(n) / total) * 100).toFixed(1) : '0';
+
+    res.json({
+      success: true,
+      data: {
+        total_active: total,
+        coverage: {
+          website: { count: parseInt(stats.has_website), pct: pct(stats.has_website) },
+          phone: { count: parseInt(stats.has_phone), pct: pct(stats.has_phone) },
+          email: { count: parseInt(stats.has_email), pct: pct(stats.has_email) },
+          booking_url: { count: parseInt(stats.has_booking_url), pct: pct(stats.has_booking_url) },
+          address: { count: parseInt(stats.has_address), pct: pct(stats.has_address) },
+          postcode: { count: parseInt(stats.has_postcode), pct: pct(stats.has_postcode) },
+          borough: { count: parseInt(stats.has_borough), pct: pct(stats.has_borough) },
+        },
+        enrichment_progress: {
+          contact_enriched: parseInt(stats.contact_enriched),
+          geo_enriched: parseInt(stats.geo_enriched),
+        }
+      }
+    });
+  } catch (error) {
+    logger.error({ err: error }, 'Error fetching enrichment stats');
+    res.status(500).json({ success: false, error: 'Failed to fetch enrichment stats' });
+  }
+});
+
 export default router;
+

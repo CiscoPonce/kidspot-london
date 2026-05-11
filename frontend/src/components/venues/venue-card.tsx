@@ -241,6 +241,20 @@ export function VenueCard({
                 {formatDistance(distance)}
               </span>
             )}
+            {/* Contact availability indicators */}
+            {(venue.phone || venue.website || venue.email) && (
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-outline">
+                {venue.phone && (
+                  <span className="material-symbols-outlined text-[14px] text-tertiary" title="Phone available">call</span>
+                )}
+                {venue.website && (
+                  <span className="material-symbols-outlined text-[14px] text-tertiary" title="Website available">language</span>
+                )}
+                {venue.email && (
+                  <span className="material-symbols-outlined text-[14px] text-tertiary" title="Email available">mail</span>
+                )}
+              </span>
+            )}
           </div>
         </div>
 

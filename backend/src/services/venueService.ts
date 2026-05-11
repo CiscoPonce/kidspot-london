@@ -702,7 +702,10 @@ const baseVenueService = {
     }
 
     const venueResult = await db.query(
-      `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug
+      `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug,
+              website, phone, email, booking_url, address, postcode, borough,
+              description, opening_hours, rating, price_level, features,
+              parent_facets, kid_score
        FROM venues
        WHERE slug = $1 AND is_active = TRUE`,
       [slug]
@@ -711,13 +714,29 @@ const baseVenueService = {
     if (venueResult.rows.length === 0) return null;
 
     const venue = venueResult.rows[0];
-    let fullDetails = null;
+    let externalDetails = null;
 
     if (venue.source === 'google' || venue.source === 'yelp' || venue.source === 'manual') {
-      fullDetails = await fetchYelpDetails(venue);
+      externalDetails = await fetchYelpDetails(venue);
     } else if (venue.source === 'osm') {
-      fullDetails = await fetchOSMDetails(venue.source_id);
+      externalDetails = await fetchOSMDetails(venue.source_id);
     }
+
+    // Merge: external API data as base, then overlay stored DB fields (DB takes precedence)
+    const merged = {
+      ...( externalDetails || {} ),
+      postcode: venue.postcode || (externalDetails as any)?.postcode || null,
+      borough: venue.borough || (externalDetails as any)?.borough || null,
+      email: venue.email || (externalDetails as any)?.email || null,
+      booking_url: venue.booking_url || (externalDetails as any)?.booking_url || null,
+      description: venue.description || (externalDetails as any)?.description || null,
+      opening_hours: venue.opening_hours || (externalDetails as any)?.opening_hours || null,
+      // DB contact fields take precedence (manually curated)
+      address: venue.address || (externalDetails as any)?.address || null,
+      website: venue.website || (externalDetails as any)?.website || null,
+      phone: venue.phone || (externalDetails as any)?.phone || null,
+    };
+    const fullDetails = merged;
 
     const response: VenueDetailsResponse = {
       success: true,
@@ -764,7 +783,10 @@ const baseVenueService = {
     if (isNaN(idVal)) return null;
 
     const venueResult = await db.query(
-      `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug
+      `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug,
+              website, phone, email, booking_url, address, postcode, borough,
+              description, opening_hours, rating, price_level, features,
+              parent_facets, kid_score
        FROM venues
        WHERE id = $1 AND is_active = TRUE`,
       [idVal]
@@ -773,13 +795,29 @@ const baseVenueService = {
     if (venueResult.rows.length === 0) return null;
 
     const venue = venueResult.rows[0];
-    let fullDetails = null;
+    let externalDetails = null;
 
     if (venue.source === 'google' || venue.source === 'yelp' || venue.source === 'manual') {
-      fullDetails = await fetchYelpDetails(venue);
+      externalDetails = await fetchYelpDetails(venue);
     } else if (venue.source === 'osm') {
-      fullDetails = await fetchOSMDetails(venue.source_id);
+      externalDetails = await fetchOSMDetails(venue.source_id);
     }
+
+    // Merge: external API data as base, then overlay stored DB fields (DB takes precedence)
+    const merged = {
+      ...( externalDetails || {} ),
+      postcode: venue.postcode || (externalDetails as any)?.postcode || null,
+      borough: venue.borough || (externalDetails as any)?.borough || null,
+      email: venue.email || (externalDetails as any)?.email || null,
+      booking_url: venue.booking_url || (externalDetails as any)?.booking_url || null,
+      description: venue.description || (externalDetails as any)?.description || null,
+      opening_hours: venue.opening_hours || (externalDetails as any)?.opening_hours || null,
+      // DB contact fields take precedence (manually curated)
+      address: venue.address || (externalDetails as any)?.address || null,
+      website: venue.website || (externalDetails as any)?.website || null,
+      phone: venue.phone || (externalDetails as any)?.phone || null,
+    };
+    const fullDetails = merged;
 
     const response: VenueDetailsResponse = {
       success: true,

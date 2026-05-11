@@ -300,10 +300,17 @@ export function VenueDetailContent({
 
             {/* Address & Info */}
             <div className="mb-6 space-y-4">
-              {address && (
+              {(address || mergedDetails.postcode || mergedDetails.borough) && (
                 <div className="flex items-start gap-3 p-4 bg-surface rounded-[16px] border border-outline-variant">
                   <span className="material-symbols-outlined text-outline">location_on</span>
-                  <span className="font-body-md text-body-md text-on-surface">{address}</span>
+                  <div className="flex flex-col">
+                    {address && <span className="font-body-md text-body-md text-on-surface">{address}</span>}
+                    {(mergedDetails.postcode || mergedDetails.borough) && (
+                      <span className="text-sm text-on-surface-variant">
+                        {[mergedDetails.borough, mergedDetails.postcode].filter(Boolean).join(' · ')}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
               {(venue as Venue).distance_miles !== undefined && (
@@ -312,6 +319,12 @@ export function VenueDetailContent({
                   <span className="font-title-sm text-title-sm text-on-surface">
                     {(venue as Venue).distance_miles?.toFixed(1)} miles away
                   </span>
+                </div>
+              )}
+              {mergedDetails.description && (
+                <div className="flex items-start gap-3 p-4 bg-surface rounded-[16px] border border-outline-variant">
+                  <span className="material-symbols-outlined text-outline">info</span>
+                  <span className="font-body-md text-body-md text-on-surface-variant">{mergedDetails.description}</span>
                 </div>
               )}
             </div>
@@ -324,12 +337,28 @@ export function VenueDetailContent({
 
             {/* Actions */}
             <div className="mt-8 flex flex-col gap-3">
+              {/* Primary CTA: Book Now */}
+              {isValidUrl(mergedDetails.booking_url) && (
+                <a
+                  href={mergedDetails.booking_url!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => trackVenueClick(venue.id, 'booking')}
+                  aria-label={`Book ${venue.name}`}
+                  id="venue-book-now-btn"
+                  className="flex items-center justify-center gap-2 bg-primary text-on-primary h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform shadow-md"
+                >
+                  <span className="material-symbols-outlined">event_available</span>
+                  Book Now
+                </a>
+              )}
               <div className="flex flex-col sm:flex-row gap-3">
                 {isValidPhone(phone) && (
                   <a
                     href={`tel:${phone!.trim()}`}
                     onClick={() => trackVenueClick(venue.id, 'phone')}
                     aria-label={`Call ${venue.name} at ${phone}`}
+                    id="venue-call-btn"
                     className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 text-white h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform"
                   >
                     <span className="material-symbols-outlined">call</span>
@@ -343,6 +372,7 @@ export function VenueDetailContent({
                     rel="noopener noreferrer"
                     onClick={() => trackVenueClick(venue.id, 'website')}
                     aria-label={`Visit ${venue.name} website`}
+                    id="venue-website-btn"
                     className="flex-1 flex items-center justify-center gap-2 bg-primary-container text-on-primary-container h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform"
                   >
                     <span className="material-symbols-outlined">language</span>
@@ -350,6 +380,18 @@ export function VenueDetailContent({
                   </a>
                 )}
               </div>
+              {mergedDetails.email && (
+                <a
+                  href={`mailto:${mergedDetails.email}`}
+                  onClick={() => trackVenueClick(venue.id, 'email')}
+                  aria-label={`Email ${venue.name}`}
+                  id="venue-email-btn"
+                  className="flex items-center justify-center gap-2 bg-secondary-container text-on-secondary-container h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform"
+                >
+                  <span className="material-symbols-outlined">mail</span>
+                  Send Email
+                </a>
+              )}
               <ShareButton 
                 title={venue.name} 
                 className="flex items-center justify-center gap-2 bg-surface border border-outline-variant h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform"

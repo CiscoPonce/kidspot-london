@@ -16,8 +16,12 @@ export interface Venue {
   user_ratings_total?: number;
   image_url?: string;
   address?: string;
+  postcode?: string;
   phone?: string;
   website?: string;
+  email?: string;
+  booking_url?: string;
+  description?: string;
   domain?: string;
   features?: string[];
 }
@@ -46,8 +50,12 @@ export interface VenueDetails {
   source: string;
   borough?: string;
   address?: string;
+  postcode?: string;
   phone?: string;
   website?: string;
+  email?: string;
+  booking_url?: string;
+  description?: string;
   user_ratings_total?: number;
   opening_hours?: {
     open: {

@@ -1,21 +1,53 @@
 import { enrichMissingDetails } from './sources/enrichment.js';
+import { enrichOsmContacts } from './sources/osm-contact-enrichment.js';
+import { enrichViaWebScraping } from './sources/web-scraper-enrichment.js';
 
 export async function processEnrichment(isDryRun: boolean = false) {
   console.log(`Starting Data Enrichment Pipeline${isDryRun ? ' (DRY RUN)' : ''}...`);
+  console.log(`  Time: ${new Date().toISOString()}\n`);
 
   if (isDryRun) {
-    console.log('Dry run: would reverse-geocode venues missing postcode/address/borough.');
-    return { success: true, dryRun: true, enriched: 0, skipped: 0, failed: 0 };
+    console.log('Dry run: would run reverse-geocoding, OSM contact extraction, and web scraping.');
+    return { success: true, dryRun: true, geocoding: null, osmContacts: null, webScraper: null };
   }
 
+  const results: Record<string, any> = {};
+
+  // Layer 0: Reverse-geocoding (address/postcode/borough)
   try {
-    const result = await enrichMissingDetails();
-    console.log(`\nEnrichment complete: ${result.enriched} enriched, ${result.skipped} skipped, ${result.failed} failed.`);
-    return { success: true, dryRun: false, ...result };
+    console.log('═══ Layer 0: Reverse-Geocoding ═══');
+    const geocodingResult = await enrichMissingDetails();
+    results.geocoding = geocodingResult;
+    console.log(`  → ${geocodingResult.enriched} enriched, ${geocodingResult.skipped} skipped, ${geocodingResult.failed} failed.\n`);
   } catch (error) {
-    console.error('Enrichment pipeline failed:', error);
-    throw error;
+    console.error('Layer 0 (reverse-geocoding) failed:', error);
+    results.geocoding = { error: String(error) };
   }
+
+  // Layer 1: OSM contact enrichment (website/phone/email from Overpass)
+  try {
+    console.log('═══ Layer 1: OSM Contact Enrichment ═══');
+    const osmResult = await enrichOsmContacts(100);
+    results.osmContacts = osmResult;
+    console.log(`  → ${osmResult.enriched} enriched, ${osmResult.skipped} skipped, ${osmResult.failed} failed.\n`);
+  } catch (error) {
+    console.error('Layer 1 (OSM contacts) failed:', error);
+    results.osmContacts = { error: String(error) };
+  }
+
+  // Layer 2: Web scraper enrichment (Brave Search + HTML scraping)
+  try {
+    console.log('═══ Layer 2: Web Scraper Enrichment ═══');
+    const webResult = await enrichViaWebScraping(10);
+    results.webScraper = webResult;
+    console.log(`  → ${webResult.enriched} enriched, ${webResult.skipped} skipped, ${webResult.failed} failed.\n`);
+  } catch (error) {
+    console.error('Layer 2 (web scraper) failed:', error);
+    results.webScraper = { error: String(error) };
+  }
+
+  console.log('═══ Pipeline Complete ═══');
+  return { success: true, dryRun: false, ...results };
 }
 
 // Allow running from command line directly

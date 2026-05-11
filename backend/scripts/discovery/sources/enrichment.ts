@@ -15,14 +15,14 @@ export async function enrichMissingDetails(): Promise<EnrichmentResult> {
   const result: EnrichmentResult = { enriched: 0, skipped: 0, failed: 0 };
 
   try {
-    // Find venues missing postcode or address (limit batch to 30 to respect Nominatim rate limits)
+    // Find venues missing postcode or address (batch of 100 — Nominatim allows 1 req/s)
     const { rows: venues } = await db.query(
       `SELECT id, name, lat, lon FROM venues
        WHERE is_active = TRUE
          AND (postcode IS NULL OR postcode = '')
          AND lat != 0 AND lon != 0
        ORDER BY last_scraped ASC NULLS FIRST
-       LIMIT 30`
+       LIMIT 100`
     );
 
     console.log(`Found ${venues.length} venues needing enrichment.`);
