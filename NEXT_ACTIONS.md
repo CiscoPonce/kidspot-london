@@ -1,26 +1,24 @@
-# Next Actions: Phase 12 — Party Portal Reliability
+# Next Actions: Phase 18 — Revenue Monetization
 
-Phase 8.5, 9, 10, and 11 are **100% complete**.
+Phases 1-17 are **100% complete**.
 
-## Recently landed (May 8, 2026)
+## Recently landed (May 15, 2026)
 
-- **Phase 12-05: OpenActive Pilot** — real-time activity feeds and scheduled sessions integrated for major leisure operators.
-- **Phase 12-04: Borough CSV Pack** — automated ingestion of council datasets for parks, halls, and leisure centres.
-- **Phase 12-03: FHRS Convergence** — automated matching with FSA data for trust boosting.
-- **Phase 12-02: Multi-Facet Schema** — implemented `parent_facets` array with GIN index.
-- **Phase 12-01: Enrichment Guardrails** — implemented `editor_locked`, `manual_source`, and provenance tracking.
-- **TypeScript Health** — Project-wide typecheck passing with zero errors.
+- **Phase 17: High-Velocity Enrichment** — Apify integration with rich data (hours, images), asynchronous webhooks, and deep contact extraction (emails).
+- **Rich Data Schema** — Database migrations and frontend components for opening hours and hero images.
+- **Webhook Ingestion** — Production-ready endpoint for background result processing.
 
-## Upcoming (Phase 12 Waves)
+## Upcoming (Phase 18)
 
-1. **Phase 12-06: Operator Integration** — Formal partnerships with leisure operators for clean data.
+1. **Phase 18-01: Claim Your Listing V2** — Enhanced verification via owner emails captured in Phase 17.
+2. **Phase 18-02: Lead Generation** — Direct outreach tools for premium sponsors.
 
 ## Verification commands
 
 ```bash
-# Check provenance log for a specific venue
-psql -c "SELECT * FROM venue_provenance_log WHERE venue_id = <ID> ORDER BY created_at DESC LIMIT 5;"
+# Verify enrichment stats
+curl http://localhost:3000/api/admin/enrichment-stats
 
-# Confirm typecheck health
-cd backend && npm run typecheck
+# Test webhook endpoint locally
+curl -X POST http://localhost:3000/api/admin/webhooks/apify?token=DUMMY_SECRET
 ```
