@@ -2,7 +2,7 @@ name: Data Enrichment Pipeline
 
 on:
   schedule:
-    # Run every 4 hours to steadily enrich venues (30 per run)
+    # Run every 4 hours to steadily enrich venues (50 per run = 300/day)
     - cron: '0 */4 * * *'
   workflow_dispatch:
     inputs:

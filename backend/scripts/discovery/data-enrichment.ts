@@ -39,7 +39,7 @@ export async function processEnrichment(isDryRun: boolean = false) {
   // Layer 2: Apify Google Maps Enrichment
   try {
     console.log('═══ Layer 2: Apify Google Maps Enrichment ═══');
-    const apifyResult = await enrichViaApify(20);
+    const apifyResult = await enrichViaApify(50);
     results.apify = apifyResult;
     console.log(`  → ${apifyResult.enriched} enriched, ${apifyResult.skipped} skipped, ${apifyResult.failed} failed.\n`);
   } catch (error) {
