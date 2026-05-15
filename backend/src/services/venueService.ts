@@ -704,7 +704,7 @@ const baseVenueService = {
     const venueResult = await db.query(
       `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug,
               website, phone, email, booking_url, address, postcode, borough,
-              description, opening_hours, rating, price_level, features,
+              description, opening_hours, images, rating, price_level, features,
               parent_facets, kid_score
        FROM venues
        WHERE slug = $1 AND is_active = TRUE`,
@@ -731,6 +731,7 @@ const baseVenueService = {
       booking_url: venue.booking_url || (externalDetails as any)?.booking_url || null,
       description: venue.description || (externalDetails as any)?.description || null,
       opening_hours: venue.opening_hours || (externalDetails as any)?.opening_hours || null,
+      images: venue.images || (externalDetails as any)?.photos || null,
       // DB contact fields take precedence (manually curated)
       address: venue.address || (externalDetails as any)?.address || null,
       website: venue.website || (externalDetails as any)?.website || null,
@@ -785,7 +786,7 @@ const baseVenueService = {
     const venueResult = await db.query(
       `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug,
               website, phone, email, booking_url, address, postcode, borough,
-              description, opening_hours, rating, price_level, features,
+              description, opening_hours, images, rating, price_level, features,
               parent_facets, kid_score
        FROM venues
        WHERE id = $1 AND is_active = TRUE`,
@@ -812,6 +813,7 @@ const baseVenueService = {
       booking_url: venue.booking_url || (externalDetails as any)?.booking_url || null,
       description: venue.description || (externalDetails as any)?.description || null,
       opening_hours: venue.opening_hours || (externalDetails as any)?.opening_hours || null,
+      images: venue.images || (externalDetails as any)?.photos || null,
       // DB contact fields take precedence (manually curated)
       address: venue.address || (externalDetails as any)?.address || null,
       website: venue.website || (externalDetails as any)?.website || null,

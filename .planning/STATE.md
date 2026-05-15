@@ -1,18 +1,14 @@
 # KidSpot London - Project State
 
 ## Current Position
-**Phase**: 12 - Party Portal Reliability
-**Wave**: 7 - Verification & Exposure (engine-complete)
+**Phase**: 17 - High-Velocity Enrichment
+**Wave**: Complete
 **Status**: 
-- **Phase 11 Complete**: Search Experience V2 live.
-- **Guardrails Live**: Phase 12-01 completed.
-- **Multi-Facet Model Live**: Phase 12-02 completed.
-- **FHRS Integrated**: Phase 12-03 completed.
-- **Borough CSV Ingest Live**: Phase 12-04 completed.
-- **OpenActive Pilot Live**: Phase 12-05 completed; real-time activity feeds and scheduled sessions integrated for leisure centres.
-- **Operator Integration Live**: Phase 12-06 completed; partnership-first ingestion for leisure chains and trampoline parks implemented.
-- **Verification & Exposure**: Phase 12-07 completed; manual seeds auto-locked, `parent_facets` exposed in spatial search, `venue_source_claims` table created, Atherton soft-play regression repaired, 50/50 panel coverage baselined.
-**Last Updated**: May 9, 2026
+- **Phase 12 Complete**: Party Portal Reliability live.
+- **Phase 17 Complete**: High-velocity enrichment via Apify live.
+- **Rich Data live**: Opening hours and images integrated into UI and API.
+- **Asynchronous Webhooks live**: Background ingestion from Apify active.
+**Last Updated**: May 15, 2026
 
 ## Completed Phases
 - 01 - Data Foundation
@@ -28,21 +24,23 @@
 - 09.0 - Sponsorship & Revenue
 - 10.0 - Sponsor Features & Engagement
 - 11.0 - Search Experience V2
+- 12.0 - Party Portal Reliability
+- 13.0 - UI/UX Modernization
+- 14.0 - Data Enrichment
+- 15.0 - Data Quality Enrichment
+- 16.0 - Accelerated Enrichment & Partnership
+- 17.0 - High-Velocity Enrichment
 
-## Active Phase: 12 - Party Portal Reliability
+## Active Phase: 17 - High-Velocity Enrichment
 ### Objective
-Implement multi-source data architecture with provenance tracking and enrichment guardrails to become the main London portal for kids' parties.
+Implement a high-velocity data enrichment pipeline using Apify, including schema upgrades for rich data, asynchronous webhooks, and deep contact extraction.
 
-### Accomplishments (May 9, 2026)
-- ✅ **Guardrails Schema**: `editor_locked` and `manual_source` columns added.
-- ✅ **Provenance Log**: Audit table and database trigger active.
-- ✅ **Multi-Facet Search**: `parent_facets` implemented with OR semantics.
-- ✅ **FHRS Convergence**: Automated matching with FSA data.
-- ✅ **Borough CSV Pack**: Automated ingestion of high-value council datasets.
-- ✅ **OpenActive Pilot**: Real-time activity feeds integrated for Better Leisure and Everyone Active.
-- ✅ **Session-Aware UX**: `activity_session` facet and automated matching active.
-- ✅ **Operator Integration**: Partnership-first ingestion for leisure chains and trampoline parks.
-- ✅ **Verification & Exposure (12-07)**: Auto-lock for `source = 'manual'`, `parent_facets` returned by `search_venues_by_radius`, `venue_source_claims` table created, Atherton repair, 50-postcode coverage harness producing 100% pass baseline (`baselines/2026-05-09.json`).
+### Accomplishments (May 15, 2026)
+- ✅ **Apify Integration**: Robust enrichment script using Google Places via Apify.
+- ✅ **Pipeline Orchestration**: Apify integrated as Layer 2 in the discovery pipeline.
+- ✅ **Rich Data Schema**: Database migration and API/UI updates for opening hours and images.
+- ✅ **Asynchronous Webhooks**: Webhook endpoint and background processing service.
+- ✅ **Deep Enrichment**: Website crawling and email extraction enabled.
 
 ### Decisions
 - **2026-05-02**: Moving to Phase 10 to focus on sponsor value delivery (D-10-01).

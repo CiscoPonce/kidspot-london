@@ -11,6 +11,7 @@ import { processPartyVenues } from '../../scripts/discovery/party-venues-discove
 import { processVenueExpansion } from '../../scripts/discovery/venue-expansion.js';
 // @ts-ignore
 import { processEnrichment } from '../../scripts/discovery/data-enrichment.js';
+import { processApifyDataset } from '../services/apifyService.js';
 
 const router = express.Router();
 
@@ -214,6 +215,33 @@ router.get('/enrichment-stats', verifyHmac, async (_req, res) => {
     logger.error({ err: error }, 'Error fetching enrichment stats');
     res.status(500).json({ success: false, error: 'Failed to fetch enrichment stats' });
   }
+});
+
+router.post('/webhooks/apify', async (req, res) => {
+  const token = req.query.token;
+  const secret = process.env.APIFY_WEBHOOK_SECRET;
+
+  if (!secret || token !== secret) {
+    logger.warn(`Unauthorized Apify webhook attempt with token: ${token}`);
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+
+  const { resource } = req.body;
+  const datasetId = resource?.defaultDatasetId;
+
+  if (!datasetId) {
+    logger.error({ body: req.body }, 'Missing datasetId in Apify webhook payload');
+    return res.status(400).json({ success: false, error: 'Missing datasetId' });
+  }
+
+  logger.info(`Received Apify webhook for dataset: ${datasetId}`);
+
+  // Process in background
+  processApifyDataset(datasetId).catch(err => {
+    logger.error({ err, datasetId }, 'Error processing Apify dataset in background');
+  });
+
+  res.status(200).json({ success: true, message: 'Webhook received and processing started' });
 });
 
 export default router;

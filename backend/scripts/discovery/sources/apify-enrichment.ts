@@ -34,8 +34,8 @@ export async function enrichViaApify(limit: number = 20) {
 
     logger.info(`Found ${venues.length} venues for enrichment.`);
 
-    // 2. Construct search strings
-    const searchStrings = venues.map((v) => `${v.name} London UK`);
+    // 2. Construct search strings with ID for reliable matching in webhook
+    const searchStrings = venues.map((v) => `${v.name} London UK #ID:${v.id}`);
 
     let enrichedData: any[] = [];
 
@@ -43,7 +43,7 @@ export async function enrichViaApify(limit: number = 20) {
     if (!APIFY_TOKEN || APIFY_TOKEN.includes('dummy')) {
       logger.info('Using dummy Apify execution for prototype...');
       enrichedData = venues.map((v, index) => ({
-        searchString: `${v.name} London UK`,
+        searchString: `${v.name} London UK #ID:${v.id}`,
         website: `https://www.example${index}.com`,
         phone: `+44 20 7946 000${index % 10}`,
         totalScore: 4.5 + (index % 5) * 0.1,
@@ -57,12 +57,17 @@ export async function enrichViaApify(limit: number = 20) {
           { day: 'Saturday', hours: '10 AM - 4 PM' },
           { day: 'Sunday', hours: 'Closed' }
         ],
-        imageUrls: [`https://images.unsplash.com/photo-1566433316213-3fe62ca97277?q=80&w=400`]
+        imageUrls: [`https://images.unsplash.com/photo-1566433316213-3fe62ca97277?q=80&w=400`],
+        emails: [`contact@example${index}.com`]
       }));
       // Simulate delay
       await new Promise(resolve => setTimeout(resolve, 1000));
     } else {
-      logger.info('Triggering live Apify Actor...');
+      logger.info('Triggering live Apify Actor with webhook...');
+      const webhookSecret = process.env.APIFY_WEBHOOK_SECRET || 'dev-secret';
+      const apiBaseUrl = process.env.API_BASE_URL || 'https://api.kidspot.london';
+      const webhookUrl = `${apiBaseUrl}/api/admin/webhooks/apify?token=${webhookSecret}`;
+
       const response = await fetch(`https://api.apify.com/v2/acts/${ACTOR_ID}/runs?token=${APIFY_TOKEN}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -70,7 +75,12 @@ export async function enrichViaApify(limit: number = 20) {
           searchStringsArray: searchStrings,
           maxCrawledPlacesPerSearch: 1,
           language: 'en',
-          countryCode: 'gb'
+          countryCode: 'gb',
+          scrapeCompanyWebsite: true, // Deep enrichment: find emails/socials
+          webhooks: [{
+            eventTypes: ["ACTOR.RUN.SUCCEEDED"],
+            requestUrl: webhookUrl
+          }]
         })
       });
 
@@ -84,47 +94,31 @@ export async function enrichViaApify(limit: number = 20) {
 
       const runData = await response.json();
       const runId = runData.data.id;
-      logger.info(`Apify run started with ID: ${runId}. Polling for completion...`);
-
-      // Poll until ready
-      let isReady = false;
-      while (!isReady) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        const statusRes = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`);
-        const statusData = await statusRes.json();
-        const status = statusData.data.status;
-        
-        if (status === 'SUCCEEDED') {
-          isReady = true;
-        } else if (status === 'FAILED' || status === 'ABORTED') {
-          throw new Error(`Apify run failed with status: ${status}`);
-        } else {
-          logger.info(`Apify run status: ${status}. Waiting...`);
-        }
-      }
-
-      // Fetch dataset
-      const datasetId = runData.data.defaultDatasetId;
-      const datasetRes = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items?token=${APIFY_TOKEN}`);
-      enrichedData = await datasetRes.json();
+      logger.info(`Apify run triggered with ID: ${runId}. Webhook will process results.`);
+      
+      // Return early for live runs as we won't have the data yet
+      return { 
+        triggered: true, 
+        runId, 
+        enriched: 0, 
+        skipped: 0, 
+        failed: 0,
+        count: venues.length 
+      };
     }
 
-    logger.info(`Retrieved ${enrichedData.length} records from Apify.`);
+    logger.info(`Retrieved ${enrichedData.length} records from Apify (Dummy Mode).`);
 
-    // 4. Update the database
+    // 4. Update the database (Only reached in Dummy Mode or if we hadn't returned early)
     for (const venue of venues) {
-      const searchStr = `${venue.name} London UK`;
+      const searchStr = `${venue.name} London UK #ID:${venue.id}`;
       
-      let item = null;
-      if (!APIFY_TOKEN || APIFY_TOKEN.includes('dummy')) {
-        item = enrichedData.find(d => d.searchString === searchStr);
-      } else {
-        const firstWord = venue.name.split(' ')[0].toLowerCase();
-        item = enrichedData.find(d => (d.title || '').toLowerCase().includes(firstWord));
-      }
+      const item = enrichedData.find(d => d.searchString === searchStr);
 
       if (item) {
         const cleanPhone = item.phone ? item.phone.replace(/\s+/g, '') : null;
+        const openingHours = item.openingHours ? JSON.stringify(item.openingHours) : null;
+        const email = (item.emails && item.emails.length > 0) ? item.emails[0] : (item.email || null);
 
         await db.query(
           `UPDATE venues 
@@ -134,15 +128,17 @@ export async function enrichViaApify(limit: number = 20) {
                user_ratings_total = COALESCE($4, user_ratings_total),
                opening_hours = COALESCE($5, opening_hours),
                images = COALESCE($6, images),
+               email = COALESCE($7, email),
                enriched_at = NOW()
-           WHERE id = $7`,
+           WHERE id = $8`,
           [
             item.website || null, 
             cleanPhone, 
             item.totalScore || null, 
             item.reviewsCount || null,
-            item.openingHours || null,
+            openingHours,
             item.imageUrls || null,
+            email,
             venue.id
           ]
         );

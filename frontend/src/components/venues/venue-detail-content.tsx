@@ -118,9 +118,35 @@ export function VenueErrorState({ onRetry }: { onRetry: () => void }) {
 
 // ─── Main Content ─────────────────────────────────────────────────────────────
 
-function OpeningHours({ hours }: { hours: NonNullable<VenueDetails['opening_hours']> }) {
+function OpeningHours({ hours }: { hours: any }) {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   
+  if (Array.isArray(hours)) {
+    return (
+      <div className="mt-6 p-5 bg-surface rounded-[24px] border border-outline-variant">
+        <h3 className="font-title-sm text-title-sm text-on-surface flex items-center gap-2 mb-4">
+          <span className="material-symbols-outlined text-outline">schedule</span>
+          Opening Hours
+        </h3>
+        <div className="space-y-2.5">
+          {hours.map((item: any) => {
+            const isToday = new Date().toLocaleDateString('en-GB', { weekday: 'long' }) === item.day;
+            return (
+              <div key={item.day} className="flex justify-between text-sm">
+                <span className={isToday ? 'font-bold text-on-surface' : 'text-on-surface-variant'}>
+                  {item.day}
+                </span>
+                <span className="text-on-surface text-right">
+                  {item.hours}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-6 p-5 bg-surface rounded-[24px] border border-outline-variant">
       <div className="flex items-center justify-between mb-4">
@@ -128,21 +154,21 @@ function OpeningHours({ hours }: { hours: NonNullable<VenueDetails['opening_hour
           <span className="material-symbols-outlined text-outline">schedule</span>
           Opening Hours
         </h3>
-        <OpenStatusBadge isOpen={hours.is_open_now} />
+        {hours.is_open_now !== undefined && <OpenStatusBadge isOpen={hours.is_open_now} />}
       </div>
       <div className="space-y-2.5">
         {days.map((dayName, index) => {
           // Yelp 0 is Monday
-          const dayHours = hours.open.filter(h => h.day === index);
+          const dayHours = hours.open?.filter((h: any) => h.day === index) || [];
           const isToday = new Date().getDay() === (index + 1) % 7;
           return (
             <div key={dayName} className="flex justify-between text-sm">
               <span className={isToday ? 'font-bold text-on-surface' : 'text-on-surface-variant'}>
                 {dayName}
               </span>
-              <span className="text-on-surface">
+              <span className="text-on-surface text-right">
                 {dayHours.length > 0 
-                  ? dayHours.map(h => `${formatTime(h.start)} – ${formatTime(h.end)}`).join(', ')
+                  ? dayHours.map((h: any) => `${formatTime(h.start)} – ${formatTime(h.end)}`).join(', ')
                   : 'Closed'}
               </span>
             </div>
@@ -293,6 +319,17 @@ export function VenueDetailContent({
           </>
         ) : (
           <>
+            {/* Hero Image */}
+            {mergedDetails.images && mergedDetails.images.length > 0 && (
+              <div className="mb-6 rounded-[24px] overflow-hidden border border-outline-variant aspect-video">
+                <img 
+                  src={mergedDetails.images[0]} 
+                  alt={venue.name} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+
             {/* Map */}
             <div className="mb-6 rounded-[24px] overflow-hidden border border-outline-variant">
               <VenueMapSnippet lat={venue.lat || 51.5074} lon={venue.lon || -0.1278} name={venue.name} />

@@ -57,16 +57,7 @@ export interface VenueDetails {
   booking_url?: string;
   description?: string;
   user_ratings_total?: number;
-  opening_hours?: {
-    open: {
-      is_overnight: boolean;
-      start: string;
-      end: string;
-      day: number;
-    }[];
-    hours_type: string;
-    is_open_now: boolean;
-  } | null;
+  opening_hours?: any;
   reviews?: YelpReview[];
   current_claim_status?: 'unclaimed' | 'pending' | 'verified' | 'rejected';
   claim_email?: string;
@@ -74,6 +65,7 @@ export interface VenueDetails {
   rating?: number;
   price_level?: number;
   image_url?: string;
+  images?: string[];
   features?: string[];
 }
 
