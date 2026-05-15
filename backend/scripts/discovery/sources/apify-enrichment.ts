@@ -47,7 +47,17 @@ export async function enrichViaApify(limit: number = 20) {
         website: `https://www.example${index}.com`,
         phone: `+44 20 7946 000${index % 10}`,
         totalScore: 4.5 + (index % 5) * 0.1,
-        reviewsCount: 100 + index * 10
+        reviewsCount: 100 + index * 10,
+        openingHours: [
+          { day: 'Monday', hours: '9 AM - 5 PM' },
+          { day: 'Tuesday', hours: '9 AM - 5 PM' },
+          { day: 'Wednesday', hours: '9 AM - 5 PM' },
+          { day: 'Thursday', hours: '9 AM - 5 PM' },
+          { day: 'Friday', hours: '9 AM - 5 PM' },
+          { day: 'Saturday', hours: '10 AM - 4 PM' },
+          { day: 'Sunday', hours: 'Closed' }
+        ],
+        imageUrls: [`https://images.unsplash.com/photo-1566433316213-3fe62ca97277?q=80&w=400`]
       }));
       // Simulate delay
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -65,6 +75,10 @@ export async function enrichViaApify(limit: number = 20) {
       });
 
       if (!response.ok) {
+        if (response.status === 402) {
+          logger.error('Apify run failed: Insufficient funds/credits. Please top up your Apify account.');
+          throw new Error('Apify insufficient funds');
+        }
         throw new Error(`Apify run trigger failed: ${response.statusText}`);
       }
 
@@ -118,9 +132,19 @@ export async function enrichViaApify(limit: number = 20) {
                phone = COALESCE($2, phone),
                rating = COALESCE($3, rating),
                user_ratings_total = COALESCE($4, user_ratings_total),
+               opening_hours = COALESCE($5, opening_hours),
+               images = COALESCE($6, images),
                enriched_at = NOW()
-           WHERE id = $5`,
-          [item.website || null, cleanPhone, item.totalScore || null, item.reviewsCount || null, venue.id]
+           WHERE id = $7`,
+          [
+            item.website || null, 
+            cleanPhone, 
+            item.totalScore || null, 
+            item.reviewsCount || null,
+            item.openingHours || null,
+            item.imageUrls || null,
+            venue.id
+          ]
         );
         logger.info(`Enriched venue ID ${venue.id}: ${venue.name}`);
         stats.enriched++;

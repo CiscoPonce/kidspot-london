@@ -178,6 +178,8 @@ router.get('/enrichment-stats', verifyHmac, async (_req, res) => {
         COUNT(*) FILTER (WHERE address IS NOT NULL AND address != '') AS has_address,
         COUNT(*) FILTER (WHERE postcode IS NOT NULL AND postcode != '') AS has_postcode,
         COUNT(*) FILTER (WHERE borough IS NOT NULL AND borough != '') AS has_borough,
+        COUNT(*) FILTER (WHERE opening_hours IS NOT NULL) AS has_opening_hours,
+        COUNT(*) FILTER (WHERE images IS NOT NULL AND array_length(images, 1) > 0) AS has_images,
         COUNT(*) FILTER (WHERE contact_enriched_at IS NOT NULL) AS contact_enriched,
         COUNT(*) FILTER (WHERE enriched_at IS NOT NULL) AS geo_enriched
       FROM venues WHERE is_active = TRUE
@@ -198,10 +200,13 @@ router.get('/enrichment-stats', verifyHmac, async (_req, res) => {
           address: { count: parseInt(stats.has_address), pct: pct(stats.has_address) },
           postcode: { count: parseInt(stats.has_postcode), pct: pct(stats.has_postcode) },
           borough: { count: parseInt(stats.has_borough), pct: pct(stats.has_borough) },
+          opening_hours: { count: parseInt(stats.has_opening_hours), pct: pct(stats.has_opening_hours) },
+          images: { count: parseInt(stats.has_images), pct: pct(stats.has_images) },
         },
         enrichment_progress: {
           contact_enriched: parseInt(stats.contact_enriched),
           geo_enriched: parseInt(stats.geo_enriched),
+          apify_enriched: parseInt(stats.has_opening_hours), // Using opening_hours as proxy for Apify
         }
       }
     });
