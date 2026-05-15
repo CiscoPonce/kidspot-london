@@ -1,5 +1,6 @@
 import { enrichMissingDetails } from './sources/enrichment.js';
 import { enrichOsmContacts } from './sources/osm-contact-enrichment.js';
+import { enrichViaApify } from './sources/apify-enrichment.js';
 import { enrichViaWebScraping } from './sources/web-scraper-enrichment.js';
 
 export async function processEnrichment(isDryRun: boolean = false) {
@@ -7,8 +8,8 @@ export async function processEnrichment(isDryRun: boolean = false) {
   console.log(`  Time: ${new Date().toISOString()}\n`);
 
   if (isDryRun) {
-    console.log('Dry run: would run reverse-geocoding, OSM contact extraction, and web scraping.');
-    return { success: true, dryRun: true, geocoding: null, osmContacts: null, webScraper: null };
+    console.log('Dry run: would run reverse-geocoding, OSM contact extraction, Apify enrichment, and web scraping.');
+    return { success: true, dryRun: true, geocoding: null, osmContacts: null, apify: null, webScraper: null };
   }
 
   const results: Record<string, any> = {};
@@ -35,14 +36,25 @@ export async function processEnrichment(isDryRun: boolean = false) {
     results.osmContacts = { error: String(error) };
   }
 
-  // Layer 2: Web scraper enrichment (Brave Search + HTML scraping)
+  // Layer 2: Apify Google Maps Enrichment
   try {
-    console.log('═══ Layer 2: Web Scraper Enrichment ═══');
+    console.log('═══ Layer 2: Apify Google Maps Enrichment ═══');
+    const apifyResult = await enrichViaApify(20);
+    results.apify = apifyResult;
+    console.log(`  → ${apifyResult.enriched} enriched, ${apifyResult.skipped} skipped, ${apifyResult.failed} failed.\n`);
+  } catch (error) {
+    console.error('Layer 2 (Apify scraper) failed:', error);
+    results.apify = { error: String(error) };
+  }
+
+  // Layer 3: Web scraper enrichment (Brave Search + HTML scraping)
+  try {
+    console.log('═══ Layer 3: Web Scraper Enrichment ═══');
     const webResult = await enrichViaWebScraping(10);
     results.webScraper = webResult;
     console.log(`  → ${webResult.enriched} enriched, ${webResult.skipped} skipped, ${webResult.failed} failed.\n`);
   } catch (error) {
-    console.error('Layer 2 (web scraper) failed:', error);
+    console.error('Layer 3 (web scraper) failed:', error);
     results.webScraper = { error: String(error) };
   }
 
