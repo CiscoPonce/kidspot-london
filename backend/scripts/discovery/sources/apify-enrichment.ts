@@ -15,14 +15,19 @@ export async function enrichViaApify(limit: number = 20) {
   const stats = { enriched: 0, skipped: 0, failed: 0 };
 
   try {
-    // 1. Fetch high-value venues missing website or phone
+    // 1. Fetch high-value venues for enrichment/refresh
+    // For 'softplay', we refresh even if data exists to ensure accuracy
+    // For others, we only enrich if missing website/phone
     const { rows: venues } = await db.query(
       `SELECT id, name, type, lat, lon 
        FROM venues 
        WHERE is_active = TRUE 
-       AND type IN ('softplay', 'leisure_centre', 'museum', 'library')
-       AND (website IS NULL OR phone IS NULL)
-       ORDER BY kid_score DESC NULLS LAST, id ASC
+       AND (
+         (type = 'softplay' AND (enriched_at IS NULL OR enriched_at < NOW() - INTERVAL '30 days'))
+         OR 
+         (type IN ('leisure_centre', 'museum', 'library') AND (website IS NULL OR phone IS NULL))
+       )
+       ORDER BY (type = 'softplay') DESC, kid_score DESC NULLS LAST, id ASC
        LIMIT $1`,
       [limit]
     );
