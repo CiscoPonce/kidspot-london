@@ -2,8 +2,8 @@ name: Data Enrichment Pipeline
 
 on:
   schedule:
-    # Run every 4 hours to steadily enrich venues (50 per run = 300/day)
-    - cron: '0 */4 * * *'
+    # Run hourly to maximize free tier usage before billing reset on the 21st
+    - cron: '0 * * * *'
   workflow_dispatch:
     inputs:
       dry_run:
