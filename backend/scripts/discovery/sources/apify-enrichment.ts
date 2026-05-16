@@ -12,7 +12,7 @@ const ACTOR_ID = 'compass~crawler-google-places';
 export async function enrichViaApify(limit: number = 20) {
   logger.info(`Starting Apify Enrichment batch for up to ${limit} venues...`);
 
-  let stats = { enriched: 0, skipped: 0, failed: 0 };
+  const stats = { enriched: 0, skipped: 0, failed: 0 };
 
   try {
     // 1. Fetch high-value venues missing website or phone
@@ -68,7 +68,12 @@ export async function enrichViaApify(limit: number = 20) {
       const apiBaseUrl = process.env.API_BASE_URL || 'https://api.kidspot.london';
       const webhookUrl = `${apiBaseUrl}/api/admin/webhooks/apify?token=${webhookSecret}`;
 
-      const response = await fetch(`https://api.apify.com/v2/acts/${ACTOR_ID}/runs?token=${APIFY_TOKEN}`, {
+      const webhooksParam = Buffer.from(JSON.stringify([{
+        eventTypes: ["ACTOR.RUN.SUCCEEDED"],
+        requestUrl: webhookUrl
+      }])).toString('base64');
+
+      const response = await fetch(`https://api.apify.com/v2/acts/${ACTOR_ID}/runs?token=${APIFY_TOKEN}&webhooks=${webhooksParam}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -76,11 +81,7 @@ export async function enrichViaApify(limit: number = 20) {
           maxCrawledPlacesPerSearch: 1,
           language: 'en',
           countryCode: 'gb',
-          scrapeCompanyWebsite: true, // Deep enrichment: find emails/socials
-          webhooks: [{
-            eventTypes: ["ACTOR.RUN.SUCCEEDED"],
-            requestUrl: webhookUrl
-          }]
+          scrapeCompanyWebsite: true // Deep enrichment: find emails/socials
         })
       });
 
@@ -92,7 +93,7 @@ export async function enrichViaApify(limit: number = 20) {
         throw new Error(`Apify run trigger failed: ${response.statusText}`);
       }
 
-      const runData = await response.json();
+      const runData = await response.json() as any;
       const runId = runData.data.id;
       logger.info(`Apify run triggered with ID: ${runId}. Webhook will process results.`);
       

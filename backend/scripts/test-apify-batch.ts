@@ -33,7 +33,7 @@ async function testApifyBatch() {
     return;
   }
 
-  const runData = await runResponse.json();
+  const runData = await runResponse.json() as any;
   const runId = runData.data.id;
   console.log(`Apify run started successfully. Run ID: ${runId}`);
 
@@ -47,7 +47,7 @@ async function testApifyBatch() {
       console.error(`Failed to fetch run status. Status: ${statusRes.status}`);
       return;
     }
-    const statusData = await statusRes.json();
+    const statusData = await statusRes.json() as any;
     runStatus = statusData.data.status;
     console.log(`Current status: ${runStatus}`);
   }
@@ -66,7 +66,7 @@ async function testApifyBatch() {
     return;
   }
   
-  const items = await datasetRes.json();
+  const items = await datasetRes.json() as any[];
   console.log(`Fetched ${items.length} items from dataset.`);
   if (items.length > 0) {
     console.log('First item structure:');
