@@ -4,10 +4,10 @@
 To become the default, zero-friction utility for parents in the UK to discover, evaluate, and share child-friendly spaces, starting with London.
 
 ## Tech Stack
-- **Frontend**: Next.js 15 (React 19), TailwindCSS 4, MapLibre GL JS 5
-- **Backend**: Node.js 22, Express 5, BullMQ (Task Queue), Pino Logging
-- **Data/AI**: PostgreSQL 15 + PostGIS, Redis 7, Brave Search API, Yelp Fusion API
-- **Infrastructure**: Docker Compose on ARM VPS, GitHub Actions
+- **Frontend**: Next.js 16.2 (React 19), TailwindCSS 4, MapLibre GL JS 5
+- **Backend**: Node.js 22, Express 5, BullMQ (Autonomous Enrichment Engine), Pino Logging
+- **Data/AI**: PostgreSQL 15 + PostGIS, Redis 7, Brave Search API, Yelp Fusion API, Apify (Google Places)
+- **Infrastructure**: Docker Compose on VPS, GitHub Actions
 
 ---
 
@@ -114,7 +114,7 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 ---
 
 ## Phase 11: Scale & Expansion (Weeks 27+)
-**Status**: **ACTIVE**
+**Status**: Completed
 **Goal**: Scale the platform across more UK cities and optimize search relevance with AI.
 
 **Requirements**:
@@ -158,6 +158,41 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ---
 
+## Phase 18: Autonomous Enrichment Engine & Code Quality
+**Status**: **COMPLETED**
+**Goal**: Transform the manual-trigger enrichment pipeline into a self-running background engine that continuously fills data gaps, and resolve critical code quality issues blocking monetization.
+
+**Completed**:
+- ✅ **Autonomous Enrichment Engine**: Rewrote BullMQ worker with 6 self-scheduling repeatable jobs (geocode every 4h, OSM contacts every 6h, web scraping every 8h, Apify daily, dedup weekly, discovery weekly)
+- ✅ **VPS Code Recovery**: Committed Apify service and enrichment script files that existed only on the VPS as uncommitted changes
+- ✅ **CORS Security**: Locked down CORS from permissive `origin: true` to production-only origins via `CORS_ORIGIN` env var
+- ✅ **Overpass Elimination**: Removed live Overpass API calls from venue detail views (2-5s latency savings per request); OSM data served from pre-enriched DB only
+- ✅ **Pipeline Expansion**: Expanded web scraper to cover 6 venue types (was 4) including community halls and parks
+- ✅ **Batch Size Optimization**: Increased OSM contacts 100→200, web scraping 10→30
+- ✅ **Smart Parks**: Auto-generated OSM map links for ~7,000 parks without websites
+- ✅ **Dedup Safety**: Added NULLIF guards to prevent empty strings from overwriting valid data during merges
+- ✅ **Shared Utilities**: Extracted duplicated `slugify()` into single shared module
+
+**Production Stats** (at time of deployment):
+- 14,238 active venues across 8 types
+- Softplay/museum/library: 100% website coverage
+- Leisure centres: 16.9% website coverage (3,308 unenriched — autonomous engine now targeting these)
+- Parks: 54% of total inventory — now have OSM map link fallbacks
+
+---
+
+## Phase 19: Revenue Monetization V2 (Planned)
+**Status**: **PLANNED**
+**Goal**: Enable venue owner self-service claiming and premium sponsorship tiers, leveraging the enriched contact data from Phase 18.
+
+**Requirements**:
+- **REV-01**: Claim Your Listing V2 — Owner verification using enriched email/phone data
+- **REV-02**: Lead Generation Dashboard — Premium sponsorship analytics
+- **REV-03**: Visual Content Pipeline — Automated image enrichment (Google Street View, Unsplash fallback)
+- **REV-04**: Admin Enrichment Dashboard — Real-time data quality monitoring in admin UI
+
+---
+
 ## Requirements Index (New Additions)
 
 ### Phase 8.5: UX & Quality
@@ -167,7 +202,15 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - **UX-ACC-01**: WCAG 2.1 compliance check.
 - **UX-TRAF-01**: Click-through tracking for external links.
 
+### Phase 18: Enrichment Engine
+- **ENR-01**: Autonomous BullMQ worker with repeatable scheduled jobs.
+- **ENR-02**: 5-layer enrichment pipeline (geocode → OSM → web scrape → Apify → smart parks).
+- **ENR-03**: COALESCE/NULLIF data safety across all enrichment layers.
+- **SEC-01**: Production CORS lockdown.
+- **PERF-01**: Eliminate live Overpass calls from detail views.
+
 ---
 
 ## Last Updated
-May 8, 2026
+May 18, 2026
+

@@ -4,14 +4,31 @@
 
 ---
 
+## 📊 Live Platform Stats
+
+| Metric | Value |
+|:---|---:|
+| **Active Venues** | 14,238 |
+| **Venue Types** | 8 (softplay, parks, leisure centres, community halls, museums, libraries, cafes, other) |
+| **With Website** | 1,390 (9.8%) |
+| **With Phone** | 595 (4.2%) |
+| **With Email** | 267 (1.9%) |
+| **Geo-Enriched** | 5,095 (35.8%) |
+| **Contact-Enriched** | 4,764 (33.5%) |
+
+> Data is continuously improving via the autonomous enrichment engine (see below).
+
+---
+
 ## 🚀 Key Features
 
 - **Hyper-Local Search**: Search by postcode or current location with a customizable radius (1-10 miles).
 - **Agentic Discovery**: Real-time integration with Brave Search API to ensure "zero-result" searches never happen. If it's on the web, KidSpot will find it.
-- **On-Demand Venue Details**: Minimizes data decay by fetching the latest venue info (opening hours, ratings, photos) directly from Google Places and OpenStreetMap on-demand.
+- **Autonomous Enrichment Engine**: 6 scheduled BullMQ jobs continuously enrich venue data 24/7 — reverse-geocoding, OSM contact extraction, web scraping, and Google Places via Apify.
 - **Programmatic SEO**: 33+ dedicated area pages (e.g., "Venues in Islington") and category-specific landing pages (e.g., "Soft Play in London").
 - **Sponsor System**: Multi-tiered monetization engine (Gold, Silver, Bronze) for featured local business listings.
-- **Automated Data Pipelines**: 4 GitHub Actions continuously discover, expand, and enrich venue data around the clock.
+- **Claim Your Listing**: Self-service verification flow for venue owners with dedicated sponsor dashboards.
+- **Automated Data Pipelines**: GitHub Actions + BullMQ scheduled jobs for continuous discovery and enrichment.
 - **Mobile First**: Fast, responsive UI optimized for busy parents on the go.
 
 ---
@@ -19,65 +36,98 @@
 ## 🛠️ Technical Stack
 
 ### Frontend
-- **Framework**: Next.js 16.2 (App Router)
-- **Styling**: Tailwind CSS
+- **Framework**: Next.js 16.2 (App Router, React 19)
+- **Styling**: Tailwind CSS 4
 - **Maps**: MapLibre GL JS
 - **State Management**: React Query
 - **Analytics**: Plausible (Privacy-first)
 
 ### Backend
-- **Runtime**: Node.js 22 (Express)
-- **Database**: PostgreSQL 15 + PostGIS (Official arm64 supported image)
-- **Caching**: Redis
-- **Task Queue**: BullMQ (for background discovery)
+- **Runtime**: Node.js 22 (Express 5)
+- **Database**: PostgreSQL 15 + PostGIS (spatial queries, levenshtein deduplication)
+- **Caching**: Redis 7
+- **Task Queue**: BullMQ (autonomous enrichment engine)
+- **Logging**: Pino (structured JSON logging)
 - **Process Manager**: PM2
+
+### Data Sources
+- **OpenStreetMap (Overpass API)** — Community centres, soft play, leisure centres, gyms, playgrounds, parks
+- **Yelp Fusion API** — Business details, ratings, categories
+- **Apify (Google Places Scraper)** — Rich data: images, opening hours, emails, reviews
+- **Brave Search API** — Real-time fallback for venue discovery and web scraping
+- **Nominatim** — Reverse geocoding for postcode/address/borough enrichment
+- **FHRS** — Food hygiene ratings for relevant venues
+- **Council Open Data** — Community hall CSV feeds from London borough councils
+- **Charity Commission** — Registered charity venues (Scout huts, village halls)
 
 ---
 
-## 🔄 Automated Data Pipelines
+## 🔄 Autonomous Enrichment Engine
 
-KidSpot runs **4 automated GitHub Actions** that continuously discover and enrich venue data without any manual intervention. Each pipeline securely triggers an authenticated API endpoint on the production server via HMAC-signed HTTP requests.
+KidSpot runs a **self-scheduling BullMQ worker** that continuously enriches venue data without manual intervention. The worker registers repeatable jobs on startup that fire automatically on a cron schedule.
+
+### Enrichment Pipeline (5 Layers)
+
+```
+Layer 0: Nominatim Reverse-Geocoding → postcode, address, borough
+Layer 1: OSM Contact Enrichment     → website, phone, email from Overpass tags
+Layer 2: Web Scraper Enrichment     → Brave Search + HTML scraping for contact info
+Layer 3: Apify Google Places        → images, opening hours, ratings, emails
+Layer 4: Smart Parks                → Auto-generated OSM map links for parks
+```
+
+### Scheduled Jobs
+
+| Job | Schedule | Batch Size | Purpose |
+|:----|:---------|:----------:|:--------|
+| `enrich-geocode` | Every 4 hours | 200 | Fill missing postcodes and addresses |
+| `enrich-osm-contacts` | Every 6 hours | 200 | Extract contact info from OSM tags |
+| `enrich-web-scrape` | Every 8 hours | 30 | Brave Search + HTML scraping |
+| `enrich-apify` | Daily at 03:00 UTC | 20 | Google Places via Apify actor |
+| `dedup-sweep` | Weekly (Sunday) | — | Merge duplicate venues |
+| `run-discovery` | Weekly (Monday) | — | Full OSM + Yelp discovery run |
+
+### GitHub Actions Pipelines
 
 | Pipeline | Action | Schedule | Description |
-|----------|--------|----------|-------------|
-| **Party Venue Discovery** | `party-discovery.yml` | Every 6 hours | Discovers council halls, charity halls (Scout huts, community centres), and OSM party-friendly venues |
-| **Venue Expansion** | `venue-expansion.yml` | Every 12 hours | Finds school lettings and church/parish halls available for hire across London |
-| **Data Enrichment** | `data-enrichment.yml` | Every 4 hours | Reverse-geocodes venues to fill in missing postcodes, addresses, and borough data (30 venues per batch) |
-| **Stale Venue Refresh** | `discovery.yml` | Scheduled | Re-scrapes outdated venue data to keep listings fresh and accurate |
-
-### Data Sources
-
-- **OpenStreetMap (Overpass API)** — Community centres, soft play, trampoline parks, playgrounds, schools, churches
-- **Council Open Data** — Community hall CSV feeds from London borough councils
-- **Charity Commission** — Registered charity venues (Scout huts, village halls)
-- **Nominatim** — Free reverse geocoding for postcode/address enrichment
-- **Brave Search API** — Real-time fallback for venue discovery
-- **Google Places API** — Rich venue details (photos, ratings, hours)
+|:---------|:-------|:---------|:------------|
+| **Party Venue Discovery** | `party-discovery.yml` | Every 6 hours | Council halls, charity halls, OSM party venues |
+| **Venue Expansion** | `venue-expansion.yml` | Every 12 hours | School lettings and church/parish halls |
+| **Data Enrichment** | `data-enrichment.yml` | Every 4 hours | Triggers full enrichment pipeline |
+| **Stale Venue Refresh** | `discovery.yml` | Scheduled | Re-scrapes outdated venue data |
 
 ### Pipeline Architecture
 
 ```
-GitHub Actions (cron)
-    │
-    ▼
-curl → POST /api/admin/ingest/{parties|expansion|enrichment|stale}
-    │   (HMAC-signed request)
-    ▼
-Express API (admin.ts)
-    │
-    ▼
-Discovery Scripts (backend/scripts/discovery/)
-    │
-    ▼
-PostgreSQL + PostGIS (upsert with deduplication)
+                    ┌─────────────────────┐
+                    │   GitHub Actions     │
+                    │   (cron triggers)    │
+                    └──────────┬──────────┘
+                               │ HMAC-signed POST
+                               ▼
+                    ┌─────────────────────┐
+                    │   Express API       │
+                    │   (admin.ts)        │
+                    └──────────┬──────────┘
+                               │ Adds job to queue
+                               ▼
+┌──────────────────────────────────────────────────────┐
+│              BullMQ Discovery Queue                   │
+│                                                       │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌─────────┐ │
+│  │ Geocode  │ │ OSM      │ │ Web      │ │ Apify   │ │
+│  │ (4h)     │ │ Contacts │ │ Scraper  │ │ (daily) │ │
+│  │          │ │ (6h)     │ │ (8h)     │ │         │ │
+│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬────┘ │
+│       │            │            │            │       │
+│       └────────────┴─────┬──────┴────────────┘       │
+│                          ▼                            │
+│              ┌─────────────────────┐                  │
+│              │  PostgreSQL+PostGIS │                  │
+│              │  (COALESCE/NULLIF)  │                  │
+│              └─────────────────────┘                  │
+└──────────────────────────────────────────────────────┘
 ```
-
-### GitHub Secrets & Variables Required
-
-| Name | Type | Description |
-|------|------|-------------|
-| `INGEST_SIGNING_SECRET` | Secret | HMAC key for authenticating pipeline requests |
-| `API_URL` | Variable | Production API base URL (e.g., `http://your-server:4000`) |
 
 ---
 
@@ -86,8 +136,9 @@ PostgreSQL + PostGIS (upsert with deduplication)
 ### Prerequisites
 - Docker and Docker Compose
 - API Keys for:
-  - **Brave Search API** (Required for fallback search)
-  - **Google Places API** (Required for rich venue details)
+  - **Brave Search API** (Required for fallback search and web scraping)
+  - **Yelp Fusion API** (Required for venue discovery)
+  - **Apify** (Optional — for Google Places enrichment)
 
 ### Setup
 
@@ -101,7 +152,7 @@ PostgreSQL + PostGIS (upsert with deduplication)
    Copy the example env files and fill in your API keys:
    ```bash
    cp backend/.env.example backend/.env
-   # Edit backend/.env with your BRAVE_API_KEY and GOOGLE_PLACES_API_KEY
+   # Edit backend/.env with your API keys
    ```
 
 3. **Launch with Docker**:
@@ -114,59 +165,111 @@ PostgreSQL + PostGIS (upsert with deduplication)
    - **API**: `http://localhost:4000/api/search/venues`
    - **Health Check**: `http://localhost:4000/health`
 
+5. **Verify the enrichment engine**:
+   ```bash
+   docker compose logs worker --tail 20
+   # Should show: "Repeatable enrichment jobs registered successfully"
+   # Should show: "Worker is running with autonomous enrichment engine..."
+   ```
+
 ---
 
 ## 📁 Project Structure
 
 ```
 kidspot-london/
-├── .github/workflows/          # CI/CD and automated data pipelines
-│   ├── ci.yml                  # Build, lint, and test
-│   ├── party-discovery.yml     # Party venue discovery (every 6h)
-│   ├── venue-expansion.yml     # Schools & churches (every 12h)
-│   ├── data-enrichment.yml     # Reverse geocoding enrichment (every 4h)
-│   └── discovery.yml           # Stale venue refresh
+├── .github/workflows/              # CI/CD and automated data pipelines
+│   ├── ci.yml                      # Build, lint, and test
+│   ├── party-discovery.yml         # Party venue discovery (every 6h)
+│   ├── venue-expansion.yml         # Schools & churches (every 12h)
+│   ├── data-enrichment.yml         # Enrichment pipeline trigger (every 4h)
+│   └── discovery.yml               # Stale venue refresh
+├── .planning/                      # Development roadmap and phase docs
 ├── backend/
 │   ├── src/
-│   │   ├── routes/admin.ts     # Authenticated ingest API endpoints
-│   │   ├── services/           # Venue search, ingest lock, etc.
-│   │   └── clients/            # PostgreSQL and Redis clients
-│   ├── scripts/discovery/      # Discovery pipeline scripts
-│   │   ├── party-venues-discovery.ts
-│   │   ├── venue-expansion.ts
-│   │   ├── data-enrichment.ts
-│   │   └── sources/            # Individual data source fetchers
-│   │       ├── council-halls.ts
-│   │       ├── charity-halls.ts
-│   │       ├── osm-parties.ts
-│   │       ├── school-lettings.ts
-│   │       ├── church-halls.ts
-│   │       └── enrichment.ts
-│   └── db/schema.sql           # PostgreSQL + PostGIS schema
+│   │   ├── server.ts               # Express app entrypoint
+│   │   ├── worker.ts               # BullMQ autonomous enrichment engine
+│   │   ├── routes/admin.ts         # Authenticated ingest API endpoints
+│   │   ├── services/
+│   │   │   ├── venueService.ts     # Search, details, click tracking
+│   │   │   ├── apifyService.ts     # Apify webhook processor
+│   │   │   ├── yelpService.ts      # Yelp Fusion API client
+│   │   │   ├── fhrsService.ts      # Food hygiene ratings
+│   │   │   └── claimService.ts     # Venue claiming flow
+│   │   ├── clients/                # PostgreSQL and Redis clients
+│   │   └── utils/slugify.ts        # Shared slug generation
+│   ├── scripts/
+│   │   ├── cron-agent.ts           # Stale venue refresh agent
+│   │   └── discovery/              # Discovery pipeline scripts
+│   │       ├── run-discovery.ts    # Orchestrates all discovery
+│   │       ├── data-enrichment.ts  # 5-layer enrichment orchestrator
+│   │       ├── osm-discovery.ts    # OpenStreetMap venue import
+│   │       ├── yelp-discovery.ts   # Yelp Fusion venue import
+│   │       ├── dedup-sweep.ts      # Spatial deduplication (200m + levenshtein)
+│   │       └── sources/
+│   │           ├── enrichment.ts           # Layer 0: Nominatim reverse-geocoding
+│   │           ├── osm-contact-enrichment.ts # Layer 1: Overpass contact extraction
+│   │           ├── web-scraper-enrichment.ts # Layer 2: Brave + HTML scraping
+│   │           └── apify-enrichment.ts     # Layer 3: Apify Google Places
+│   └── db/
+│       ├── schema.sql              # Full PostgreSQL + PostGIS schema
+│       └── migrations/             # Incremental database migrations
 ├── frontend/
-│   └── src/                    # Next.js 16 App Router
-└── docker-compose.yml          # Full stack orchestration
+│   └── src/                        # Next.js 16 App Router
+│       ├── app/                    # Pages and layouts
+│       ├── components/             # Reusable UI components
+│       └── lib/api.ts              # API client
+└── docker-compose.yml              # Full stack orchestration (5 services)
 ```
 
 ---
 
-## 🔍 Local Verification (London)
+## 🔍 API Endpoints
 
-KidSpot is optimized for London geography. To test the agentic search logic locally:
-1. Ensure your **Brave Search API Key** is active in `.env`.
-2. Search for a specific London postcode (e.g., `N1 9GU`).
-3. If no local records exist, the **London-aware Agent** will trigger, automatically appending "London UK" to your query to find the best local pubs, parks, and halls.
+### Public Search
+| Method | Endpoint | Description |
+|:-------|:---------|:------------|
+| GET | `/api/search/venues` | Search by lat/lon, radius, type, borough |
+| GET | `/api/search/venues/slug/:slug/details` | Full venue details |
+| GET | `/api/search/facets/venues` | Multi-facet search |
+| GET | `/api/search/slugs` | All venue slugs (for SSG) |
+| POST | `/api/search/venues/:id/click` | Track outbound click |
+
+### Admin (HMAC-authenticated)
+| Method | Endpoint | Description |
+|:-------|:---------|:------------|
+| POST | `/api/admin/ingest/parties` | Trigger party venue discovery |
+| POST | `/api/admin/ingest/expansion` | Trigger venue expansion |
+| POST | `/api/admin/ingest/enrichment` | Trigger enrichment pipeline |
+| POST | `/api/admin/ingest/stale` | Trigger stale venue refresh |
+| GET | `/api/admin/enrichment-stats` | Data quality metrics |
 
 ---
 
 ## 🛡️ Security & Performance
 
-- **Production Ready**: Uses PM2 Cluster Mode to fully utilize multi-core architectures.
-- **HMAC Authentication**: All admin/ingest endpoints are protected with timestamp + SHA-256 signature verification.
+- **CORS Locked**: Production origins enforced via `CORS_ORIGIN` env var.
+- **HMAC Authentication**: All admin/ingest endpoints protected with timestamp + SHA-256 signature verification.
 - **Rate Limited**: API protection via `express-rate-limit` (60 req/min).
-- **Secure Headers**: Implemented `helmet.js` for robust HTTP security.
-- **Optimized Caching**: 1-hour Redis cache for all venue details and search results.
-- **Deduplication**: PostGIS spatial deduplication prevents duplicate venue entries within 50 meters.
+- **Secure Headers**: Robust HTTP security via `helmet.js`.
+- **Redis Caching**: 1-hour TTL for venue details and search results.
+- **Deduplication**: PostGIS spatial dedup (200m) + levenshtein fuzzy matching.
+- **Data Safety**: All enrichment uses `COALESCE(NULLIF())` guards to prevent empty values overwriting valid data.
+
+---
+
+## 🔧 Environment Variables
+
+| Variable | Required | Description |
+|:---------|:--------:|:------------|
+| `DATABASE_URL` | ✅ | PostgreSQL connection string |
+| `REDIS_URL` | ✅ | Redis connection string |
+| `BRAVE_API_KEY` | ✅ | Brave Search API key |
+| `YELP_API_KEY` | ✅ | Yelp Fusion API key |
+| `INGEST_SIGNING_SECRET` | ✅ | HMAC key for admin endpoints |
+| `CORS_ORIGIN` | ✅ | Allowed frontend origin(s) |
+| `APIFY_TOKEN` | Optional | Apify API token for Google Places enrichment |
+| `NODE_ENV` | Optional | `production` or `development` |
 
 ---
 
