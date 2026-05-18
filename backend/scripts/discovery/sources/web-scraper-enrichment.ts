@@ -44,18 +44,20 @@ export async function enrichViaWebScraping(batchSize: number = 10): Promise<WebS
   }
 
   try {
-    // Target high-value venues missing website data
+    // Target venues missing website data — expanded to include all actionable types
     const { rows: venues } = await db.query(
       `SELECT id, name, type, borough, lat, lon FROM venues
        WHERE is_active = TRUE
          AND (website IS NULL OR website = '')
-         AND type IN ('softplay', 'leisure_centre', 'museum', 'library')
+         AND type IN ('softplay', 'leisure_centre', 'museum', 'library', 'community_hall', 'park')
        ORDER BY
          CASE type
            WHEN 'softplay' THEN 1
            WHEN 'leisure_centre' THEN 2
-           WHEN 'museum' THEN 3
-           WHEN 'library' THEN 4
+           WHEN 'community_hall' THEN 3
+           WHEN 'museum' THEN 4
+           WHEN 'library' THEN 5
+           WHEN 'park' THEN 6
          END,
          id ASC
        LIMIT $1`,

@@ -20,7 +20,12 @@ const CATEGORY_MAP: Record<string, string> = {
   'gyms': 'leisure_centre'
 };
 
-function mapYelpCategoriesToType(categories: { alias: string; title: string }[]): string {
+function mapYelpCategoriesToType(categories: { alias: string; title: string }[], name: string = ''): string {
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes('gym') || lowerName.includes('leisure centre') || lowerName.includes('sports centre') || lowerName.includes('swimming pool')) {
+    return 'leisure_centre';
+  }
+
   for (const category of categories) {
     if (CATEGORY_MAP[category.alias]) {
       return CATEGORY_MAP[category.alias];
@@ -52,7 +57,7 @@ async function upsertYelpVenue(business: YelpBusiness) {
       return { status: 'skipped', id: null };
     }
 
-    const type = mapYelpCategoriesToType(business.categories);
+    const type = mapYelpCategoriesToType(business.categories, business.name);
     const slug = `${slugify(business.name)}-${business.id.slice(0, 5)}`;
     
     const result = await db.query(
@@ -104,7 +109,10 @@ export async function discoverVenuesWithYelp() {
     'playground', 
     'children museum', 
     'park', 
-    'leisure centre'
+    'leisure centre',
+    'Better Gym',
+    'Better Leisure Centre',
+    'trampoline park'
   ];
   const londonCenter = { lat: 51.5074, lon: -0.1278 };
   

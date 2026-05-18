@@ -53,13 +53,13 @@ export async function processApifyDataset(datasetId: string) {
 
       await db.query(
         `UPDATE venues 
-         SET website = CASE WHEN $1::text IS NOT NULL THEN $1 ELSE website END,
-             phone = CASE WHEN $2::text IS NOT NULL THEN $2 ELSE phone END,
+         SET website = CASE WHEN NULLIF($1::text, '') IS NOT NULL THEN $1 ELSE website END,
+             phone = CASE WHEN NULLIF($2::text, '') IS NOT NULL THEN $2 ELSE phone END,
              rating = COALESCE($3, rating),
              user_ratings_total = COALESCE($4, user_ratings_total),
-             opening_hours = CASE WHEN $5::text IS NOT NULL THEN $5 ELSE opening_hours END,
-             images = CASE WHEN $6::text[] IS NOT NULL THEN $6 ELSE images END,
-             email = CASE WHEN $7::text IS NOT NULL THEN $7 ELSE email END,
+             opening_hours = CASE WHEN NULLIF($5::text, '') IS NOT NULL THEN $5 ELSE opening_hours END,
+             images = CASE WHEN $6::text[] IS NOT NULL AND array_length($6::text[], 1) > 0 THEN $6 ELSE images END,
+             email = CASE WHEN NULLIF($7::text, '') IS NOT NULL THEN $7 ELSE email END,
              enriched_at = NOW()
          WHERE id = $8`,
         [

@@ -57,8 +57,6 @@ export interface Venue {
   enriched_at?: string | Date;
   features?: string[];
   parent_facets?: VenueFacet[];
-  opening_hours?: any;
-  images?: string[];
   
   // Guardrail fields
   editor_locked?: boolean;

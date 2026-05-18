@@ -11,7 +11,6 @@ import { processPartyVenues } from '../../scripts/discovery/party-venues-discove
 import { processVenueExpansion } from '../../scripts/discovery/venue-expansion.js';
 // @ts-ignore
 import { processEnrichment } from '../../scripts/discovery/data-enrichment.js';
-import { processApifyDataset } from '../services/apifyService.js';
 
 const router = express.Router();
 
@@ -82,9 +81,9 @@ router.post('/ingest/parties', verifyHmac, async (req, res) => {
       processPartyVenues(dryRun),
     );
     res.status(200).json({
-      ...metrics,
       success: true,
-      job_id: jobId
+      job_id: jobId,
+      ...metrics
     });
   } catch (error: unknown) {
     if (error instanceof StaleIngestLockedError) {
@@ -113,9 +112,9 @@ router.post('/ingest/expansion', verifyHmac, async (req, res) => {
       processVenueExpansion(dryRun),
     );
     res.status(200).json({
-      ...metrics,
       success: true,
-      job_id: jobId
+      job_id: jobId,
+      ...metrics
     });
   } catch (error: unknown) {
     if (error instanceof StaleIngestLockedError) {
@@ -144,9 +143,9 @@ router.post('/ingest/enrichment', verifyHmac, async (req, res) => {
       processEnrichment(dryRun),
     );
     res.status(200).json({
-      ...metrics,
       success: true,
-      job_id: jobId
+      job_id: jobId,
+      ...metrics
     });
   } catch (error: unknown) {
     if (error instanceof StaleIngestLockedError) {
@@ -179,8 +178,6 @@ router.get('/enrichment-stats', verifyHmac, async (_req, res) => {
         COUNT(*) FILTER (WHERE address IS NOT NULL AND address != '') AS has_address,
         COUNT(*) FILTER (WHERE postcode IS NOT NULL AND postcode != '') AS has_postcode,
         COUNT(*) FILTER (WHERE borough IS NOT NULL AND borough != '') AS has_borough,
-        COUNT(*) FILTER (WHERE opening_hours IS NOT NULL) AS has_opening_hours,
-        COUNT(*) FILTER (WHERE images IS NOT NULL AND array_length(images, 1) > 0) AS has_images,
         COUNT(*) FILTER (WHERE contact_enriched_at IS NOT NULL) AS contact_enriched,
         COUNT(*) FILTER (WHERE enriched_at IS NOT NULL) AS geo_enriched
       FROM venues WHERE is_active = TRUE
@@ -201,13 +198,10 @@ router.get('/enrichment-stats', verifyHmac, async (_req, res) => {
           address: { count: parseInt(stats.has_address), pct: pct(stats.has_address) },
           postcode: { count: parseInt(stats.has_postcode), pct: pct(stats.has_postcode) },
           borough: { count: parseInt(stats.has_borough), pct: pct(stats.has_borough) },
-          opening_hours: { count: parseInt(stats.has_opening_hours), pct: pct(stats.has_opening_hours) },
-          images: { count: parseInt(stats.has_images), pct: pct(stats.has_images) },
         },
         enrichment_progress: {
           contact_enriched: parseInt(stats.contact_enriched),
           geo_enriched: parseInt(stats.geo_enriched),
-          apify_enriched: parseInt(stats.has_opening_hours), // Using opening_hours as proxy for Apify
         }
       }
     });
@@ -215,33 +209,6 @@ router.get('/enrichment-stats', verifyHmac, async (_req, res) => {
     logger.error({ err: error }, 'Error fetching enrichment stats');
     res.status(500).json({ success: false, error: 'Failed to fetch enrichment stats' });
   }
-});
-
-router.post('/webhooks/apify', async (req, res) => {
-  const token = req.query.token;
-  const secret = process.env.APIFY_WEBHOOK_SECRET || 'dev-secret';
-
-  if (token !== secret) {
-    logger.warn(`Unauthorized Apify webhook attempt with token: ${token}`);
-    return res.status(401).json({ success: false, error: 'Unauthorized' });
-  }
-
-  const { resource } = req.body;
-  const datasetId = resource?.defaultDatasetId;
-
-  if (!datasetId) {
-    logger.error({ body: req.body }, 'Missing datasetId in Apify webhook payload');
-    return res.status(400).json({ success: false, error: 'Missing datasetId' });
-  }
-
-  logger.info(`Received Apify webhook for dataset: ${datasetId}`);
-
-  // Process in background
-  processApifyDataset(datasetId).catch(err => {
-    logger.error({ err, datasetId }, 'Error processing Apify dataset in background');
-  });
-
-  res.status(200).json({ success: true, message: 'Webhook received and processing started' });
 });
 
 export default router;

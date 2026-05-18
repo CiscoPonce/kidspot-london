@@ -25,7 +25,7 @@ export async function enrichViaApify(limit: number = 20) {
        AND (
          (type = 'softplay' AND (enriched_at IS NULL OR enriched_at < NOW() - INTERVAL '30 days'))
          OR 
-         (type IN ('leisure_centre', 'museum', 'library') AND (website IS NULL OR phone IS NULL))
+         (type IN ('leisure_centre', 'museum', 'library', 'community_hall') AND (website IS NULL OR phone IS NULL))
        )
        ORDER BY (type = 'softplay') DESC, kid_score DESC NULLS LAST, id ASC
        LIMIT $1`,
@@ -128,13 +128,13 @@ export async function enrichViaApify(limit: number = 20) {
 
         await db.query(
           `UPDATE venues 
-           SET website = COALESCE($1, website),
-               phone = COALESCE($2, phone),
+           SET website = COALESCE(NULLIF($1, ''), website),
+               phone = COALESCE(NULLIF($2, ''), phone),
                rating = COALESCE($3, rating),
                user_ratings_total = COALESCE($4, user_ratings_total),
-               opening_hours = COALESCE($5, opening_hours),
-               images = COALESCE($6, images),
-               email = COALESCE($7, email),
+               opening_hours = COALESCE(NULLIF($5, ''), opening_hours),
+               images = CASE WHEN $6::text[] IS NOT NULL AND array_length($6::text[], 1) > 0 THEN $6 ELSE images END,
+               email = COALESCE(NULLIF($7, ''), email),
                enriched_at = NOW()
            WHERE id = $8`,
           [

@@ -1,15 +1,34 @@
 import { enrichMissingDetails } from './sources/enrichment.js';
 import { enrichOsmContacts } from './sources/osm-contact-enrichment.js';
-import { enrichViaApify } from './sources/apify-enrichment.js';
 import { enrichViaWebScraping } from './sources/web-scraper-enrichment.js';
+import { enrichViaApify } from './sources/apify-enrichment.js';
+import { db } from '../../src/clients/db.js';
+
+/**
+ * Smart Parks: auto-generate OSM map links for parks without websites.
+ * This gives users a clickable destination instead of an empty card.
+ */
+async function enrichParksWithOsmLinks(): Promise<{ updated: number }> {
+  const { rowCount } = await db.query(`
+    UPDATE venues SET
+      website = 'https://www.openstreetmap.org/node/' || source_id
+    WHERE is_active = TRUE
+      AND source = 'osm'
+      AND type = 'park'
+      AND (website IS NULL OR website = '')
+      AND source_id IS NOT NULL
+      AND source_id != ''
+  `);
+  return { updated: rowCount || 0 };
+}
 
 export async function processEnrichment(isDryRun: boolean = false) {
   console.log(`Starting Data Enrichment Pipeline${isDryRun ? ' (DRY RUN)' : ''}...`);
   console.log(`  Time: ${new Date().toISOString()}\n`);
 
   if (isDryRun) {
-    console.log('Dry run: would run reverse-geocoding, OSM contact extraction, Apify enrichment, and web scraping.');
-    return { success: true, dryRun: true, geocoding: null, osmContacts: null, apify: null, webScraper: null };
+    console.log('Dry run: would run reverse-geocoding, OSM contact extraction, web scraping, Apify, and park links.');
+    return { success: true, dryRun: true, geocoding: null, osmContacts: null, webScraper: null, apify: null, parkLinks: null };
   }
 
   const results: Record<string, any> = {};
@@ -28,7 +47,7 @@ export async function processEnrichment(isDryRun: boolean = false) {
   // Layer 1: OSM contact enrichment (website/phone/email from Overpass)
   try {
     console.log('═══ Layer 1: OSM Contact Enrichment ═══');
-    const osmResult = await enrichOsmContacts(100);
+    const osmResult = await enrichOsmContacts(200);
     results.osmContacts = osmResult;
     console.log(`  → ${osmResult.enriched} enriched, ${osmResult.skipped} skipped, ${osmResult.failed} failed.\n`);
   } catch (error) {
@@ -36,26 +55,37 @@ export async function processEnrichment(isDryRun: boolean = false) {
     results.osmContacts = { error: String(error) };
   }
 
-  // Layer 2: Apify Google Maps Enrichment
+  // Layer 2: Web scraper enrichment (Brave Search + HTML scraping)
   try {
-    console.log('═══ Layer 2: Apify Google Maps Enrichment ═══');
-    const apifyResult = await enrichViaApify(200);
-    results.apify = apifyResult;
-    console.log(`  → ${apifyResult.enriched} enriched, ${apifyResult.skipped} skipped, ${apifyResult.failed} failed.\n`);
-  } catch (error) {
-    console.error('Layer 2 (Apify scraper) failed:', error);
-    results.apify = { error: String(error) };
-  }
-
-  // Layer 3: Web scraper enrichment (Brave Search + HTML scraping)
-  try {
-    console.log('═══ Layer 3: Web Scraper Enrichment ═══');
-    const webResult = await enrichViaWebScraping(10);
+    console.log('═══ Layer 2: Web Scraper Enrichment ═══');
+    const webResult = await enrichViaWebScraping(30);
     results.webScraper = webResult;
     console.log(`  → ${webResult.enriched} enriched, ${webResult.skipped} skipped, ${webResult.failed} failed.\n`);
   } catch (error) {
-    console.error('Layer 3 (web scraper) failed:', error);
+    console.error('Layer 2 (web scraper) failed:', error);
     results.webScraper = { error: String(error) };
+  }
+
+  // Layer 3: Apify Google Places enrichment
+  try {
+    console.log('═══ Layer 3: Apify Google Places ═══');
+    const apifyResult = await enrichViaApify(20);
+    results.apify = apifyResult;
+    console.log(`  → enriched=${apifyResult.enriched}, skipped=${apifyResult.skipped}, failed=${apifyResult.failed}\n`);
+  } catch (error) {
+    console.error('Layer 3 (Apify) failed:', error);
+    results.apify = { error: String(error) };
+  }
+
+  // Layer 4: Smart Parks — OSM map link fallback
+  try {
+    console.log('═══ Layer 4: Smart Parks OSM Links ═══');
+    const parkResult = await enrichParksWithOsmLinks();
+    results.parkLinks = parkResult;
+    console.log(`  → ${parkResult.updated} parks updated with OSM map links.\n`);
+  } catch (error) {
+    console.error('Layer 4 (park links) failed:', error);
+    results.parkLinks = { error: String(error) };
   }
 
   console.log('═══ Pipeline Complete ═══');

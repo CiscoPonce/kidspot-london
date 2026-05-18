@@ -37,9 +37,12 @@ app.use(helmet({
   }
 }));
 
-// CORS - Lock to production origin if available
+// CORS - Lock to production origins; fall back to permissive in development
+const CORS_ALLOWED = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+  : (process.env.NODE_ENV === 'production' ? ['https://kidspot.london', 'https://www.kidspot.london'] : true);
 app.use(cors({
-  origin: true, // Reflect request origin (effectively allowing any origin while keeping credentials support)
+  origin: CORS_ALLOWED,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-ingest-timestamp', 'x-ingest-signature']

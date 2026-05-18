@@ -11,9 +11,13 @@ function mapVenueType(tags: Record<string, string>): string {
   // Specific kids' party keywords in name
   if (name.includes('soft play') || name.includes('play centre')) return 'softplay';
   if (name.includes('playground') || name.includes('play area')) return 'park';
+  if (name.includes('gym') || name.includes('leisure centre') || name.includes('sports centre') || name.includes('swimming pool')) return 'leisure_centre';
 
   // Tag-based mapping
   if (tags.leisure === 'indoor_play' || tags.indoor_play === 'yes') return 'softplay';
+  if (tags.leisure === 'leisure_centre' || tags.amenity === 'leisure_centre' || tags.leisure === 'sports_centre') return 'leisure_centre';
+  if (tags.leisure === 'fitness_centre' || tags.leisure === 'gym' || tags.amenity === 'gym') return 'leisure_centre';
+  if (tags.leisure === 'swimming_pool' || tags.amenity === 'public_bath') return 'leisure_centre';
   if (tags['rooms:party'] === 'yes' || tags.party_hire === 'yes') return 'community_hall';
   if (tags.amenity === 'community_centre' || tags.amenity === 'village_hall') return 'community_hall';
   if (tags.leisure === 'park' || tags.leisure === 'playground') return 'park';
@@ -37,12 +41,29 @@ const OSM_QUERIES = [
     `
   },
   {
+    name: 'leisure_centre',
+    query: `
+      [out:json][timeout:300];
+      (
+        node["leisure"~"leisure_centre|sports_centre|fitness_centre|gym|swimming_pool"](51.2,-0.5,51.7,0.3);
+        way["leisure"~"leisure_centre|sports_centre|fitness_centre|gym|swimming_pool"](51.2,-0.5,51.7,0.3);
+        relation["leisure"~"leisure_centre|sports_centre|fitness_centre|gym|swimming_pool"](51.2,-0.5,51.7,0.3);
+        node["amenity"~"leisure_centre|gym|public_bath"](51.2,-0.5,51.7,0.3);
+        way["amenity"~"leisure_centre|gym|public_bath"](51.2,-0.5,51.7,0.3);
+        node["name"~"Better"](51.2,-0.5,51.7,0.3);
+        way["name"~"Better"](51.2,-0.5,51.7,0.3);
+      );
+      out center;
+    `
+  },
+  {
     name: 'party_venue',
     query: `
       [out:json][timeout:300];
       (
         node["rooms:party"="yes"](51.2,-0.5,51.7,0.3);
         way["rooms:party"="yes"](51.2,-0.5,51.7,0.3);
+        relation["rooms:party"="yes"](51.2,-0.5,51.7,0.3);
         node["amenity"="hall"]["party_hire"="yes"](51.2,-0.5,51.7,0.3);
         way["amenity"="hall"]["party_hire"="yes"](51.2,-0.5,51.7,0.3);
       );
@@ -54,9 +75,9 @@ const OSM_QUERIES = [
     query: `
       [out:json][timeout:300];
       (
-        node["amenity"="community_centre"](51.2,-0.5,51.7,0.3);
-        way["amenity"="community_centre"](51.2,-0.5,51.7,0.3);
-        relation["amenity"="community_centre"](51.2,-0.5,51.7,0.3);
+        node["amenity"~"community_centre|village_hall"](51.2,-0.5,51.7,0.3);
+        way["amenity"~"community_centre|village_hall"](51.2,-0.5,51.7,0.3);
+        relation["amenity"~"community_centre|village_hall"](51.2,-0.5,51.7,0.3);
       );
       out center;
     `

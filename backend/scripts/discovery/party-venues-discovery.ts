@@ -48,8 +48,7 @@ export async function processPartyVenues(isDryRun: boolean = false) {
       ...osmVenues
     ];
 
-    for (const v of allVenues) {
-      const venue = v as any;
+    for (const venue of allVenues) {
       try {
         const slug = generateSlug(venue.name, venue.id || Math.random().toString(36).substring(7));
         

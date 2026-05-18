@@ -11,41 +11,50 @@ export interface DedupResult {
  *
  * Finds venues with the same name within 200m of each other and merges them.
  * Keeps the venue with the most enriched data, deactivates the rest.
+ * Uses levenshtein distance <= 2 to catch slight name variations (e.g. typos).
+ * Uses NULLIF guards throughout to prevent empty strings from overwriting valid data.
  */
 export async function runDedupSweep(dryRun: boolean = false): Promise<DedupResult> {
   const result: DedupResult = { groupsFound: 0, venuesMerged: 0, venuesDeactivated: 0 };
 
   try {
-    // Find duplicate groups: same name, within 200 meters
+    // Find duplicate pairs: same name (or levenshtein <= 2), within 200 meters
     const { rows: dupeGroups } = await db.query(`
+      WITH pairs AS (
+        SELECT a.name as group_name, a.id as a_id, b.id as b_id
+        FROM venues a
+        JOIN venues b ON 
+          (a.name = b.name OR levenshtein(lower(a.name), lower(b.name)) <= 2)
+          AND a.id < b.id
+          AND a.is_active = TRUE
+          AND b.is_active = TRUE
+          AND ST_DWithin(
+            ST_MakePoint(a.lon, a.lat)::geography,
+            ST_MakePoint(b.lon, b.lat)::geography,
+            200
+          )
+      ),
+      all_ids AS (
+        SELECT group_name, a_id as id FROM pairs
+        UNION
+        SELECT group_name, b_id as id FROM pairs
+      )
       SELECT
-        a.name,
-        array_agg(a.id ORDER BY
-          -- Score: prefer venues with more data
-          (CASE WHEN a.website IS NOT NULL AND a.website != '' THEN 4 ELSE 0 END) +
-          (CASE WHEN a.phone IS NOT NULL AND a.phone != '' THEN 3 ELSE 0 END) +
-          (CASE WHEN a.email IS NOT NULL AND a.email != '' THEN 2 ELSE 0 END) +
-          (CASE WHEN a.address IS NOT NULL AND a.address != '' THEN 2 ELSE 0 END) +
-          (CASE WHEN a.postcode IS NOT NULL AND a.postcode != '' THEN 1 ELSE 0 END) +
-          (CASE WHEN a.borough IS NOT NULL AND a.borough != '' THEN 1 ELSE 0 END) +
-          (CASE WHEN a.enriched_at IS NOT NULL THEN 1 ELSE 0 END)
-          DESC, a.id ASC
+        group_name as name,
+        array_agg(id ORDER BY
+          (SELECT 
+            (CASE WHEN website IS NOT NULL AND website != '' THEN 4 ELSE 0 END) +
+            (CASE WHEN phone IS NOT NULL AND phone != '' THEN 3 ELSE 0 END) +
+            (CASE WHEN email IS NOT NULL AND email != '' THEN 2 ELSE 0 END) +
+            (CASE WHEN address IS NOT NULL AND address != '' THEN 2 ELSE 0 END) +
+            (CASE WHEN postcode IS NOT NULL AND postcode != '' THEN 1 ELSE 0 END) +
+            (CASE WHEN borough IS NOT NULL AND borough != '' THEN 1 ELSE 0 END) +
+            (CASE WHEN enriched_at IS NOT NULL THEN 1 ELSE 0 END)
+           FROM venues WHERE venues.id = all_ids.id) DESC, id ASC
         ) AS venue_ids,
         COUNT(*) AS cnt
-      FROM venues a
-      JOIN venues b ON a.name = b.name
-        AND a.id < b.id
-        AND a.is_active = TRUE
-        AND b.is_active = TRUE
-        AND ST_DWithin(
-          ST_MakePoint(a.lon, a.lat)::geography,
-          ST_MakePoint(b.lon, b.lat)::geography,
-          200
-        )
-      WHERE a.is_active = TRUE
-      GROUP BY a.name
-      HAVING COUNT(*) >= 2
-      ORDER BY COUNT(*) DESC
+      FROM all_ids
+      GROUP BY group_name
     `);
 
     console.log(`Found ${dupeGroups.length} duplicate groups.`);
@@ -56,21 +65,25 @@ export async function runDedupSweep(dryRun: boolean = false): Promise<DedupResul
       const keepId = ids[0]; // First in the array has the highest data score
       const deactivateIds = ids.slice(1);
 
+      if (deactivateIds.length === 0) continue;
+
       console.log(`  "${group.name}" (${ids.length} venues): keep #${keepId}, deactivate ${deactivateIds.join(', ')}`);
 
       if (!dryRun) {
-        // Merge: copy any non-null fields from duplicates to the keeper
+        // Merge: copy any non-null, non-empty fields from duplicates to the keeper
         for (const dupeId of deactivateIds) {
           await db.query(`
             UPDATE venues SET
-              website = COALESCE(website, (SELECT website FROM venues WHERE id = $1)),
-              phone = COALESCE(phone, (SELECT phone FROM venues WHERE id = $1)),
-              email = COALESCE(email, (SELECT email FROM venues WHERE id = $1)),
-              address = COALESCE(address, (SELECT address FROM venues WHERE id = $1)),
-              postcode = COALESCE(postcode, (SELECT postcode FROM venues WHERE id = $1)),
-              borough = COALESCE(borough, (SELECT borough FROM venues WHERE id = $1)),
-              booking_url = COALESCE(booking_url, (SELECT booking_url FROM venues WHERE id = $1)),
-              description = COALESCE(description, (SELECT description FROM venues WHERE id = $1))
+              website = COALESCE(NULLIF(website, ''), (SELECT NULLIF(website, '') FROM venues WHERE id = $1)),
+              phone = COALESCE(NULLIF(phone, ''), (SELECT NULLIF(phone, '') FROM venues WHERE id = $1)),
+              email = COALESCE(NULLIF(email, ''), (SELECT NULLIF(email, '') FROM venues WHERE id = $1)),
+              address = COALESCE(NULLIF(address, ''), (SELECT NULLIF(address, '') FROM venues WHERE id = $1)),
+              postcode = COALESCE(NULLIF(postcode, ''), (SELECT NULLIF(postcode, '') FROM venues WHERE id = $1)),
+              borough = COALESCE(NULLIF(borough, ''), (SELECT NULLIF(borough, '') FROM venues WHERE id = $1)),
+              booking_url = COALESCE(NULLIF(booking_url, ''), (SELECT NULLIF(booking_url, '') FROM venues WHERE id = $1)),
+              description = COALESCE(NULLIF(description, ''), (SELECT NULLIF(description, '') FROM venues WHERE id = $1)),
+              opening_hours = COALESCE(NULLIF(opening_hours, ''), (SELECT NULLIF(opening_hours, '') FROM venues WHERE id = $1)),
+              images = COALESCE(images, (SELECT images FROM venues WHERE id = $1))
             WHERE id = $2
           `, [dupeId, keepId]);
         }

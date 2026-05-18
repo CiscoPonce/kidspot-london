@@ -475,34 +475,10 @@ const fetchYelpDetails = async (venue: Venue) => {
   }
 };
 
-/**
- * Fetch OSM details
- */
-const fetchOSMDetails = async (osmId: string) => {
-  try {
-    const response = await axios.get(`https://overpass-api.de/api/interpreter`, {
-      params: {
-        data: `[out:json];(node(${osmId});way(${osmId});relation(${osmId}););out;`
-      },
-      timeout: 10000
-    });
-
-    if (response.data && response.data.elements && response.data.elements.length > 0) {
-      const element = response.data.elements[0];
-      return {
-        address: element.tags?.address,
-        phone: element.tags?.phone,
-        website: element.tags?.website,
-        description: element.tags?.description
-      };
-    }
-    
-    return null;
-  } catch (error: any) {
-    console.error('Error fetching OSM details:', error.message);
-    return null;
-  }
-};
+// NOTE: fetchOSMDetails (live Overpass call) was removed in Phase 18 prep.
+// OSM contact data is now pre-populated by the enrichment pipeline (osm-contact-enrichment.ts).
+// All venue details are served from the DB. If an OSM venue hasn't been enriched yet,
+// it will be picked up by the background enrichment engine.
 
 const baseVenueService = {
   /**
@@ -704,7 +680,7 @@ const baseVenueService = {
     const venueResult = await db.query(
       `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug,
               website, phone, email, booking_url, address, postcode, borough,
-              description, opening_hours, images, rating, price_level, features,
+              description, opening_hours, rating, price_level, features,
               parent_facets, kid_score
        FROM venues
        WHERE slug = $1 AND is_active = TRUE`,
@@ -718,9 +694,8 @@ const baseVenueService = {
 
     if (venue.source === 'google' || venue.source === 'yelp' || venue.source === 'manual') {
       externalDetails = await fetchYelpDetails(venue);
-    } else if (venue.source === 'osm') {
-      externalDetails = await fetchOSMDetails(venue.source_id);
     }
+    // OSM venues use pre-enriched DB data only (no live Overpass calls)
 
     // Merge: external API data as base, then overlay stored DB fields (DB takes precedence)
     const merged = {
@@ -731,7 +706,6 @@ const baseVenueService = {
       booking_url: venue.booking_url || (externalDetails as any)?.booking_url || null,
       description: venue.description || (externalDetails as any)?.description || null,
       opening_hours: venue.opening_hours || (externalDetails as any)?.opening_hours || null,
-      images: venue.images || (externalDetails as any)?.photos || null,
       // DB contact fields take precedence (manually curated)
       address: venue.address || (externalDetails as any)?.address || null,
       website: venue.website || (externalDetails as any)?.website || null,
@@ -786,7 +760,7 @@ const baseVenueService = {
     const venueResult = await db.query(
       `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug,
               website, phone, email, booking_url, address, postcode, borough,
-              description, opening_hours, images, rating, price_level, features,
+              description, opening_hours, rating, price_level, features,
               parent_facets, kid_score
        FROM venues
        WHERE id = $1 AND is_active = TRUE`,
@@ -800,9 +774,8 @@ const baseVenueService = {
 
     if (venue.source === 'google' || venue.source === 'yelp' || venue.source === 'manual') {
       externalDetails = await fetchYelpDetails(venue);
-    } else if (venue.source === 'osm') {
-      externalDetails = await fetchOSMDetails(venue.source_id);
     }
+    // OSM venues use pre-enriched DB data only (no live Overpass calls)
 
     // Merge: external API data as base, then overlay stored DB fields (DB takes precedence)
     const merged = {
@@ -813,7 +786,6 @@ const baseVenueService = {
       booking_url: venue.booking_url || (externalDetails as any)?.booking_url || null,
       description: venue.description || (externalDetails as any)?.description || null,
       opening_hours: venue.opening_hours || (externalDetails as any)?.opening_hours || null,
-      images: venue.images || (externalDetails as any)?.photos || null,
       // DB contact fields take precedence (manually curated)
       address: venue.address || (externalDetails as any)?.address || null,
       website: venue.website || (externalDetails as any)?.website || null,
