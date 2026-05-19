@@ -75,6 +75,24 @@ async function setupRepeatingJobs() {
       removeOnFail: { count: 20 },
     });
 
+    // Layer 3.5: Yelp Fusion details enrichment
+    // Daily at 04:00 UTC, batch of 30 (free details)
+    await discoveryQueue.add('enrich-yelp-details', { batchSize: 30 }, {
+      repeat: { pattern: '0 4 * * *' }, // Daily at 04:00
+      jobId: 'repeat:enrich-yelp-details',
+      removeOnComplete: { count: 10 },
+      removeOnFail: { count: 20 },
+    });
+
+    // Yelp softplay borough-based grid discovery
+    // Weekly on Tuesday at 01:00 UTC
+    await discoveryQueue.add('discover-yelp-grid', {}, {
+      repeat: { pattern: '0 1 * * 2' }, // Weekly on Tuesday
+      jobId: 'repeat:discover-yelp-grid',
+      removeOnComplete: { count: 5 },
+      removeOnFail: { count: 10 },
+    });
+
     // Deduplication sweep — weekly on Sunday at 05:00 UTC
     await discoveryQueue.add('dedup-sweep', { dryRun: false }, {
       repeat: { pattern: '0 5 * * 0' }, // Sunday at 05:00
@@ -165,6 +183,23 @@ const worker = new Worker(
           const batchSize = (job.data as EnrichmentJobData)?.batchSize || 20;
           const result = await enrichViaApify(batchSize);
           logger.info({ result }, 'Apify enrichment complete');
+          return { status: 'completed', ...result };
+        }
+
+        // ── Layer 3.5: Yelp details enrichment ──
+        case 'enrich-yelp-details': {
+          const { enrichViaYelpDetails } = await import('../scripts/discovery/sources/yelp-details-enrichment.js');
+          const batchSize = (job.data as EnrichmentJobData)?.batchSize || 30;
+          const result = await enrichViaYelpDetails(batchSize);
+          logger.info({ result }, 'Yelp details enrichment complete');
+          return { status: 'completed', ...result };
+        }
+
+        // ── Yelp softplay grid discovery ──
+        case 'discover-yelp-grid': {
+          const { runYelpGridSoftplayDiscovery } = await import('../scripts/discovery/sources/yelp-grid-softplay.js');
+          const result = await runYelpGridSoftplayDiscovery();
+          logger.info({ result }, 'Yelp grid softplay discovery complete');
           return { status: 'completed', ...result };
         }
 

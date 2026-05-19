@@ -66,14 +66,15 @@
 
 KidSpot runs a **self-scheduling BullMQ worker** that continuously enriches venue data without manual intervention. The worker registers repeatable jobs on startup that fire automatically on a cron schedule.
 
-### Enrichment Pipeline (5 Layers)
+### Enrichment Pipeline (6 Layers)
 
 ```
 Layer 0: Nominatim Reverse-Geocoding → postcode, address, borough
 Layer 1: OSM Contact Enrichment     → website, phone, email from Overpass tags
 Layer 2: Web Scraper Enrichment     → Brave Search + HTML scraping for contact info
-Layer 3: Apify Google Places        → images, opening hours, ratings, emails
-Layer 4: Smart Parks                → Auto-generated OSM map links for parks
+Layer 3: Yelp Details Enrichment    → opening hours, photos, ratings (Free, 5,000 requests/day)
+Layer 4: Apify Google Places        → images, opening hours, ratings, emails (Google Places fallback)
+Layer 5: Smart Parks                → Auto-generated OSM map links for parks
 ```
 
 ### Scheduled Jobs
@@ -83,6 +84,8 @@ Layer 4: Smart Parks                → Auto-generated OSM map links for parks
 | `enrich-geocode` | Every 4 hours | 200 | Fill missing postcodes and addresses |
 | `enrich-osm-contacts` | Every 6 hours | 200 | Extract contact info from OSM tags |
 | `enrich-web-scrape` | Every 8 hours | 30 | Brave Search + HTML scraping |
+| `discover-yelp-grid` | Weekly (Sunday 01:00) | — | Borough-based Yelp softplay grid discovery |
+| `enrich-yelp-details`| Daily at 04:00 UTC | 30 | Batch Yelp details (hours, photos, rating) enrichment |
 | `enrich-apify` | Daily at 03:00 UTC | 20 | Google Places via Apify actor |
 | `dedup-sweep` | Weekly (Sunday) | — | Merge duplicate venues |
 | `run-discovery` | Weekly (Monday) | — | Full OSM + Yelp discovery run |
@@ -202,18 +205,22 @@ kidspot-london/
 │   │   ├── cron-agent.ts           # Stale venue refresh agent
 │   │   └── discovery/              # Discovery pipeline scripts
 │   │       ├── run-discovery.ts    # Orchestrates all discovery
-│   │       ├── data-enrichment.ts  # 5-layer enrichment orchestrator
-│   │       ├── osm-discovery.ts    # OpenStreetMap venue import
+│   │       ├── data-enrichment.ts  # 6-layer enrichment orchestrator
+│   │       ├── osm-discovery.ts    # OpenStreetMap venue import (Enhanced tags)
 │   │       ├── yelp-discovery.ts   # Yelp Fusion venue import
 │   │       ├── dedup-sweep.ts      # Spatial deduplication (200m + levenshtein)
 │   │       └── sources/
 │   │           ├── enrichment.ts           # Layer 0: Nominatim reverse-geocoding
 │   │           ├── osm-contact-enrichment.ts # Layer 1: Overpass contact extraction
 │   │           ├── web-scraper-enrichment.ts # Layer 2: Brave + HTML scraping
-│   │           └── apify-enrichment.ts     # Layer 3: Apify Google Places
+│   │           ├── yelp-grid-softplay.ts   # Phase 17.5: Borough grid Yelp discovery
+│   │           ├── yelp-details-enrichment.ts # Layer 3: Yelp opening hours & photos
+│   │           └── apify-enrichment.ts     # Layer 4: Apify Google Places
+│   ├── run-migration-023.js        # Phase 17.5 migration runner
 │   └── db/
-│       ├── schema.sql              # Full PostgreSQL + PostGIS schema
+│       ├── schema.sql              # Full PostgreSQL + PostGIS schema (Updated)
 │       └── migrations/             # Incremental database migrations
+│           └── 023_fix_insert_venue_function.sql # Fix constraint function signature
 ├── frontend/
 │   └── src/                        # Next.js 16 App Router
 │       ├── app/                    # Pages and layouts

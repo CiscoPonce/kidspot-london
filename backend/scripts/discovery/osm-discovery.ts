@@ -9,12 +9,23 @@ function mapVenueType(tags: Record<string, string>): string {
   const name = (tags.name || '').toLowerCase();
   
   // Specific kids' party keywords in name
-  if (name.includes('soft play') || name.includes('play centre')) return 'softplay';
+  if (
+    name.includes('soft play') ||
+    name.includes('softplay') ||
+    name.includes('play centre') ||
+    name.includes('play center') ||
+    name.includes('play barn') ||
+    name.includes('play cafe') ||
+    name.includes('playcafe') ||
+    name.includes('play zone')
+  ) {
+    return 'softplay';
+  }
   if (name.includes('playground') || name.includes('play area')) return 'park';
   if (name.includes('gym') || name.includes('leisure centre') || name.includes('sports centre') || name.includes('swimming pool')) return 'leisure_centre';
 
   // Tag-based mapping
-  if (tags.leisure === 'indoor_play' || tags.indoor_play === 'yes') return 'softplay';
+  if (tags.leisure === 'indoor_play' || tags.indoor_play === 'yes' || tags.playground === 'indoor' || tags.leisure === 'play_hall') return 'softplay';
   if (tags.leisure === 'leisure_centre' || tags.amenity === 'leisure_centre' || tags.leisure === 'sports_centre') return 'leisure_centre';
   if (tags.leisure === 'fitness_centre' || tags.leisure === 'gym' || tags.amenity === 'gym') return 'leisure_centre';
   if (tags.leisure === 'swimming_pool' || tags.amenity === 'public_bath') return 'leisure_centre';
@@ -36,6 +47,15 @@ const OSM_QUERIES = [
         relation["leisure"="indoor_play"](51.2,-0.5,51.7,0.3);
         node["indoor_play"="yes"](51.2,-0.5,51.7,0.3);
         way["indoor_play"="yes"](51.2,-0.5,51.7,0.3);
+        node["playground"="indoor"](51.2,-0.5,51.7,0.3);
+        way["playground"="indoor"](51.2,-0.5,51.7,0.3);
+        relation["playground"="indoor"](51.2,-0.5,51.7,0.3);
+        node["leisure"="play_hall"](51.2,-0.5,51.7,0.3);
+        way["leisure"="play_hall"](51.2,-0.5,51.7,0.3);
+        relation["leisure"="play_hall"](51.2,-0.5,51.7,0.3);
+        node["name"~"soft play|softplay|play centre|play center|play barn|play zone|indoor playground",i](51.2,-0.5,51.7,0.3);
+        way["name"~"soft play|softplay|play centre|play center|play barn|play zone|indoor playground",i](51.2,-0.5,51.7,0.3);
+        relation["name"~"soft play|softplay|play centre|play center|play barn|play zone|indoor playground",i](51.2,-0.5,51.7,0.3);
       );
       out center;
     `
