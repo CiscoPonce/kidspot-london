@@ -1,6 +1,91 @@
-    // Deduplication sweep — weekly on Sunday at 05:00 UTC
+import { Worker, Job, Queue } from 'bullmq';
+import { redis } from './clients/redis.js';
+import { logger } from './config/logger.js';
+import env from './config/env.js';
+import { StaleIngestLockedError, withStaleIngestLock } from './services/ingestLock.js';
+
+logger.info('=== KidSpot London - Background Worker ===');
+logger.info(`Connected to Redis at: ${env.REDIS_URL}`);
+
+interface ProcessStaleJobData {
+  limit?: number;
+  dryRun?: boolean;
+}
+
+interface EnrichmentJobData {
+  batchSize?: number;
+  layer?: 'geocode' | 'osm-contacts' | 'web-scrape' | 'apify';
+}
+
+interface DedupJobData {
+  dryRun?: boolean;
+}
+
+const discoveryQueue = new Queue('discovery', { connection: redis });
+
+const jobOpts = {
+  removeOnComplete: { count: 10 },
+  removeOnFail: { count: 20 },
+  attempts: 3,
+  backoff: { type: 'exponential' as const, delay: 30000 },
+};
+
+async function setupRepeatingJobs() {
+  try {
+    await discoveryQueue.add('enrich-geocode', { batchSize: 200 }, {
+      repeat: { pattern: '0 */4 * * *' },
+      jobId: 'repeat:enrich-geocode',
+      ...jobOpts,
+    });
+
+    await discoveryQueue.add('enrich-osm-contacts', { batchSize: 200 }, {
+      repeat: { pattern: '30 */6 * * *' },
+      jobId: 'repeat:enrich-osm-contacts',
+      ...jobOpts,
+    });
+
+    await discoveryQueue.add('enrich-web-scrape', { batchSize: 30 }, {
+      repeat: { pattern: '15 */8 * * *' },
+      jobId: 'repeat:enrich-web-scrape',
+      ...jobOpts,
+    });
+
+    // Layer 2b: Direct website crawl
+    await discoveryQueue.add('enrich-direct-crawl', { batchSize: 100 }, {
+      repeat: { pattern: '0 */4 * * *' },
+      jobId: 'repeat:enrich-direct-crawl',
+      ...jobOpts,
+    });
+
+    // Layer 1b: OSM opening hours
+    await discoveryQueue.add('enrich-osm-hours', { batchSize: 100 }, {
+      repeat: { pattern: '45 */6 * * *' },
+      jobId: 'repeat:enrich-osm-hours',
+      ...jobOpts,
+    });
+
+    await discoveryQueue.add('enrich-apify', { batchSize: 20 }, {
+      repeat: { pattern: '0 3 * * *' },
+      jobId: 'repeat:enrich-apify',
+      ...jobOpts,
+    });
+
+    // Yelp — DISABLED (Fusion API trial expired)
+
+    await discoveryQueue.add('enrich-foursquare', { batchSize: 50 }, {
+      repeat: { pattern: '0 5 * * *' },
+      jobId: 'repeat:enrich-foursquare',
+      ...jobOpts,
+    });
+
+    await discoveryQueue.add('enrich-geoapify', { batchSize: 40 }, {
+      repeat: { pattern: '0 6 * * *' },
+      jobId: 'repeat:enrich-geoapify',
+      ...jobOpts,
+    });
+
     await discoveryQueue.add('dedup-sweep', { dryRun: false }, {
-      repeat: { pattern: '0 5 * * 0' }, // Sunday at 05:00
+      repeat: { pattern: '0 5 * * 0' },
       jobId: 'repeat:dedup-sweep',
       removeOnComplete: { count: 5 },
       removeOnFail: { count: 10 },
@@ -8,9 +93,8 @@
       backoff: { type: 'exponential', delay: 30000 },
     });
 
-    // Full discovery run — weekly on Monday at 02:00 UTC
     await discoveryQueue.add('run-discovery', {}, {
-      repeat: { pattern: '0 2 * * 1' }, // Monday at 02:00
+      repeat: { pattern: '0 2 * * 1' },
       jobId: 'repeat:run-discovery',
       removeOnComplete: { count: 5 },
       removeOnFail: { count: 10 },
@@ -24,9 +108,6 @@
   }
 }
 
-// ──────────────────────────────────────────────────
-// Worker: processes all job types
-// ──────────────────────────────────────────────────
 const worker = new Worker(
   'discovery',
   async (job: Job) => {
@@ -35,14 +116,12 @@ const worker = new Worker(
 
     try {
       switch (job.name) {
-        // ── Discovery ──
         case 'run-discovery': {
           const { runAllDiscovery } = await import('../scripts/discovery/run-discovery.js');
           await runAllDiscovery();
           break;
         }
 
-        // ── Stale venue refresh ──
         case 'process-stale': {
           const { processStaleVenues } = await import('../scripts/cron-agent.js');
           const data = (job.data || {}) as ProcessStaleJobData;
@@ -60,7 +139,6 @@ const worker = new Worker(
           break;
         }
 
-        // ── Layer 0: Reverse-geocoding ──
         case 'enrich-geocode': {
           const { enrichMissingDetails } = await import('../scripts/discovery/sources/enrichment.js');
           const result = await enrichMissingDetails();
@@ -68,7 +146,6 @@ const worker = new Worker(
           return { status: 'completed', ...result };
         }
 
-        // ── Layer 1: OSM contact enrichment ──
         case 'enrich-osm-contacts': {
           const { enrichOsmContacts } = await import('../scripts/discovery/sources/osm-contact-enrichment.js');
           const batchSize = (job.data as EnrichmentJobData)?.batchSize || 200;
@@ -77,7 +154,6 @@ const worker = new Worker(
           return { status: 'completed', ...result };
         }
 
-        // ── Layer 2: Web scraper enrichment ──
         case 'enrich-web-scrape': {
           const { enrichViaWebScraping } = await import('../scripts/discovery/sources/web-scraper-enrichment.js');
           const batchSize = (job.data as EnrichmentJobData)?.batchSize || 30;
@@ -85,8 +161,6 @@ const worker = new Worker(
           logger.info({ result }, 'Web scraper enrichment complete');
           return { status: 'completed', ...result };
         }
-
-        // ── Layer 3: Apify Google Places enrichment ──
 
         case 'enrich-direct-crawl': {
           const { enrichViaDirectCrawl } = await import('../scripts/discovery/sources/direct-crawl-enrichment.js');
@@ -112,9 +186,8 @@ const worker = new Worker(
           return { status: 'completed', ...result };
         }
 
-        // Yelp details — DISABLED (trial expired)
+        // Yelp — DISABLED (trial expired)
 
-        // ── Layer 3.6: Foursquare enrichment ──
         case 'enrich-foursquare': {
           const { enrichViaFoursquare } = await import('../scripts/discovery/sources/foursquare-enrichment.js');
           const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
@@ -122,11 +195,6 @@ const worker = new Worker(
           logger.info({ result }, 'Foursquare enrichment complete');
           return { status: 'completed', ...result };
         }
-
-        // Yelp grid — DISABLED (trial expired)
-
-
-        // ── Deduplication sweep ──
 
         case 'enrich-geoapify': {
           const { enrichViaGeoapify } = await import('../scripts/discovery/sources/geoapify-enrichment.js');
@@ -158,14 +226,11 @@ const worker = new Worker(
   },
   {
     connection: redis,
-    concurrency: 1, // Run one job at a time to avoid API rate limit conflicts
+    concurrency: 1,
     stalledInterval: 30000,
   },
 );
 
-// ──────────────────────────────────────────────────
-// Worker event handlers
-// ──────────────────────────────────────────────────
 worker.on('completed', (job) => {
   logger.info({ jobId: job.id, jobName: job.name }, 'Job completed successfully');
 });
@@ -174,9 +239,6 @@ worker.on('failed', (job, err) => {
   logger.error({ jobId: job?.id, jobName: job?.name, err }, 'Job failed');
 });
 
-// ──────────────────────────────────────────────────
-// Graceful shutdown
-// ──────────────────────────────────────────────────
 process.on('SIGTERM', async () => {
   logger.info('Worker shutting down (SIGTERM)...');
   await worker.close();
@@ -191,9 +253,6 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-// ──────────────────────────────────────────────────
-// Initialize repeatable jobs and start
-// ──────────────────────────────────────────────────
 setupRepeatingJobs().then(() => {
   logger.info('Worker is running with autonomous enrichment engine...');
 });
