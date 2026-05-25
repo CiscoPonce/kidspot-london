@@ -1,7 +1,11 @@
 import { enrichMissingDetails } from './sources/enrichment.js';
 import { enrichOsmContacts } from './sources/osm-contact-enrichment.js';
+import { enrichViaDirectCrawl } from './sources/direct-crawl-enrichment.js';
+import { enrichOsmOpeningHours } from './sources/osm-opening-hours-enrichment.js';
+import { enrichViaGeoapify } from './sources/geoapify-enrichment.js';
 import { enrichViaWebScraping } from './sources/web-scraper-enrichment.js';
 import { enrichViaApify } from './sources/apify-enrichment.js';
+import { enrichViaFoursquare } from './sources/foursquare-enrichment.js';
 import { db } from '../../src/clients/db.js';
 
 /**
@@ -55,6 +59,27 @@ export async function processEnrichment(isDryRun: boolean = false) {
     results.osmContacts = { error: String(error) };
   }
 
+
+  try {
+    console.log('=== Layer 1b: OSM Opening Hours ===');
+    const osmHoursResult = await enrichOsmOpeningHours(100);
+    results.osmHours = osmHoursResult;
+    console.log(`  enriched=${osmHoursResult.enriched}, skipped=${osmHoursResult.skipped}, failed=${osmHoursResult.failed}`);
+  } catch (error) {
+    console.error('Layer 1b failed:', error);
+    results.osmHours = { error: String(error) };
+  }
+
+  try {
+    console.log('=== Layer 2b: Direct Website Crawl ===');
+    const crawlResult = await enrichViaDirectCrawl(100);
+    results.directCrawl = crawlResult;
+    console.log(`  enriched=${crawlResult.enriched}, skipped=${crawlResult.skipped}, failed=${crawlResult.failed}`);
+  } catch (error) {
+    console.error('Layer 2b failed:', error);
+    results.directCrawl = { error: String(error) };
+  }
+
   // Layer 2: Web scraper enrichment (Brave Search + HTML scraping)
   try {
     console.log('═══ Layer 2: Web Scraper Enrichment ═══');
@@ -75,6 +100,19 @@ export async function processEnrichment(isDryRun: boolean = false) {
   } catch (error) {
     console.error('Layer 3 (Apify) failed:', error);
     results.apify = { error: String(error) };
+  }
+
+
+  // Layer 3.6: Foursquare Places enrichment
+  try {
+    console.log('═══ Layer 3.6: Foursquare Places ═══');
+    const foursquareResult = await enrichViaFoursquare(50);
+    results.foursquare = foursquareResult;
+    console.log(`  → enriched=${foursquareResult.enriched}, skipped=${foursquareResult.skipped}, failed=${foursquareResult.failed}
+`);
+  } catch (error) {
+    console.error('Layer 3.6 (Foursquare) failed:', error);
+    results.foursquare = { error: String(error) };
   }
 
   // Layer 4: Smart Parks — OSM map link fallback

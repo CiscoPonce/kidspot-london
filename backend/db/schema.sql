@@ -21,7 +21,9 @@ CREATE TABLE IF NOT EXISTS venues (
     kid_score NUMERIC DEFAULT 0,
     rating NUMERIC,
     user_ratings_total INTEGER,
-    enriched_at TIMESTAMPTZ
+    enriched_at TIMESTAMPTZ,
+    foursquare_place_id TEXT,
+    foursquare_enriched_at TIMESTAMPTZ
 );
 
 -- Create spatial index for blazing fast radius queries

@@ -14,10 +14,17 @@ export function RadiusSlider({ value, onChange }: RadiusSliderProps) {
     setLocalValue(value);
   }, [value]);
 
+  useEffect(() => {
+    if (localValue === value) return;
+    const timer = setTimeout(() => {
+      onChange(localValue);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [localValue, value, onChange]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseFloat(e.target.value);
     setLocalValue(newValue);
-    onChange(newValue);
   };
 
   // Calculate percentage for track fill

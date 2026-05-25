@@ -1,4 +1,3 @@
-import { discoverVenuesWithYelp } from './yelp-discovery.js';
 import { discoverVenuesFromOSM } from './osm-discovery.js';
 import { logger } from '../../src/config/logger.js';
 
@@ -9,11 +8,7 @@ export async function runAllDiscovery() {
   const startTime = Date.now();
   
   try {
-    // Run Yelp discovery
-    logger.info('--- Yelp Fusion Discovery ---');
-    await discoverVenuesWithYelp();
-    
-    // Run OSM discovery
+    // Yelp discovery disabled — Fusion API trial expired (2026-05)
     logger.info('--- OpenStreetMap Discovery ---');
     await discoverVenuesFromOSM();
     

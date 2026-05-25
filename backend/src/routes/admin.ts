@@ -81,9 +81,9 @@ router.post('/ingest/parties', verifyHmac, async (req, res) => {
       processPartyVenues(dryRun),
     );
     res.status(200).json({
-      success: true,
       job_id: jobId,
-      ...metrics
+      ...metrics,
+      success: true
     });
   } catch (error: unknown) {
     if (error instanceof StaleIngestLockedError) {
@@ -112,9 +112,9 @@ router.post('/ingest/expansion', verifyHmac, async (req, res) => {
       processVenueExpansion(dryRun),
     );
     res.status(200).json({
-      success: true,
       job_id: jobId,
-      ...metrics
+      ...metrics,
+      success: true
     });
   } catch (error: unknown) {
     if (error instanceof StaleIngestLockedError) {
@@ -143,9 +143,9 @@ router.post('/ingest/enrichment', verifyHmac, async (req, res) => {
       processEnrichment(dryRun),
     );
     res.status(200).json({
-      success: true,
       job_id: jobId,
-      ...metrics
+      ...metrics,
+      success: true
     });
   } catch (error: unknown) {
     if (error instanceof StaleIngestLockedError) {

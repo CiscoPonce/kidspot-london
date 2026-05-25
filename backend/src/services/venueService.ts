@@ -1116,7 +1116,7 @@ const baseVenueService = {
   /**
    * Match a venue to FHRS establishment and store it
    */
-  async matchVenueToFhrs(venueId: number): Promise<FhrsEstablishment | null> {
+  async matchVenueToFhrs(venueId: number, preloadedVenue?: any): Promise<FhrsEstablishment | null> {
     const venue = await this.getVenueById(venueId);
     if (!venue) return null;
 
@@ -1194,7 +1194,7 @@ const baseVenueService = {
   /**
    * Update venue details from FHRS data (respects guardrails)
    */
-  async updateVenueFromFhrs(venueId: number, fhrsId: number): Promise<boolean> {
+  async updateVenueFromFhrs(venueId: number, fhrsId: number, preloadedVenue?: any): Promise<boolean> {
     try {
       const isLocked = await checkEditorLocked(venueId);
       if (isLocked) {
@@ -1209,7 +1209,7 @@ const baseVenueService = {
       await this.storeFhrsEstablishment(est);
 
       // Only update address/postcode if they are missing or likely better
-      const venue = await this.getVenueById(venueId);
+      const venue = preloadedVenue || await this.getVenueById(venueId);
       if (!venue) return false;
 
       const updates: Record<string, any> = {};
@@ -1279,7 +1279,7 @@ const baseVenueService = {
   async batchMatchVenuesToFhrs(limit: number = 100): Promise<{ matched: number; total: number }> {
     try {
       const result = await db.query(
-        `SELECT id FROM venues 
+        `SELECT * FROM venues 
          WHERE fhrs_establishment_id IS NULL 
          AND editor_locked = FALSE 
          LIMIT $1`,
@@ -1288,10 +1288,10 @@ const baseVenueService = {
 
       let matchedCount = 0;
       for (const row of result.rows) {
-        const match = await this.matchVenueToFhrs(row.id);
+        const match = await this.matchVenueToFhrs(row.id, row);
         if (match) {
           matchedCount++;
-          await this.updateVenueFromFhrs(row.id, match.id);
+          await this.updateVenueFromFhrs(row.id, match.id, row);
         }
         await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -1721,16 +1721,20 @@ const baseVenueService = {
    * Match an operator venue to an existing venue
    */
   async matchOperatorVenueToVenue(
-    operatorVenueId: number
+    operatorVenueId: number,
+    preloadedOpVenue?: any
   ): Promise<{ venueId: number; confidence: 'high' | 'medium' | 'low' } | null> {
     try {
-      const result = await db.query(
-        'SELECT * FROM operator_venues WHERE id = $1',
-        [operatorVenueId]
-      );
+      let opVenue = preloadedOpVenue;
+      if (!opVenue) {
+        const result = await db.query(
+          'SELECT * FROM operator_venues WHERE id = $1',
+          [operatorVenueId]
+        );
 
-      if (result.rows.length === 0) return null;
-      const opVenue = result.rows[0] as OperatorVenue;
+        if (result.rows.length === 0) return null;
+        opVenue = result.rows[0] as OperatorVenue;
+      }
 
       // Try exact name + postcode match
       if (opVenue.postcode) {
@@ -1873,21 +1877,20 @@ const baseVenueService = {
     const metrics = { processed: 0, matched: 0 };
     try {
       const result = await db.query(
-        'SELECT id FROM operator_venues WHERE venue_id IS NULL LIMIT $1',
+        'SELECT * FROM operator_venues WHERE venue_id IS NULL LIMIT $1',
         [limit]
       );
 
       for (const row of result.rows) {
         metrics.processed++;
-        const match = await this.matchOperatorVenueToVenue(row.id);
+        const match = await this.matchOperatorVenueToVenue(row.id, row);
         if (match) {
           await db.query(
             'UPDATE operator_venues SET venue_id = $1 WHERE id = $2',
             [match.venueId, row.id]
           );
           
-          const opVenueResult = await db.query('SELECT * FROM operator_venues WHERE id = $1', [row.id]);
-          await this.updateVenueFromOperator(match.venueId, opVenueResult.rows[0]);
+          await this.updateVenueFromOperator(match.venueId, row);
           metrics.matched++;
         }
       }

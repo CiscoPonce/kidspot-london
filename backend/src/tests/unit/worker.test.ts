@@ -7,6 +7,10 @@ vi.mock('bullmq', () => {
       this.on = vi.fn();
       this.close = vi.fn();
     }),
+    Queue: vi.fn().mockImplementation(function (this: any) {
+      this.add = vi.fn();
+      this.close = vi.fn();
+    }),
     Job: vi.fn()
   };
 });

@@ -217,3 +217,10 @@ html {
     height: calc(100vh - 200px) !important;
   }
 }
+
+@media (hover: none) {
+  button, [role="button"], a {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
