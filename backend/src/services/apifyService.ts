@@ -41,12 +41,14 @@ export async function processApifyDataset(datasetId: string) {
       const cleanPhone = item.phone ? item.phone.replace(/\s+/g, '') : null;
       
       // Extract rich data
-      // opening_hours is stored as text (JSON string) according to \d venues
       const openingHours = item.openingHours ? JSON.stringify(item.openingHours) : null;
       const images = (item.imageUrls && Array.isArray(item.imageUrls)) ? item.imageUrls.slice(0, 5) : null;
       
+      // Closure detection
+      // Apify's Google Places Crawler usually returns isClosed: boolean or permanentlyClosed: boolean
+      const isPermanentlyClosed = item.isClosed === true || item.permanentlyClosed === true;
+
       // Extract deep enrichment data (emails)
-      // Google Maps Scraper with website crawling enabled often returns 'emails' or 'contactEmail'
       const email = (item.emails && Array.isArray(item.emails) && item.emails.length > 0) 
         ? item.emails[0] 
         : (item.email || null);
@@ -60,19 +62,26 @@ export async function processApifyDataset(datasetId: string) {
              opening_hours = CASE WHEN NULLIF($5::text, '') IS NOT NULL THEN $5 ELSE opening_hours END,
              images = CASE WHEN $6::text[] IS NOT NULL AND array_length($6::text[], 1) > 0 THEN $6 ELSE images END,
              email = CASE WHEN NULLIF($7::text, '') IS NOT NULL THEN $7 ELSE email END,
+             is_active = CASE WHEN $8 = TRUE THEN FALSE ELSE is_active END,
              enriched_at = NOW()
-         WHERE id = $8`,
+         WHERE id = $9`,
         [
           item.website || null,
           cleanPhone,
           item.totalScore || null,
           item.reviewsCount || null,
           openingHours,
-          item.imageUrls || images, // Prefer original item imageUrls if available
+          item.imageUrls || images,
           email,
+          isPermanentlyClosed,
           venueId
         ]
       );
+      
+      if (isPermanentlyClosed) {
+        logger.warn({ venueId, name: item.title }, 'Venue marked as inactive due to permanent closure reported by Apify');
+      }
+
       enrichedCount++;
       logger.info(`Enriched venue ID ${venueId} from Apify webhook`);
     } catch (err) {

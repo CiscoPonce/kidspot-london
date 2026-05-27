@@ -82,6 +82,18 @@ async function setupRepeatingJobs() {
       ...jobOpts,
     });
 
+    await discoveryQueue.add('enrich-brave-images', { batchSize: 20 }, {
+      repeat: { pattern: '0 4 * * *' },
+      jobId: 'repeat:enrich-brave-images',
+      ...jobOpts,
+    });
+
+    await discoveryQueue.add('contact-backfill', { batchSize: 50 }, {
+      repeat: { pattern: '0 7 * * *' },
+      jobId: 'repeat:contact-backfill',
+      ...jobOpts,
+    });
+
     await discoveryQueue.add('dedup-sweep', { dryRun: false }, {
       repeat: { pattern: '0 5 * * 0' },
       jobId: 'repeat:dedup-sweep',
@@ -197,6 +209,22 @@ const worker = new Worker(
           const batchSize = (job.data as EnrichmentJobData)?.batchSize || 40;
           const result = await enrichViaGeoapify(batchSize);
           logger.info({ result }, 'Geoapify enrichment complete');
+          return { status: 'completed', ...result };
+        }
+
+        case 'enrich-brave-images': {
+          const { enrichViaBraveImages } = await import('../scripts/discovery/sources/brave-image-enrichment.js');
+          const batchSize = (job.data as EnrichmentJobData)?.batchSize || 20;
+          const result = await enrichViaBraveImages(batchSize);
+          logger.info({ result }, 'Brave image enrichment complete');
+          return { status: 'completed', ...result };
+        }
+
+        case 'contact-backfill': {
+          const { runContactBackfill } = await import('../scripts/discovery/sources/contact-backfill.js');
+          const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
+          const result = await runContactBackfill(batchSize);
+          logger.info({ result }, 'Contact backfill complete');
           return { status: 'completed', ...result };
         }
 

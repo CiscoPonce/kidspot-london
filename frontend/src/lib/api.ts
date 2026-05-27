@@ -24,6 +24,7 @@ export interface Venue {
   description?: string;
   domain?: string;
   features?: string[];
+  enriched_at?: string;
 }
 
 export interface YelpReview {
@@ -67,6 +68,7 @@ export interface VenueDetails {
   image_url?: string;
   images?: string[];
   features?: string[];
+  enriched_at?: string;
 }
 
 export interface VenueSearchParams {

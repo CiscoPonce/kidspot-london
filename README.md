@@ -25,13 +25,10 @@
 
 - **Hyper-Local Search**: Search by postcode or current location with a customizable radius (1–10 miles).
 - **Agentic Discovery**: Real-time integration with Brave Search API to reduce zero-result searches.
-- **Autonomous Enrichment Engine**: Self-scheduling BullMQ worker runs 24/7 — geocoding, OSM contacts, direct website crawling, Foursquare contact extraction, Geoapify POI matching, and Apify rich media.
+- **Autonomous Enrichment Engine**: Self-scheduling BullMQ worker runs 24/7 — geocoding, OSM contacts, direct website crawling, Foursquare contact extraction, Geoapify POI matching, and Apify/Brave rich media.
+- **Data Validation & Trust Layer**: Systematic closure detection (auto-deactivate closed venues), phone normalization, and "Last Verified" timestamps to ensure data reliability.
+- **Rich Media Acquisition**: Multi-layered image engine using Google Places (via Apify) and Brave Image Search as a fallback for 100% photo coverage.
 - **Zero-Budget Contact Pipeline**: Foursquare + direct website crawl + Geoapify replace paid Yelp Fusion for phone, email, and website data.
-- **Programmatic SEO**: 33+ dedicated area pages and category-specific landing pages.
-- **Sponsor System**: Multi-tiered monetization engine (Gold, Silver, Bronze) for featured local business listings.
-- **Claim Your Listing**: Self-service verification flow for venue owners with dedicated sponsor dashboards.
-- **Automated Data Pipelines**: GitHub Actions + BullMQ scheduled jobs for continuous discovery and enrichment.
-- **Mobile First**: Fast, responsive UI optimized for busy parents on the go.
 
 ---
 
@@ -41,32 +38,27 @@
 - **Framework**: Next.js 16 (App Router, React 19)
 - **Styling**: Tailwind CSS 4
 - **Maps**: MapLibre GL JS
-- **State Management**: React Query
-- **Analytics**: Plausible (Privacy-first)
+- **Trust UI**: Data freshness badges and community reporting tools.
 
 ### Backend
 - **Runtime**: Node.js 22 (Express 5)
 - **Database**: PostgreSQL 15 + PostGIS (spatial queries, levenshtein deduplication)
 - **Caching**: Redis 7
 - **Task Queue**: BullMQ (autonomous enrichment engine)
-- **Logging**: Pino (structured JSON logging)
-- **Deployment**: Docker Compose (5 services on VPS)
+- **Verification**: Automatic status checks via Google/Brave.
 
 ### Data Sources
 
 | Source | Role | Cost |
 |:-------|:-----|:-----|
-| **OpenStreetMap / Overpass** | Discovery, coords, contacts, opening hours | Free |
+| **OpenStreetMap / Overpass** | Discovery, coords, contacts, opening hours | Free (w/ Retry fix) |
+| **Brave Image Search** | Fallback visual media acquisition engine | Paid |
 | **Foursquare Places API** | Contact extraction (phone, website, email) | Free tier |
 | **Direct website crawl** | Contact + Schema.org hours from known URLs | Free |
-| **Geoapify Places API** | POI matching and contact enrichment (OSM-based) | Free tier (3,000 credits/day) |
-| **Apify (Google Places)** | Rich media: images, hours, ratings | Free tier (limited) |
-| **Brave Search API** | Fallback search + web scraping for venues without websites | Paid |
-| **Nominatim** | Reverse geocoding (postcode, address, borough) | Free |
-| **Council Open Data** | Community hall CSV feeds | Free |
-| **FHRS** | Food hygiene ratings | Free |
+| **Geoapify Places API** | POI matching and contact enrichment (OSM-based) | Free tier |
+| **Apify (Google Places)** | Rich media (images) + Closure detection | Free tier |
 
-> **Yelp Fusion API** — disabled (trial expired). Code retained but jobs are not scheduled.
+> **Yelp Fusion API** — fully removed from the codebase (2026-05).
 
 ---
 
@@ -79,16 +71,15 @@ KidSpot runs a **self-scheduling BullMQ worker** that continuously enriches venu
 ```
 Layer 0:  Nominatim Reverse-Geocoding  → postcode, address, borough
 Layer 1:  OSM Contact Enrichment       → website, phone, email from Overpass tags
-Layer 1b: OSM Opening Hours            → dedicated Overpass pass for opening_hours tag
+Layer 1b: OSM Opening Hours            → dedicated Overpass pass (resilient w/ retries)
 Layer 2:  Brave Web Scraper            → find websites for venues missing them
 Layer 2b: Direct Website Crawl         → cheerio crawl of known URLs (contact + hours)
-Layer 3:  Apify Google Places          → images, opening hours, ratings (rich media)
+Layer 3:  Apify Google Places          → images, closure detection (webhook powered)
 Layer 3.6: Foursquare Places           → phone, website, email (contact engine)
-Layer 3.7: Geoapify Places             → POI matching, website, email (OSM-based)
+Layer 3.7: Brave Images                → visual fallback engine for missing photos
+Layer 3.8: Contact Backfill            → phone normalization + targeted email crawling
 Layer 4:  Smart Parks                  → OSM map links for parks without websites
 ```
-
-**Strategic split:** Foursquare + direct crawl + Geoapify handle **contact data** (B2B monetization). Apify handles **rich media** (photos, hours) for high-value venues only.
 
 ### Scheduled Jobs
 
@@ -96,12 +87,13 @@ Layer 4:  Smart Parks                  → OSM map links for parks without websi
 |:----|:---------|------:|:--------|
 | `enrich-geocode` | Every 4 hours | 200 | Fill missing postcodes and addresses |
 | `enrich-osm-contacts` | Every 6 hours | 200 | Extract contacts from OSM Overpass tags |
-| `enrich-osm-hours` | Every 6 hours | 100 | Dedicated OSM opening_hours pass |
+| `enrich-osm-hours` | Every 6 hours | 100 | Dedicated resilient Overpass hours pass |
 | `enrich-direct-crawl` | Every 4 hours | 100 | Crawl known websites for contact info |
-| `enrich-web-scrape` | Every 8 hours | 30 | Brave Search + HTML scraping |
-| `enrich-apify` | Daily 03:00 UTC | 20 | Google Places rich media via Apify |
+| `enrich-apify` | Daily 03:00 UTC | 20 | Google Places images + Closure checks |
+| `enrich-brave-images` | Daily 04:00 UTC | 20 | Brave Image fallback pass |
 | `enrich-foursquare` | Daily 05:00 UTC | 50 | Contact extraction via Foursquare |
 | `enrich-geoapify` | Daily 06:00 UTC | 40 | POI matching via Geoapify |
+| `contact-backfill` | Daily 07:00 UTC | 50 | Phone normalization + Deep email crawl |
 | `dedup-sweep` | Weekly (Sunday) | — | Merge duplicate venues |
 | `run-discovery` | Weekly (Monday) | — | Full OSM discovery run |
 

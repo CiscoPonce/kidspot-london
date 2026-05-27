@@ -11,6 +11,7 @@ import { processPartyVenues } from '../../scripts/discovery/party-venues-discove
 import { processVenueExpansion } from '../../scripts/discovery/venue-expansion.js';
 // @ts-ignore
 import { processEnrichment } from '../../scripts/discovery/data-enrichment.js';
+import { processApifyDataset } from '../services/apifyService.js';
 
 const router = express.Router();
 
@@ -209,6 +210,40 @@ router.get('/enrichment-stats', verifyHmac, async (_req, res) => {
     logger.error({ err: error }, 'Error fetching enrichment stats');
     res.status(500).json({ success: false, error: 'Failed to fetch enrichment stats' });
   }
+});
+
+/**
+ * Apify Webhook Handler
+ * Receives notification when an enrichment run finishes.
+ */
+router.post('/webhooks/apify', async (req, res) => {
+  const { token } = req.query;
+  const webhookSecret = process.env.APIFY_WEBHOOK_SECRET || 'dev-secret';
+
+  if (token !== webhookSecret) {
+    logger.warn({ token }, 'Unauthorized Apify webhook attempt');
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+
+  const { eventType, resource } = req.body;
+  
+  if (eventType !== 'ACTOR.RUN.SUCCEEDED') {
+    return res.json({ success: true, message: 'Ignoring non-success event' });
+  }
+
+  const { defaultDatasetId } = resource;
+  if (!defaultDatasetId) {
+    return res.status(400).json({ success: false, error: 'Missing datasetId' });
+  }
+
+  logger.info({ datasetId: defaultDatasetId }, 'Apify webhook received. Processing dataset...');
+
+  // Process in background
+  processApifyDataset(defaultDatasetId).catch(err => {
+    logger.error({ err, datasetId: defaultDatasetId }, 'Failed to process Apify dataset from webhook');
+  });
+
+  res.json({ success: true, message: 'Processing started' });
 });
 
 export default router;

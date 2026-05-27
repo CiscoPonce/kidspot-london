@@ -372,8 +372,28 @@ export function VenueDetailContent({
             {/* Reviews */}
             {reviews && <ReviewsList reviews={reviews} />}
 
+            {/* Last Verified & Feedback */}
+            <div className="mt-8 flex items-center justify-between px-1">
+              {venue.enriched_at && (
+                <div className="flex items-center gap-1.5 text-xs text-on-surface-variant/70 italic">
+                  <span className="material-symbols-outlined text-[14px]">done_all</span>
+                  Last verified: {new Date(venue.enriched_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                </div>
+              )}
+              <button 
+                onClick={() => {
+                  const subject = `Reporting an issue with ${venue.name}`;
+                  const body = `Venue: ${venue.name}\nSlug: ${venue.slug}\n\nPlease describe the issue (e.g., closed, wrong phone): `;
+                  window.location.href = `mailto:hello@kidspot.london?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                }}
+                className="text-[10px] font-bold text-primary/60 hover:text-primary transition-colors uppercase tracking-widest"
+              >
+                Report an issue
+              </button>
+            </div>
+
             {/* Actions */}
-            <div className="mt-8 flex flex-col gap-3">
+            <div className="mt-6 flex flex-col gap-3">
               {/* Primary CTA: Book Now */}
               {isValidUrl(mergedDetails.booking_url) && (
                 <a

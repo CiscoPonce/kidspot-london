@@ -622,7 +622,7 @@ const baseVenueService = {
       `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug,
               website, phone, email, booking_url, address, postcode, borough,
               description, opening_hours, rating, price_level, features,
-              parent_facets, kid_score
+              parent_facets, kid_score, images, enriched_at
        FROM venues
        WHERE slug = $1 AND is_active = TRUE`,
       [slug]
@@ -702,7 +702,7 @@ const baseVenueService = {
       `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug,
               website, phone, email, booking_url, address, postcode, borough,
               description, opening_hours, rating, price_level, features,
-              parent_facets, kid_score
+              parent_facets, kid_score, images, enriched_at
        FROM venues
        WHERE id = $1 AND is_active = TRUE`,
       [idVal]

@@ -26,8 +26,14 @@ export async function enrichViaApify(limit: number = 20) {
          (type = 'softplay' AND (enriched_at IS NULL OR enriched_at < NOW() - INTERVAL '30 days'))
          OR 
          (type IN ('leisure_centre', 'museum', 'library', 'community_hall') AND (website IS NULL OR phone IS NULL))
+         OR
+         (images IS NULL OR array_length(images, 1) IS NULL OR array_length(images, 1) = 0)
        )
-       ORDER BY (type = 'softplay') DESC, kid_score DESC NULLS LAST, id ASC
+       ORDER BY 
+         (type = 'softplay') DESC, 
+         (images IS NULL OR array_length(images, 1) = 0) DESC,
+         kid_score DESC NULLS LAST, 
+         id ASC
        LIMIT $1`,
       [limit]
     );
@@ -63,7 +69,8 @@ export async function enrichViaApify(limit: number = 20) {
           { day: 'Sunday', hours: 'Closed' }
         ],
         imageUrls: [`https://images.unsplash.com/photo-1566433316213-3fe62ca97277?q=80&w=400`],
-        emails: [`contact@example${index}.com`]
+        emails: [`contact@example${index}.com`],
+        isClosed: index === 0 // Simulate one closed venue
       }));
       // Simulate delay
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -86,7 +93,8 @@ export async function enrichViaApify(limit: number = 20) {
           maxCrawledPlacesPerSearch: 1,
           language: 'en',
           countryCode: 'gb',
-          scrapeCompanyWebsite: true // Deep enrichment: find emails/socials
+          scrapeCompanyWebsite: true, // Deep enrichment: find emails/socials
+          personalDataMask: false // We need business contact info
         })
       });
 
@@ -125,6 +133,7 @@ export async function enrichViaApify(limit: number = 20) {
         const cleanPhone = item.phone ? item.phone.replace(/\s+/g, '') : null;
         const openingHours = item.openingHours ? JSON.stringify(item.openingHours) : null;
         const email = (item.emails && item.emails.length > 0) ? item.emails[0] : (item.email || null);
+        const isPermanentlyClosed = item.isClosed === true || item.permanentlyClosed === true;
 
         await db.query(
           `UPDATE venues 
@@ -135,8 +144,9 @@ export async function enrichViaApify(limit: number = 20) {
                opening_hours = COALESCE(NULLIF($5, ''), opening_hours),
                images = CASE WHEN $6::text[] IS NOT NULL AND array_length($6::text[], 1) > 0 THEN $6 ELSE images END,
                email = COALESCE(NULLIF($7, ''), email),
+               is_active = CASE WHEN $8 = TRUE THEN FALSE ELSE is_active END,
                enriched_at = NOW()
-           WHERE id = $8`,
+           WHERE id = $9`,
           [
             item.website || null, 
             cleanPhone, 
@@ -145,9 +155,15 @@ export async function enrichViaApify(limit: number = 20) {
             openingHours,
             item.imageUrls || null,
             email,
+            isPermanentlyClosed,
             venue.id
           ]
         );
+        
+        if (isPermanentlyClosed) {
+          logger.warn({ venueId: venue.id, name: venue.name }, 'Venue marked as inactive due to permanent closure (Dummy Mode)');
+        }
+
         logger.info(`Enriched venue ID ${venue.id}: ${venue.name}`);
         stats.enriched++;
       } else {
