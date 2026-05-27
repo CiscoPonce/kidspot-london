@@ -1,8 +1,6 @@
-import axios from 'axios';
 import { db } from '../../src/clients/db.js';
 import { logger } from '../../src/config/logger.js';
-
-const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
+import { fetchOverpassWithRetry } from './sources/overpass-utils.js';
 
 // Map OSM tags to our venue types
 function mapVenueType(tags: Record<string, string>): string {
@@ -164,15 +162,8 @@ async function upsertOSMVenue(venue: any, venueType: string) {
 async function queryOverpass(query: string) {
   try {
     const minifiedQuery = query.replace(/\s+/g, ' ').trim();
-    const response = await axios.post(OVERPASS_API_URL, `data=${encodeURIComponent(minifiedQuery)}`, {
-      headers: { 
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-        'User-Agent': 'KidSpotLondon/1.0'
-      },
-      timeout: 60000
-    });
-    return response.data?.elements || [];
+    const data = await fetchOverpassWithRetry(minifiedQuery);
+    return data?.elements || [];
   } catch (error: any) {
     logger.error({ err: error.message || error }, 'Overpass API query failed');
     return [];

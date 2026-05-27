@@ -1,4 +1,5 @@
 import { db } from '../../../src/clients/db.js';
+import { fetchOverpassWithRetry } from './overpass-utils.js';
 
 export interface OsmContactResult {
   enriched: number;
@@ -71,22 +72,7 @@ export async function enrichOsmContacts(batchSize: number = 50): Promise<OsmCont
 
         console.log(`  Querying Overpass for batch ${Math.floor(i / SUB_BATCH) + 1} (${batch.length} venues)...`);
 
-        const response = await fetch('https://overpass-api.de/api/interpreter', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'KidSpot-London/1.0 (osm-contact-enrichment)'
-          },
-          body: 'data=' + encodeURIComponent(query)
-        });
-
-        if (!response.ok) {
-          console.warn(`  Overpass returned ${response.status} — skipping batch.`);
-          result.failed += batch.length;
-          continue;
-        }
-
-        const data = await response.json() as any;
+        const data = await fetchOverpassWithRetry(query);
         const elements = data?.elements || [];
 
         // Build a lookup map: OSM ID → tags

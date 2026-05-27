@@ -18,7 +18,6 @@ const envSchema = z.object({
   OPENROUTER_API_KEY: z.string().optional(),
   BRAVE_API_KEY: z.string().optional(),
   GOOGLE_PLACES_API_KEY: z.string().optional(),
-  YELP_API_KEY: z.string().optional(),
   FOURSQUARE_API_KEY: z.string().optional(),
   GEOAPIFY_API_KEY: z.string().optional(),
   

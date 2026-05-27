@@ -23,150 +23,11 @@ export interface StaleVenueIngestMetrics {
   duration_ms: number;
 }
 
-// Yelp Fusion API configuration
-import { yelpService } from '../src/services/yelpService.js';
-import { calculateKidScore } from '../src/scoring/kidScore.js';
-
-// Map Yelp categories to our venue types
-export function mapVenueType(yelpCategories: any[]) {
-  const typeMap: Record<string, string> = {
-    kids_activities: 'softplay',
-    softplay: 'softplay',
-    playgrounds: 'park',
-    parks: 'park',
-    recreation: 'leisure_centre',
-    gyms: 'leisure_centre',
-    leisure_centers: 'leisure_centre',
-    communitycenters: 'community_hall',
-    libraries: 'library',
-    museums: 'museum',
-    cafes: 'cafe',
-    venues: 'community_hall',
-    event_spaces: 'community_hall',
-  };
-
-  if (yelpCategories && Array.isArray(yelpCategories)) {
-    for (const category of yelpCategories) {
-      if (category.alias && typeMap[category.alias]) {
-        return typeMap[category.alias];
-      }
-    }
-  }
-
-  return 'other';
-}
-
-// Update venue information using Yelp Fusion API
+// Update venue information
 async function updateVenue(venue: any) {
-  const { id: venueId, name: venueName, lat, lon } = venue;
+  const { id: venueId, name: venueName } = venue;
   try {
-    const searchParams: any = {
-      term: venueName,
-      limit: 1,
-    };
-
-    if (lat && lon && lat !== 0 && lon !== 0) {
-      searchParams.latitude = lat;
-      searchParams.longitude = lon;
-      searchParams.radius = 100;
-    } else {
-      searchParams.location = 'London, UK';
-    }
-
-    const searchResults = await yelpService.searchBusinesses(searchParams);
-
-    const details = searchResults.length > 0 ? searchResults[0] : null;
-
-    if (!details) {
-      await db.query('SELECT update_venue_scrape_time($1)', [venueId]);
-      return { status: 'updated', message: 'Venue not found on Yelp. Timestamp updated.' };
-    }
-
-    if (details.is_closed) {
-      await db.query('SELECT deactivate_venue($1, $2, $3)', [
-        venueId,
-        'permanently_closed',
-        'Detected via Yelp Fusion API',
-      ]);
-      return { status: 'deactivated', message: 'Venue permanently closed' };
-    }
-
-    // Check if venue is editor_locked before updating type
-    const venueCheck = await db.query('SELECT editor_locked, manual_source, type FROM venues WHERE id = $1', [venueId]);
-    const isEditorLocked = venueCheck.rows[0]?.editor_locked || false;
-    const isManualSource = venueCheck.rows[0]?.manual_source === 'manual';
-    const currentType = venueCheck.rows[0]?.type;
-
-    const newType = mapVenueType(details.categories || []);
-
-    if (isEditorLocked || isManualSource) {
-      // Log provenance but do not update type
-      await db.query('SELECT log_venue_change($1, $2, $3, $4, $5, $6, $7)', [
-        venueId,
-        'type',
-        currentType,
-        newType,
-        'yelp_fusion',
-        'system:cron-agent',
-        'Skipped: editor_locked or manual_source'
-      ]);
-      await db.query('SELECT update_venue_scrape_time($1)', [venueId]);
-      return { status: 'skipped', message: 'Venue editor_locked or manual_source - type not updated' };
-    }
-
-    // Check for conflicts with other sources
-    const conflictCheck = await db.query(
-      'SELECT source FROM venue_provenance_log WHERE venue_id = $1 AND field_name = $2 AND source != $3 ORDER BY created_at DESC LIMIT 1',
-      [venueId, 'type', 'yelp_fusion']
-    );
-
-    if (conflictCheck.rows.length > 0) {
-      const otherSource = conflictCheck.rows[0].source;
-      if ((otherSource === 'osm' || otherSource === 'fhrs' || otherSource === 'manual') && newType !== currentType) {
-        // Log conflict for review
-        await db.query('SELECT log_venue_change($1, $2, $3, $4, $5, $6, $7)', [
-          venueId,
-          'type',
-          currentType,
-          newType,
-          'yelp_fusion',
-          'system:cron-agent',
-          `Conflict: ${otherSource} disagrees with Yelp`
-        ]);
-        // Do not update type - prefer structured/manual sources
-        return { status: 'conflict', message: `Type conflict with ${otherSource} - not updated` };
-      }
-    }
-
-    // Map Yelp price string ("$", "$$", "$$$", "$$$$") to number (1-4)
-    const priceLevel = details.price ? details.price.length : null;
-
-    const kidScoreInput = {
-      name: details.name || venueName,
-      types: [newType],
-      rating: details.rating,
-      user_ratings_total: details.review_count,
-    };
-
-    const kidScore = calculateKidScore(kidScoreInput);
-
-    await db.query(
-      `UPDATE venues 
-       SET type = $1, rating = $2, user_ratings_total = $3, price_level = $4, kid_score = $5, enriched_at = NOW(), last_scraped = NOW(), source_id = COALESCE(source_id, $6)
-       WHERE id = $7`,
-      [newType, details.rating || null, details.review_count || null, priceLevel, kidScore, details.id, venueId],
-    );
-
-    // Log the change
-    await db.query('SELECT log_venue_change($1, $2, $3, $4, $5, $6, $7)', [
-      venueId,
-      'type',
-      currentType,
-      newType,
-      'yelp_fusion',
-      'system:cron-agent',
-      'Updated via Yelp Fusion API'
-    ]);
+    await db.query('SELECT update_venue_scrape_time($1)', [venueId]);
 
     // Try FHRS matching if not already matched
     if (!venue.fhrs_establishment_id) {
@@ -177,7 +38,7 @@ async function updateVenue(venue: any) {
       }
     }
 
-    return { status: 'updated', type: newType, kidScore, message: 'Updated via Yelp' };
+    return { status: 'updated', message: 'Timestamps updated' };
   } catch (error: any) {
     console.error(`Error updating venue ${venueId}:`, error.message);
     return { status: 'error', message: error.message };

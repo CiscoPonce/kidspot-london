@@ -23,11 +23,10 @@ import {
   OperatorVenue,
   OperatorPartnership
 } from '../types/venue.js';
-import { yelpService } from './yelpService.js';
+import { operatorService } from './operatorService.js';
 import { fhrsService } from './fhrsService.js';
 import { boroughCsvService } from './boroughCsvService.js';
 import { openactiveService } from './openactiveService.js';
-import { operatorService } from './operatorService.js';
 import env from '../config/env.js';
 import { calculateDistanceMiles } from '../utils/distance.js';
 
@@ -417,64 +416,6 @@ const fetchBraveSearchResults = async (lat: number, lon: number, radiusMiles: nu
   }
 };
 
-/**
- * Fetch Yelp details using Yelp Fusion API
- * If it's a Google venue, we try to match it first.
- */
-const fetchYelpDetails = async (venue: Venue) => {
-  try {
-    if (!env.YELP_API_KEY) {
-      logger.info('Yelp details skipped: YELP_API_KEY not configured');
-      return null;
-    }
-
-    let yelpId = venue.source === 'yelp' ? venue.source_id : null;
-
-    // If it's not a Yelp source, we need to find a match
-    if (!yelpId) {
-      // For now, we use a simple match based on name and lat/lon if available
-      // In a real scenario, we'd want address info from the DB
-      if (venue.lat && venue.lon) {
-        const matches = await yelpService.searchBusinesses({
-          term: venue.name,
-          latitude: venue.lat,
-          longitude: venue.lon,
-          limit: 1
-        });
-        if (matches && matches.length > 0) {
-          yelpId = matches[0].id;
-        }
-      }
-    }
-
-    if (!yelpId) return null;
-
-    const [details, reviews] = await Promise.all([
-      yelpService.getBusinessDetails(yelpId),
-      yelpService.getBusinessReviews(yelpId)
-    ]);
-
-    if (details) {
-      return {
-        name: details.name,
-        address: details.location.display_address.join(', '),
-        phone: details.display_phone,
-        website: details.url,
-        rating: details.rating,
-        user_ratings_total: details.review_count,
-        reviews: reviews || [],
-        opening_hours: details.hours?.[0] || null,
-        photos: details.photos || [details.image_url]
-      };
-    }
-    
-    return null;
-  } catch (error: any) {
-    logger.error({ err: error, venueId: venue.id }, 'Error fetching Yelp details');
-    return null;
-  }
-};
-
 // NOTE: fetchOSMDetails (live Overpass call) was removed in Phase 18 prep.
 // OSM contact data is now pre-populated by the enrichment pipeline (osm-contact-enrichment.ts).
 // All venue details are served from the DB. If an OSM venue hasn't been enriched yet,
@@ -692,8 +633,8 @@ const baseVenueService = {
     const venue = venueResult.rows[0];
     let externalDetails = null;
 
-    if (venue.source === 'google' || venue.source === 'yelp' || venue.source === 'manual') {
-      externalDetails = await fetchYelpDetails(venue);
+    if (venue.source === 'google' || venue.source === 'manual') {
+      externalDetails = null; // No external fetching for these either now, served from DB.
     }
     // OSM venues use pre-enriched DB data only (no live Overpass calls)
 
@@ -772,8 +713,8 @@ const baseVenueService = {
     const venue = venueResult.rows[0];
     let externalDetails = null;
 
-    if (venue.source === 'google' || venue.source === 'yelp' || venue.source === 'manual') {
-      externalDetails = await fetchYelpDetails(venue);
+    if (venue.source === 'google' || venue.source === 'manual') {
+      externalDetails = null; // No external fetching for these either now, served from DB.
     }
     // OSM venues use pre-enriched DB data only (no live Overpass calls)
 

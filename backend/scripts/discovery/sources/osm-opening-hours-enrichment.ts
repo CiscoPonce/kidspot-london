@@ -1,5 +1,6 @@
 import { db } from '../../../src/clients/db.js';
 import { logger } from '../../../src/config/logger.js';
+import { fetchOverpassWithRetry } from './overpass-utils.js';
 
 export interface OsmHoursResult {
   enriched: number;
@@ -56,22 +57,8 @@ export async function enrichOsmOpeningHours(batchSize: number = 100): Promise<Os
       const idSelectors = osmIds.map((id) => `node(${id});way(${id});relation(${id});`).join('');
       const query = `[out:json][timeout:30];(${idSelectors});out tags;`;
 
-      const response = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'KidSpot-London/1.0 (osm-hours-enrichment)',
-        },
-        body: 'data=' + encodeURIComponent(query),
-      });
+      const data = await fetchOverpassWithRetry(query);
 
-      if (!response.ok) {
-        logger.warn(`Overpass returned ${response.status} — skipping batch.`);
-        result.failed += batch.length;
-        continue;
-      }
-
-      const data = (await response.json()) as any;
       const tagMap = new Map<string, Record<string, string>>();
       for (const el of data?.elements || []) {
         tagMap.set(String(el.id), el.tags || {});

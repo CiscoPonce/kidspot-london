@@ -70,8 +70,6 @@ async function setupRepeatingJobs() {
       ...jobOpts,
     });
 
-    // Yelp — DISABLED (Fusion API trial expired)
-
     await discoveryQueue.add('enrich-foursquare', { batchSize: 50 }, {
       repeat: { pattern: '0 5 * * *' },
       jobId: 'repeat:enrich-foursquare',
@@ -185,8 +183,6 @@ const worker = new Worker(
           logger.info({ result }, 'Apify enrichment complete');
           return { status: 'completed', ...result };
         }
-
-        // Yelp — DISABLED (trial expired)
 
         case 'enrich-foursquare': {
           const { enrichViaFoursquare } = await import('../scripts/discovery/sources/foursquare-enrichment.js');
