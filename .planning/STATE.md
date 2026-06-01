@@ -30,21 +30,34 @@
 - 15.0 - Data Quality Enrichment
 - 16.0 - Accelerated Enrichment & Partnership
 - 17.0 - High-Velocity Enrichment
+- 18.0 - Autonomous Enrichment Engine & Code Quality
+- 18.5 - Chain Enrichment & Categorization Polish
+- 18.0-18.5 Data Validation (closure detection, Brave images, phone normalisation, contact-backfill worker, enriched_at timestamp)
 
-## Active Phase: 17 - High-Velocity Enrichment
+## Active Phase: 18B - Contact Extraction Yield Optimization
 ### Objective
-Implement a high-velocity data enrichment pipeline using Apify, including schema upgrades for rich data, asynchronous webhooks, and deep contact extraction.
+Increase contact extraction yield of the direct-crawl pipeline by ~30% via browser-grade HTTP headers, OpenRouter LLM fallback extraction, and a BullMQ queue rate limiter.
 
-### Accomplishments (May 15, 2026)
-- ✅ **Apify Integration**: Robust enrichment script using Google Places via Apify.
-- ✅ **Pipeline Orchestration**: Apify integrated as Layer 2 in the discovery pipeline.
-- ✅ **Rich Data Schema**: Database migration and API/UI updates for opening hours and images.
-- ✅ **Asynchronous Webhooks**: Webhook endpoint and background processing service.
-- ✅ **Deep Enrichment**: Website crawling and email extraction enabled.
+## Completed Phases Detail
 
-### Decisions
-- **2026-05-02**: Moving to Phase 10 to focus on sponsor value delivery (D-10-01).
-- **2026-05-02**: Decided to implement OTP-based owner login for simplicity and security (D-10-02).
+### Phase 18 Data Validation (Completed)
+- ✅ **Closure Detection**: `is_active` flag set to FALSE when Apify reports permanent closure
+- ✅ **Brave Image Search**: New `braveService.ts` with daily `enrich-brave-images` job
+- ✅ **Phone Normalization**: `normalizeUkPhone()` utility in `backend/src/utils/phone.ts`
+- ✅ **Contact Backfill**: `contact-backfill.ts` worker runs daily at 07:00
+- ✅ **Enriched At**: `enriched_at = NOW()` set on every Apify update
+- ✅ **Webhook**: `/admin/webhooks/apify` endpoint for Apify dataset notifications
+
+### Phase 18.5 Chain Enrichment (Completed)
+- ✅ **Categorization Overrides**: DB trigger for brands (Flip Out, Oxygen, etc.)
+- ✅ **Chain Expansion**: Seeded missing Flip Out and Gravity locations
+
+### Database Stats (June 2026)
+- 16,844 total venues (14,676 active, 2,168 inactive)
+- Image coverage: 303 (~2%)
+- Email coverage: 1,216 (~8%)
+- Phone coverage: 3,191 (~22%)
+- Enriched venues: 16,767 (recently backfilled)
 
 ---
 
@@ -81,10 +94,11 @@ Implement a high-velocity data enrichment pipeline using Apify, including schema
 ---
 
 ## Next Steps
-1. **Phase 12 product-complete (Wave 13.x):**
-   - Backfill FHRS for the §11 panel + ≥ 50% of active venues.
-   - Run real OpenActive feed ingestion (confirm publisher URLs first).
-   - Smoke-test borough CSV URLs and ingest the 3 seeded sources end-to-end.
-   - Standardise non-operator enrichment paths to write `venue_source_claims`.
-2. Re-run `coverage-eval.ts` and improve panel pass rate by ≥ 10 pp over the 2026-05-09 baseline.
-3. Proceed to Phase 13 (Search Experience V2 enhancements or next milestone) once metrics are met.
+1. **Phase 18B yield optimisation (current focus):**
+- Deploy browser-grade headers to all venue crawls
+- Wire OpenRouter LLM fallback into `direct-crawl-enrichment.ts`
+- Add BullMQ queue rate limiter
+- Verify coverage lift via before/after SQL queries
+2. Monitor Phase 18.5 and 18B pipeline runs for 2 weeks; confirm email/phone coverage rises from 8%/22% toward 11%/28%+
+3. Re-run `coverage-eval.ts` and report yield delta to team.
+4. Proceed to Phase 19 (Revenue Monetization V2) once contact coverage meets targets.

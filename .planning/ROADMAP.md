@@ -181,6 +181,27 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ---
 
+## Phase 18.5: Chain Enrichment & Categorization Polish (Weeks 23-24)
+**Status**: **COMPLETED**
+**Goal**: Correct systematic miscategorization of commercial indoor play centers and ensure 100% coverage of major child-friendly chains across Greater London.
+
+**Completed**:
+- ✅ **Categorization Overrides**: Database trigger to auto-map brands (Flip Out, etc.) to `softplay`.
+- ✅ **Chain Expansion**: Targeted discovery script and seeding for major missing locations.
+- ✅ **Coverage Audit**: 100% coverage for Flip Out London branches.
+
+---
+
+## Phase 18B: Contact Extraction Yield Optimization (Weeks 23-24)
+**Status**: **PLANNED**
+**Goal**: Increase the yield of the direct-crawl contact extraction pipeline by ~30% through browser-grade HTTP headers and LLM fallback extraction, without adding new infrastructure.
+**Requirements**:
+- **CE-01**: Browser-grade header spoofing on all outbound venue crawls
+- **CE-02**: LLM fallback extraction via OpenRouter when cheerio+regex returns nothing
+- **CE-03**: BullMQ worker rate limiter to reduce upstream firewall blocks
+
+---
+
 ## Phase 19: Revenue Monetization V2 (Planned)
 **Status**: **PLANNED**
 **Goal**: Enable venue owner self-service claiming and premium sponsorship tiers, leveraging the enriched contact data from Phase 18.
