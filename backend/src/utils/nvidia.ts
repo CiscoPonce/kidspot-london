@@ -70,7 +70,7 @@ export async function callNvidia({
   const reader = response.body?.getReader();
   if (!reader) {
     // Fallback: body was not streamed (shouldn't happen with stream:true)
-    const rawJson = await response.json().catch(() => ({}));
+    const rawJson = (await response.json().catch(() => ({}))) as { choices?: { delta?: Record<string, unknown> }[] };
     const delta = rawJson?.choices?.[0]?.delta ?? {};
     // This model ALWAYS returns reasoning/reasoning_content; content is always null.
     // Use content as last resort only if neither reasoning field is present.
