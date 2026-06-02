@@ -21,6 +21,14 @@ const envSchema = z.object({
   FOURSQUARE_API_KEY: z.string().optional(),
   GEOAPIFY_API_KEY: z.string().optional(),
   
+  // NVIDIA API (Phase 18B — LLM fallback extraction)
+  NVIDIA_API_KEY: z.string().min(1, 'NVIDIA_API_KEY is required when NVIDIA_MODEL is set'),
+  NVIDIA_MODEL: z.string().default('stepfun-ai/step-3.7-flash'),
+  NVIDIA_MAX_TOKENS: z.coerce.number().default(16384),
+  NVIDIA_TEMPERATURE: z.coerce.number().default(1),
+  NVIDIA_TOP_P: z.coerce.number().default(0.95),
+  NVIDIA_BASE_URL: z.string().url().default('https://integrate.api.nvidia.com/v1'),
+
   // Security
   ADMIN_KEY: z.string().optional(),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
