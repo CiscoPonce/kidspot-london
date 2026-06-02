@@ -182,10 +182,12 @@ export async function enrichViaDirectCrawl(batchSize: number = 100): Promise<Dir
       if (!openingHours && extracted.openingHours) openingHours = extracted.openingHours;
     }
 
-    // CE-02: LLM fallback ONLY when ALL THREE fields are null AND we have HTML to work with
-    // One call per venue per pass. Result validated before any DB write.
-    let llmFired = false;
-    if (!phone && !email && !openingHours && htmlFetched) {
+  // CE-02: LLM fallback ONLY when ALL THREE fields are null AND we have HTML to work with
+  // Gate: phone IS NULL AND email IS NULL AND opening_hours IS NULL after cheerio+regex extraction
+  // (Same semantics in TS: !phone && !email && !openingHours)
+  // One call per venue per pass. Result validated before any DB write.
+  let llmFired = false;
+  if (!phone && !email && !openingHours && htmlFetched) {
       try {
         const llmRaw = await callNvidia({
           systemPrompt:
