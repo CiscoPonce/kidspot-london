@@ -71,13 +71,10 @@ export async function callNvidia({
   if (!reader) {
     // Fallback: body was not streamed (shouldn't happen with stream:true)
     const rawJson = await response.json().catch(() => ({}));
-    const json = rawJson as { choices?: { delta?: Record<string, string | undefined> }[] };
-    const delta = json?.choices?.[0]?.delta ?? {};
-    accumulated =
-      (delta.reasoning as string | undefined) ??
-      (delta.reasoning_content as string | undefined) ??
-      (delta.content as string | undefined) ??
-      '';
+    const delta = rawJson?.choices?.[0]?.delta ?? {};
+    // This model ALWAYS returns reasoning/reasoning_content; content is always null.
+    // Use content as last resort only if neither reasoning field is present.
+    accumulated = (delta.reasoning as string | undefined) ?? (delta.reasoning_content as string | undefined) ?? (delta.content as string | undefined) ?? '';
     return accumulated.trim();
   }
 

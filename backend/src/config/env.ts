@@ -22,7 +22,8 @@ const envSchema = z.object({
   GEOAPIFY_API_KEY: z.string().optional(),
   
   // NVIDIA API (Phase 18B — LLM fallback extraction)
-  NVIDIA_API_KEY: z.string().min(1, 'NVIDIA_API_KEY is required when NVIDIA_MODEL is set'),
+  // Optional in schema; nvidia.ts validates presence at call time if not set
+  NVIDIA_API_KEY: z.string().optional(),
   NVIDIA_MODEL: z.string().default('stepfun-ai/step-3.7-flash'),
   NVIDIA_MAX_TOKENS: z.coerce.number().default(16384),
   NVIDIA_TEMPERATURE: z.coerce.number().default(1),
