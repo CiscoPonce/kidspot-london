@@ -3,6 +3,7 @@ import { redis } from './clients/redis.js';
 import { logger } from './config/logger.js';
 import env from './config/env.js';
 import { StaleIngestLockedError, withStaleIngestLock } from './services/ingestLock.js';
+import { crawlDelay } from './utils/rateLimiter.js';
 
 logger.info('=== KidSpot London - Background Worker ===');
 logger.info(`Connected to Redis at: ${env.REDIS_URL}`);
@@ -149,81 +150,91 @@ const worker = new Worker(
           break;
         }
 
-        case 'enrich-geocode': {
-          const { enrichMissingDetails } = await import('../scripts/discovery/sources/enrichment.js');
-          const result = await enrichMissingDetails();
+case 'enrich-geocode': {
+  await crawlDelay(400);
+  const { enrichMissingDetails } = await import('../scripts/discovery/sources/enrichment.js');
+  const result = await enrichMissingDetails();
           logger.info({ result }, 'Geocoding enrichment complete');
           return { status: 'completed', ...result };
         }
 
-        case 'enrich-osm-contacts': {
-          const { enrichOsmContacts } = await import('../scripts/discovery/sources/osm-contact-enrichment.js');
-          const batchSize = (job.data as EnrichmentJobData)?.batchSize || 200;
-          const result = await enrichOsmContacts(batchSize);
+case 'enrich-osm-contacts': {
+  await crawlDelay(600);
+  const { enrichOsmContacts } = await import('../scripts/discovery/sources/osm-contact-enrichment.js');
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 200;
+  const result = await enrichOsmContacts(batchSize);
           logger.info({ result }, 'OSM contact enrichment complete');
           return { status: 'completed', ...result };
         }
 
-        case 'enrich-web-scrape': {
-          const { enrichViaWebScraping } = await import('../scripts/discovery/sources/web-scraper-enrichment.js');
-          const batchSize = (job.data as EnrichmentJobData)?.batchSize || 30;
-          const result = await enrichViaWebScraping(batchSize);
+case 'enrich-web-scrape': {
+  await crawlDelay(1200);
+  const { enrichViaWebScraping } = await import('../scripts/discovery/sources/web-scraper-enrichment.js');
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 30;
+  const result = await enrichViaWebScraping(batchSize);
           logger.info({ result }, 'Web scraper enrichment complete');
           return { status: 'completed', ...result };
         }
 
-        case 'enrich-direct-crawl': {
-          const { enrichViaDirectCrawl } = await import('../scripts/discovery/sources/direct-crawl-enrichment.js');
-          const batchSize = (job.data as EnrichmentJobData)?.batchSize || 100;
-          const result = await enrichViaDirectCrawl(batchSize);
+case 'enrich-direct-crawl': {
+  await crawlDelay(800);
+  const { enrichViaDirectCrawl } = await import('../scripts/discovery/sources/direct-crawl-enrichment.js');
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 100;
+  const result = await enrichViaDirectCrawl(batchSize);
           logger.info({ result }, 'Direct crawl enrichment complete');
           return { status: 'completed', ...result };
         }
 
-        case 'enrich-osm-hours': {
-          const { enrichOsmOpeningHours } = await import('../scripts/discovery/sources/osm-opening-hours-enrichment.js');
-          const batchSize = (job.data as EnrichmentJobData)?.batchSize || 100;
-          const result = await enrichOsmOpeningHours(batchSize);
+case 'enrich-osm-hours': {
+  await crawlDelay(600);
+  const { enrichOsmOpeningHours } = await import('../scripts/discovery/sources/osm-opening-hours-enrichment.js');
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 100;
+  const result = await enrichOsmOpeningHours(batchSize);
           logger.info({ result }, 'OSM opening hours enrichment complete');
           return { status: 'completed', ...result };
         }
 
-        case 'enrich-apify': {
-          const { enrichViaApify } = await import('../scripts/discovery/sources/apify-enrichment.js');
-          const batchSize = (job.data as EnrichmentJobData)?.batchSize || 20;
-          const result = await enrichViaApify(batchSize);
+case 'enrich-apify': {
+  await crawlDelay(1000);
+  const { enrichViaApify } = await import('../scripts/discovery/sources/apify-enrichment.js');
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 20;
+  const result = await enrichViaApify(batchSize);
           logger.info({ result }, 'Apify enrichment complete');
           return { status: 'completed', ...result };
         }
 
-        case 'enrich-foursquare': {
-          const { enrichViaFoursquare } = await import('../scripts/discovery/sources/foursquare-enrichment.js');
-          const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
-          const result = await enrichViaFoursquare(batchSize);
+case 'enrich-foursquare': {
+  await crawlDelay(500);
+  const { enrichViaFoursquare } = await import('../scripts/discovery/sources/foursquare-enrichment.js');
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
+  const result = await enrichViaFoursquare(batchSize);
           logger.info({ result }, 'Foursquare enrichment complete');
           return { status: 'completed', ...result };
         }
 
-        case 'enrich-geoapify': {
-          const { enrichViaGeoapify } = await import('../scripts/discovery/sources/geoapify-enrichment.js');
-          const batchSize = (job.data as EnrichmentJobData)?.batchSize || 40;
-          const result = await enrichViaGeoapify(batchSize);
+case 'enrich-geoapify': {
+  await crawlDelay(500);
+  const { enrichViaGeoapify } = await import('../scripts/discovery/sources/geoapify-enrichment.js');
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 40;
+  const result = await enrichViaGeoapify(batchSize);
           logger.info({ result }, 'Geoapify enrichment complete');
           return { status: 'completed', ...result };
         }
 
-        case 'enrich-brave-images': {
-          const { enrichViaBraveImages } = await import('../scripts/discovery/sources/brave-image-enrichment.js');
-          const batchSize = (job.data as EnrichmentJobData)?.batchSize || 20;
-          const result = await enrichViaBraveImages(batchSize);
+case 'enrich-brave-images': {
+  await crawlDelay(500);
+  const { enrichViaBraveImages } = await import('../scripts/discovery/sources/brave-image-enrichment.js');
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 20;
+  const result = await enrichViaBraveImages(batchSize);
           logger.info({ result }, 'Brave image enrichment complete');
           return { status: 'completed', ...result };
         }
 
-        case 'contact-backfill': {
-          const { runContactBackfill } = await import('../scripts/discovery/sources/contact-backfill.js');
-          const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
-          const result = await runContactBackfill(batchSize);
+case 'contact-backfill': {
+  await crawlDelay(700);
+  const { runContactBackfill } = await import('../scripts/discovery/sources/contact-backfill.js');
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
+  const result = await runContactBackfill(batchSize);
           logger.info({ result }, 'Contact backfill complete');
           return { status: 'completed', ...result };
         }
