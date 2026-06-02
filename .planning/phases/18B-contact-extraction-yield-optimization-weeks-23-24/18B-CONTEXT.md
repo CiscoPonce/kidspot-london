@@ -46,6 +46,11 @@ adding new infrastructure or per-venue cost concerns.
 - **Trigger condition:** Total failure only — all of `phone`, `email`, and
   `opening_hours` are null after cheerio+regex extraction succeeds on the HTML.
   Partial failure (one field present) does not trigger the LLM.
+- **Response contract (NVIDIA-specific):** The `stepfun-ai/step-3.7-flash` model
+  returns its assistant output in `chunk.choices[0].delta.reasoning` /
+  `chunk.choices[0].delta.reasoning_content` on both streaming and non-streaming calls.
+  The standard `message.content` field is always `null`.  Implementations MUST accumulate
+  `reasoning`/`reasoning_content` tokens, not `content`.
 - **Cost/safety guardrails:** Limit to one LLM call per venue per enrichment pass.
   If both the homepage and `/contact` page return non-null HTML but yield zero extracted
   fields, a single NVIDIA API call summarises the raw HTML and fills missing fields.
