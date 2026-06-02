@@ -29,6 +29,7 @@
 - **Data Validation & Trust Layer**: Systematic closure detection (auto-deactivate closed venues), phone normalization, and "Last Verified" timestamps to ensure data reliability.
 - **Rich Media Acquisition**: Multi-layered image engine using Google Places (via Apify) and Brave Image Search as a fallback for 100% photo coverage.
 - **Zero-Budget Contact Pipeline**: Foursquare + direct website crawl + Geoapify replace paid Yelp Fusion for phone, email, and website data.
+- **LLM Fallback Extraction (Phase 18B)**: NVIDIA API (free tier) used as a last resort when cheerio+regex yields nothing for all three contact fields — no new per-venue cost incurred.
 
 ---
 
@@ -243,6 +244,9 @@ kidspot-london/
 | `API_BASE_URL` | Optional | Public API URL for webhooks |
 | `NEXT_PUBLIC_API_URL` | Optional | Frontend API URL |
 | `YELP_API_KEY` | — | Disabled (trial expired) |
+| `NVIDIA_API_KEY` | Optional | NVIDIA API key for LLM contact extraction fallback (Phase 18B) |
+| `NVIDIA_MODEL` | Optional | LLM model identifier (default: `stepfun-ai/step-3.7-flash`) |
+| `NVIDIA_BASE_URL` | Optional | NVIDIA API base URL (default: `https://integrate.api.nvidia.com/v1`) |
 | `NODE_ENV` | Optional | `production` or `development` |
 
 ---
