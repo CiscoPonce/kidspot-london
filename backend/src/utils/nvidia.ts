@@ -70,7 +70,8 @@ export async function callNvidia({
   const reader = response.body?.getReader();
   if (!reader) {
     // Fallback: body was not streamed (shouldn't happen with stream:true)
-    const json = await response.json().catch(() => ({} as any));
+    const rawJson = await response.json().catch(() => ({}));
+    const json = rawJson as { choices?: { delta?: Record<string, string | undefined> }[] };
     const delta = json?.choices?.[0]?.delta ?? {};
     accumulated =
       (delta.reasoning as string | undefined) ??

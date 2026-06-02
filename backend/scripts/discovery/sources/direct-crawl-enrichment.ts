@@ -167,20 +167,22 @@ export async function enrichViaDirectCrawl(batchSize: number = 100): Promise<Dir
     let email = venue.email || null;
     let openingHours = venue.opening_hours || null;
 
-    // Track whether we fetched any HTML (total-failure gate for LLM fallback)
-    let htmlFetched = false;
+    // Track the first fetched HTML for LLM fallback (total-failure gate)
+    let firstFetchedHtml: string | null = null;
 
     for (const path of CONTACT_PATHS) {
       if (phone && email && openingHours) break;
       const url = normalizeUrl(venue.website, path);
       const html = await fetchPage(url);
       if (!html) continue;
-      htmlFetched = true;
+      if (!firstFetchedHtml) firstFetchedHtml = html;
       const extracted = extractFromHtml(html);
       if (!phone && extracted.phone) phone = extracted.phone;
       if (!email && extracted.email) email = extracted.email;
       if (!openingHours && extracted.openingHours) openingHours = extracted.openingHours;
     }
+
+    const htmlFetched = firstFetchedHtml !== null;
 
   // CE-02: LLM fallback ONLY when ALL THREE fields are null AND we have HTML to work with
   // Gate: phone IS NULL AND email IS NULL AND opening_hours IS NULL after cheerio+regex extraction
@@ -188,15 +190,16 @@ export async function enrichViaDirectCrawl(batchSize: number = 100): Promise<Dir
   // One call per venue per pass. Result validated before any DB write.
   let llmFired = false;
   if (!phone && !email && !openingHours && htmlFetched) {
-      try {
-        const llmRaw = await callNvidia({
-          systemPrompt:
-            'You are a contact-data extraction assistant. Given raw HTML from a UK venue website, extract UK phone numbers, email addresses, and opening hours. Return ONLY a JSON object with keys: phone (string|null), email (string|null), opening_hours (string|null). Use null for missing fields. Do not invent data.',
-          userPrompt:
-            `Extract contact details from this HTML for the venue "${venue.name}" (${venue.website}):\n\n` +
-            // Trim to stay within token budget — keep first ~12000 chars
-            html.slice(0, 12000),
-        });
+  try {
+  const htmlForLlm = firstFetchedHtml!; // non-null: htmlFetched=true guarantees firstFetchedHtml set
+  const llmRaw = await callNvidia({
+    systemPrompt:
+      'You are a contact-data extraction assistant. Given raw HTML from a UK venue website, extract UK phone numbers, email addresses, and opening hours. Return ONLY a JSON object with keys: phone (string|null), email (string|null), opening_hours (string|null). Use null for missing fields. Do not invent data.',
+    userPrompt:
+      `Extract contact details from this HTML for the venue "${venue.name}" (${venue.website}):\n\n` +
+      // Trim to stay within token budget — keep first ~12000 chars
+      htmlForLlm.slice(0, 12000),
+  });
 
         let llmPhone: string | null = null;
         let llmEmail: string | null = null;

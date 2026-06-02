@@ -1,7 +1,6 @@
 import { db } from '../../../src/clients/db.js';
 import { browserHeaders } from '../../../src/utils/httpHeaders.js';
 import { crawlDelay } from '../../../src/utils/rateLimiter.js';
-import { crawlDelay } from '../../../src/utils/rateLimiter.js';
 
 export interface EnrichmentResult {
   enriched: number;
