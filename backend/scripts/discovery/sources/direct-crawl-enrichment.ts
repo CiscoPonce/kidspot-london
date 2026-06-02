@@ -1,6 +1,10 @@
 import * as cheerio from 'cheerio';
 import { db } from '../../../src/clients/db.js';
 import { logger } from '../../../src/config/logger.js';
+import { normalizeUkPhone, isValidUkPhone } from '../../../src/utils/phone.js';
+import { browserHeaders } from '../../../src/utils/httpHeaders.js';
+import { crawlDelay } from '../../../src/utils/rateLimiter.js';
+import { callNvidia } from '../../../src/utils/nvidia.js';
 
 export interface DirectCrawlResult {
   enriched: number;
@@ -16,7 +20,6 @@ const JUNK_EMAIL = /example\.com|sentry\.io|wixpress|wordpress|\.png$|\.jpg$|\.w
 const CONTACT_PATHS = ['', '/contact', '/contact-us', '/about', '/about-us', '/get-in-touch'];
 
 const FETCH_OPTS = {
-  headers: { 'User-Agent': 'KidSpot-London/1.0 (venue-enrichment; +https://kidspot.london)' },
   signal: AbortSignal.timeout(12000),
   redirect: 'follow' as const,
 };
@@ -97,7 +100,7 @@ function extractFromHtml(html: string): { phone: string | null; email: string | 
 
 async function fetchPage(url: string): Promise<string | null> {
   try {
-    const res = await fetch(url, FETCH_OPTS);
+    const res = await fetch(url, { ...FETCH_OPTS, headers: browserHeaders() });
     if (!res.ok) return null;
     const ct = res.headers.get('content-type') || '';
     if (!ct.includes('text/html') && !ct.includes('text/plain')) return null;
@@ -157,25 +160,91 @@ export async function enrichViaDirectCrawl(batchSize: number = 100): Promise<Dir
       continue;
     }
 
-    try {
-      await new Promise((r) => setTimeout(r, 800));
+  try {
+    await crawlDelay(800);
 
-      let phone = venue.phone || null;
-      let email = venue.email || null;
-      let openingHours = venue.opening_hours || null;
+    let phone = venue.phone || null;
+    let email = venue.email || null;
+    let openingHours = venue.opening_hours || null;
 
-      for (const path of CONTACT_PATHS) {
-        if (phone && email && openingHours) break;
-        const url = normalizeUrl(venue.website, path);
-        const html = await fetchPage(url);
-        if (!html) continue;
-        const extracted = extractFromHtml(html);
-        if (!phone && extracted.phone) phone = extracted.phone;
-        if (!email && extracted.email) email = extracted.email;
-        if (!openingHours && extracted.openingHours) openingHours = extracted.openingHours;
+    // Track whether we fetched any HTML (total-failure gate for LLM fallback)
+    let htmlFetched = false;
+
+    for (const path of CONTACT_PATHS) {
+      if (phone && email && openingHours) break;
+      const url = normalizeUrl(venue.website, path);
+      const html = await fetchPage(url);
+      if (!html) continue;
+      htmlFetched = true;
+      const extracted = extractFromHtml(html);
+      if (!phone && extracted.phone) phone = extracted.phone;
+      if (!email && extracted.email) email = extracted.email;
+      if (!openingHours && extracted.openingHours) openingHours = extracted.openingHours;
+    }
+
+    // CE-02: LLM fallback ONLY when ALL THREE fields are null AND we have HTML to work with
+    // One call per venue per pass. Result validated before any DB write.
+    let llmFired = false;
+    if (!phone && !email && !openingHours && htmlFetched) {
+      try {
+        const llmRaw = await callNvidia({
+          systemPrompt:
+            'You are a contact-data extraction assistant. Given raw HTML from a UK venue website, extract UK phone numbers, email addresses, and opening hours. Return ONLY a JSON object with keys: phone (string|null), email (string|null), opening_hours (string|null). Use null for missing fields. Do not invent data.',
+          userPrompt:
+            `Extract contact details from this HTML for the venue "${venue.name}" (${venue.website}):\n\n` +
+            // Trim to stay within token budget — keep first ~12000 chars
+            html.slice(0, 12000),
+        });
+
+        let llmPhone: string | null = null;
+        let llmEmail: string | null = null;
+        let llmOpeningHours: string | null = null;
+
+        try {
+          const parsed = JSON.parse(llmRaw);
+          llmPhone = typeof parsed.phone === 'string' ? parsed.phone : null;
+          llmEmail = typeof parsed.email === 'string' ? parsed.email : null;
+          llmOpeningHours = typeof parsed.opening_hours === 'string' ? parsed.opening_hours : null;
+        } catch {
+          // LLM returned non-JSON — discard
+        }
+
+        // Validate before assignment (T-18B-01 mitigation)
+        if (llmPhone && isValidUkPhone(llmPhone)) {
+          const normalized = normalizeUkPhone(llmPhone);
+          if (normalized) llmPhone = normalized;
+        } else if (llmPhone) {
+          llmPhone = null; // failed UK validation
+        }
+
+        if (llmEmail && EMAIL_REGEX.test(llmEmail) && !JUNK_EMAIL.test(llmEmail)) {
+          // keep
+        } else {
+          llmEmail = null;
+        }
+
+        if (!llmPhone && !llmEmail && !llmOpeningHours) {
+          // LLM yielded nothing useful — log metric and leave fields null
+          logger.info({ venueId: venue.id, name: venue.name }, 'LLM fallback: no valid fields extracted');
+        } else {
+          phone = phone ?? llmPhone;
+          email = email ?? llmEmail;
+          openingHours = openingHours ?? llmOpeningHours;
+          llmFired = true;
+          logger.info(
+            { venueId: venue.id, name: venue.name, ph: !!phone, em: !!email, hrs: !!openingHours },
+            'LLM fallback extracted contact fields',
+          );
+        }
+      } catch (llmErr: any) {
+        logger.warn(
+          { err: llmErr.message, venueId: venue.id, name: venue.name },
+          'LLM fallback call failed — proceeding without LLM data',
+        );
       }
+    }
 
-      const hasNew = (
+    const hasNew = (
         (phone && phone !== venue.phone) ||
         (email && email !== venue.email) ||
         (openingHours && openingHours !== venue.opening_hours)

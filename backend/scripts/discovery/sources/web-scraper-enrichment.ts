@@ -1,4 +1,5 @@
 import { db } from '../../../src/clients/db.js';
+import { browserHeaders } from '../../../src/utils/httpHeaders.js';
 
 export interface WebScraperResult {
   enriched: number;
@@ -81,15 +82,16 @@ export async function enrichViaWebScraping(batchSize: number = 10): Promise<WebS
 
         console.log(`  Searching: "${searchQuery}"...`);
 
-        const braveRes = await fetch(
-          `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(searchQuery)}&count=5`,
-          {
-            headers: {
-              'Accept': 'application/json',
-              'X-Subscription-Token': BRAVE_API_KEY
-            }
-          }
-        );
+  const braveRes = await fetch(
+    `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(searchQuery)}&count=5`,
+    {
+      headers: {
+        ...browserHeaders(),
+        'Accept': 'application/json',
+        'X-Subscription-Token': BRAVE_API_KEY,
+      },
+    }
+  );
 
         if (!braveRes.ok) {
           if (braveRes.status === 429) {
@@ -127,12 +129,12 @@ export async function enrichViaWebScraping(batchSize: number = 10): Promise<WebS
         let bookingUrl: string | null = null;
 
         // Try to fetch the homepage for contact info
-        try {
-          const pageRes = await fetch(websiteUrl, {
-            headers: { 'User-Agent': 'KidSpot-London/1.0 (venue-enrichment)' },
-            signal: AbortSignal.timeout(10000),
-            redirect: 'follow'
-          });
+  try {
+    const pageRes = await fetch(websiteUrl, {
+      headers: browserHeaders(),
+      signal: AbortSignal.timeout(10000),
+      redirect: 'follow',
+    });
 
           if (pageRes.ok) {
             const html = await pageRes.text();
@@ -172,13 +174,13 @@ export async function enrichViaWebScraping(batchSize: number = 10): Promise<WebS
         }
 
         // Also try /contact page
-        try {
-          const contactUrl = new URL('/contact', websiteUrl).href;
-          const contactRes = await fetch(contactUrl, {
-            headers: { 'User-Agent': 'KidSpot-London/1.0 (venue-enrichment)' },
-            signal: AbortSignal.timeout(10000),
-            redirect: 'follow'
-          });
+  try {
+    const contactUrl = new URL('/contact', websiteUrl).href;
+    const contactRes = await fetch(contactUrl, {
+      headers: browserHeaders(),
+      signal: AbortSignal.timeout(10000),
+      redirect: 'follow',
+    });
 
           if (contactRes.ok) {
             const html = await contactRes.text();

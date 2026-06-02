@@ -1,19 +1,20 @@
 import { logger } from '../../../src/config/logger.js';
+import { browserHeaders } from '../../../src/utils/httpHeaders.js';
 
 export async function fetchOverpassWithRetry(query: string, maxRetries = 3): Promise<any> {
   let attempt = 0;
   let delay = 2000;
 
   while (attempt < maxRetries) {
-    try {
-      const response = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'KidSpot-London/1.0 (overpass-utils)'
-        },
-        body: 'data=' + encodeURIComponent(query)
-      });
+  try {
+    const response = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      headers: {
+        ...browserHeaders(),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'data=' + encodeURIComponent(query),
+    });
 
       if (response.ok) {
         return await response.json();

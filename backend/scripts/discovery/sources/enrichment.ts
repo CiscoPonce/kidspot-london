@@ -1,4 +1,7 @@
 import { db } from '../../../src/clients/db.js';
+import { browserHeaders } from '../../../src/utils/httpHeaders.js';
+import { crawlDelay } from '../../../src/utils/rateLimiter.js';
+import { crawlDelay } from '../../../src/utils/rateLimiter.js';
 
 export interface EnrichmentResult {
   enriched: number;
@@ -29,15 +32,15 @@ export async function enrichMissingDetails(): Promise<EnrichmentResult> {
 
     for (const venue of venues) {
       try {
-        // Nominatim requires a 1 second delay between requests
-        await new Promise((resolve) => setTimeout(resolve, 1100));
+      // Nominatim delay via shared rate limiter (CE-03: geocode base=400ms)
+      await crawlDelay(400);
 
-        const url = `https://nominatim.openstreetmap.org/reverse?lat=${venue.lat}&lon=${venue.lon}&format=json&addressdetails=1`;
-        const res = await fetch(url, {
-          headers: { 'User-Agent': 'KidSpot-London/1.0 (venue-enrichment)' },
-        });
+  const url = `https://nominatim.openstreetmap.org/reverse?lat=${venue.lat}&lon=${venue.lon}&format=json&addressdetails=1`;
+  const res = await fetch(url, {
+    headers: browserHeaders(),
+  });
 
-        if (!res.ok) {
+  if (!res.ok) {
           console.warn(`Nominatim returned ${res.status} for venue ${venue.id}`);
           result.failed++;
           continue;
