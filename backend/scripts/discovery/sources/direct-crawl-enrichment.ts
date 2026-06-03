@@ -19,12 +19,14 @@ const JUNK_EMAIL = /example\.com|sentry\.io|wixpress|wordpress|\.png$|\.jpg$|\.w
 
 const CONTACT_PATHS = ['', '/contact', '/contact-us', '/about', '/about-us', '/get-in-touch'];
 
+// NOTE: the timeout signal is created PER request inside fetchPage. A shared
+// module-level AbortSignal.timeout() aborts every fetch after 12s of wall-clock
+// from import, silently nulling all subsequent crawls in a long batch.
 const FETCH_OPTS = {
-  signal: AbortSignal.timeout(12000),
   redirect: 'follow' as const,
 };
 
-function normalizeUrl(base: string, path: string): string {
+export function normalizeUrl(base: string, path: string): string {
   try {
     if (!path || path === '') return base;
     return new URL(path, base).href;
@@ -33,7 +35,7 @@ function normalizeUrl(base: string, path: string): string {
   }
 }
 
-function isCrawlable(url: string): boolean {
+export function isCrawlable(url: string): boolean {
   if (!url || url.includes('openstreetmap.org') || url.includes('facebook.com') ||
       url.includes('instagram.com') || url.startsWith('mailto:')) return false;
   return url.startsWith('http://') || url.startsWith('https://');
@@ -98,9 +100,9 @@ function extractFromHtml(html: string): { phone: string | null; email: string | 
   return { phone, email, openingHours };
 }
 
-async function fetchPage(url: string): Promise<string | null> {
+export async function fetchPage(url: string): Promise<string | null> {
   try {
-    const res = await fetch(url, { ...FETCH_OPTS, headers: browserHeaders() });
+    const res = await fetch(url, { ...FETCH_OPTS, headers: browserHeaders(), signal: AbortSignal.timeout(12000) });
     if (!res.ok) return null;
     const ct = res.headers.get('content-type') || '';
     if (!ct.includes('text/html') && !ct.includes('text/plain')) return null;
@@ -129,7 +131,7 @@ export async function enrichViaDirectCrawl(batchSize: number = 100): Promise<Dir
          OR (email IS NULL OR email = '')
          OR (opening_hours IS NULL OR opening_hours = '')
        )
-       AND (website_crawl_enriched_at IS NULL OR website_crawl_enriched_at < NOW() - INTERVAL '90 days')
+       AND (website_crawl_enriched_at IS NULL OR website_crawl_enriched_at < NOW() - INTERVAL '30 days')
      ORDER BY
        CASE type
          WHEN 'softplay' THEN 1
@@ -206,7 +208,9 @@ export async function enrichViaDirectCrawl(batchSize: number = 100): Promise<Dir
         let llmOpeningHours: string | null = null;
 
         try {
-          const parsed = JSON.parse(llmRaw);
+          // LLM may wrap JSON in prose; extract the first {...} block.
+          const jsonMatch = llmRaw.match(/\{[\s\S]*\}/);
+          const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : llmRaw);
           llmPhone = typeof parsed.phone === 'string' ? parsed.phone : null;
           llmEmail = typeof parsed.email === 'string' ? parsed.email : null;
           llmOpeningHours = typeof parsed.opening_hours === 'string' ? parsed.opening_hours : null;

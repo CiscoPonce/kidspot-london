@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
 import {
   Trees,
   Building2,
@@ -11,10 +10,14 @@ import {
   Landmark,
   Heart,
   Star,
-  ShieldCheck,
+  Users,
+  Clock,
 } from 'lucide-react';
 import { usePlausible } from 'next-plausible';
 import type { Venue } from '@/lib/api';
+import { trustSignals } from '@/lib/trust';
+import { isOpenNow } from '@/lib/opening-hours';
+import { useShortlist } from '@/hooks/use-shortlist';
 
 interface VenueCardProps {
   venue: Venue;
@@ -23,7 +26,7 @@ interface VenueCardProps {
   isSelected?: boolean;
 }
 
-type CategoryKey = 'softplay' | 'park' | 'museum' | 'community_hall' | 'library' | 'other';
+type CategoryKey = 'softplay' | 'park' | 'museum' | 'community_hall' | 'library' | 'leisure_centre' | 'cafe' | 'other';
 
 const CATEGORY_META: Record<
   CategoryKey,
@@ -53,6 +56,16 @@ const CATEGORY_META: Record<
     label: 'Party Room',
     chip: 'bg-[#FFCCBC] text-[#5C2210] border-[#FFAB91]/70',
   },
+  leisure_centre: {
+    icon: Building2,
+    label: 'Leisure Centre',
+    chip: 'bg-[#D7CCF0] text-[#2E2150] border-[#B9A7E6]/70',
+  },
+  cafe: {
+    icon: Building2,
+    label: 'Café',
+    chip: 'bg-[#FFE0B2] text-[#5A3A0E] border-[#FFCC80]/70',
+  },
   library: {
     icon: BookOpen,
     label: 'Library',
@@ -71,30 +84,39 @@ const SPONSOR_BADGE = {
   bronze: 'bg-orange-100 text-orange-700 border-orange-200',
 } as const;
 
+const PARTY_TYPES = new Set(['softplay', 'community_hall']);
+const PARTY_FACETS = ['soft_play', 'party_hire', 'hall_hire'];
+
 function formatDistance(miles: number): string {
   if (!miles && miles !== 0) return '';
   return miles < 0.1 ? '<0.1 mi' : `${miles.toFixed(1)} mi`;
 }
 
-function formatPrice(venue: Venue): { label: string; tone: 'price' | 'free' } | null {
-  if (venue.type === 'park' && (venue.price_level === 0 || venue.price_level == null)) {
-    return { label: 'Free', tone: 'free' };
-  }
-  if (venue.price_level == null) return null;
-  const tier = Math.max(0, Math.min(4, Number(venue.price_level)));
-  if (tier === 0) return { label: 'Free', tone: 'free' };
-  return { label: '£'.repeat(tier), tone: 'price' };
+function isPartyCapable(venue: Venue): boolean {
+  if (venue.party_capable === true) return true;
+  if (venue.party_capable === false) return false;
+  if (PARTY_TYPES.has(venue.type)) return true;
+  return (venue.parent_facets || []).some((f) => PARTY_FACETS.includes(f));
 }
 
-function isSafeChecked(venue: Venue): boolean {
-  // Heuristic until we add an explicit boolean (Phase 11.5):
-  //  - sponsored venues are owner-verified
-  //  - high-rated venues are crowd-validated
-  //  - well-formed venues with phone/website + borough have passed enrichment
-  if (venue.sponsor_tier) return true;
-  if (typeof venue.rating === 'number' && venue.rating >= 4.0) return true;
-  if (venue.borough && (venue.phone || venue.website)) return true;
-  return false;
+function firstImage(venue: Venue): string | undefined {
+  if (venue.image_url) return venue.image_url;
+  if (Array.isArray(venue.images) && venue.images.length > 0) return venue.images[0];
+  return undefined;
+}
+
+function partyPriceLabel(venue: Venue): { from: string; unit: string } | null {
+  if (typeof venue.party_price_from !== 'number') return null;
+  const amount = Number.isInteger(venue.party_price_from)
+    ? `£${venue.party_price_from}`
+    : `£${venue.party_price_from.toFixed(2)}`;
+  const unit =
+    venue.party_price_unit === 'per_hour'
+      ? '/ hour'
+      : venue.party_price_unit === 'flat'
+        ? ''
+        : '/ child';
+  return { from: amount, unit };
 }
 
 export function VenueCard({
@@ -110,11 +132,17 @@ export function VenueCard({
     : null;
   const isGold = venue.sponsor_tier === 'gold';
   const plausible = usePlausible();
-  const [isSaved, setIsSaved] = useState(false);
+  const { has, toggle } = useShortlist();
 
-  const imageUrl = venue.image_url;
-  const safeChecked = isSafeChecked(venue);
-  const price = formatPrice(venue);
+  const isSaved = has(venue.id);
+  const imageUrl = firstImage(venue);
+  const trust = trustSignals(venue);
+  const partyCapable = isPartyCapable(venue);
+  const partyPrice = partyPriceLabel(venue);
+  const isFreePark = venue.type === 'park' && !partyPrice;
+  const capacity = typeof venue.party_max_capacity === 'number' ? venue.party_max_capacity : null;
+  const enquiryUrl = venue.party_enquiry_url || venue.booking_url || null;
+  const openState = isOpenNow(venue.opening_hours);
 
   const handleCardClick = () => {
     plausible('VenueSelected', {
@@ -125,9 +153,16 @@ export function VenueCard({
 
   const handleSaveToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsSaved((s) => !s);
+    toggle(venue);
     plausible('VenueSaved', {
       props: { venueId: venue.id, saved: !isSaved },
+    });
+  };
+
+  const handleEnquiry = (e: React.MouseEvent, kind: 'enquiry' | 'call') => {
+    e.stopPropagation();
+    plausible('PartyEnquiryClicked', {
+      props: { venueId: venue.id, kind, type: venue.type },
     });
   };
 
@@ -144,12 +179,9 @@ export function VenueCard({
       tabIndex={0}
       aria-pressed={isSelected}
       className={`group relative cursor-pointer overflow-hidden ks-card flex flex-col sm:flex-row ${
-        isSelected
-          ? 'ks-card-active'
-          : ''
+        isSelected ? 'ks-card-active' : ''
       } ${isGold ? 'ring-2 ring-[#efdf00]' : ''}`}
     >
-      {/* Featured ribbon for Gold */}
       {isGold && (
         <div className="pointer-events-none absolute right-0 top-0 z-20 h-16 w-16 overflow-hidden">
           <div className="absolute right-[-24px] top-2 w-24 rotate-45 bg-amber-400 py-1 text-center text-[8px] font-black uppercase tracking-tighter text-amber-900 shadow-sm">
@@ -158,12 +190,11 @@ export function VenueCard({
         </div>
       )}
 
-      {/* Image / gradient placeholder */}
-      <div
-        className="relative shrink-0 overflow-hidden bg-surface-variant sm:w-[40%] sm:min-w-[180px]"
-      >
+      {/* Image / category placeholder */}
+      <div className="relative shrink-0 overflow-hidden bg-surface-variant sm:w-[40%] sm:min-w-[180px]">
         <div className="aspect-[16/10] sm:aspect-auto sm:h-full sm:min-h-[180px]">
           {imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={imageUrl}
               alt={venue.name}
@@ -177,12 +208,12 @@ export function VenueCard({
           )}
         </div>
 
-        {/* Heart save button */}
+        {/* Save / shortlist button */}
         <button
           type="button"
           onClick={handleSaveToggle}
           aria-pressed={isSaved}
-          aria-label={isSaved ? `Remove ${venue.name} from saved` : `Save ${venue.name}`}
+          aria-label={isSaved ? `Remove ${venue.name} from shortlist` : `Add ${venue.name} to shortlist`}
           className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-surface-container-lowest/90 backdrop-blur-sm shadow-sm hover:bg-surface-container-lowest active:scale-90 transition"
         >
           <Heart
@@ -192,11 +223,18 @@ export function VenueCard({
           />
         </button>
 
-        {/* Safe-checked pill */}
-        {safeChecked && (
+        {/* Party-capable badge */}
+        {partyCapable && (
+          <span className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-primary text-on-primary px-2.5 py-1 text-[11px] font-bold shadow-sm">
+            🎉 Hosts parties
+          </span>
+        )}
+
+        {/* Verifiable trust signal (replaces the old fake "Safe-checked") */}
+        {trust.length > 0 && (
           <span className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1 rounded-full bg-tertiary-container text-on-tertiary-container px-2.5 py-1 text-[11px] font-semibold shadow-sm">
-            <ShieldCheck size={12} strokeWidth={2.5} />
-            Safe-checked
+            <span className="material-symbols-outlined text-[13px]">{trust[0].icon}</span>
+            {trust[0].label}
           </span>
         )}
       </div>
@@ -231,28 +269,26 @@ export function VenueCard({
                 {Number(venue.rating).toFixed(1)}
               </span>
             ) : null}
-            <span className="inline-flex items-center gap-1">
-              <span className="material-symbols-outlined text-[16px]">child_care</span>
-              0-12 yrs {/* Mocked until data provides it */}
-            </span>
+            {capacity ? (
+              <span className="inline-flex items-center gap-1">
+                <Users size={13} strokeWidth={2.5} />
+                Up to {capacity}
+              </span>
+            ) : null}
+            {openState !== 'unknown' && (
+              <span
+                className={`inline-flex items-center gap-1 font-semibold ${
+                  openState === 'open' ? 'text-tertiary' : 'text-outline'
+                }`}
+              >
+                <Clock size={13} strokeWidth={2.5} />
+                {openState === 'open' ? 'Open now' : 'Closed'}
+              </span>
+            )}
             {distance > 0 && (
               <span className="inline-flex items-center gap-1">
                 <MapPin size={12} strokeWidth={2.5} />
                 {formatDistance(distance)}
-              </span>
-            )}
-            {/* Contact availability indicators */}
-            {(venue.phone || venue.website || venue.email) && (
-              <span className="inline-flex items-center gap-1.5 text-[11px] text-outline">
-                {venue.phone && (
-                  <span className="material-symbols-outlined text-[14px] text-tertiary" title="Phone available">call</span>
-                )}
-                {venue.website && (
-                  <span className="material-symbols-outlined text-[14px] text-tertiary" title="Website available">language</span>
-                )}
-                {venue.email && (
-                  <span className="material-symbols-outlined text-[14px] text-tertiary" title="Email available">mail</span>
-                )}
               </span>
             )}
           </div>
@@ -260,37 +296,60 @@ export function VenueCard({
 
         <div className="mt-4 flex items-end justify-between gap-3">
           <div className="min-w-0">
-            {price ? (
+            {partyPrice ? (
               <p className="text-sm leading-tight text-on-surface-variant">
-                {price.tone === 'free' ? (
-                  <span className="font-bold text-tertiary">Free</span>
-                ) : (
-                  <>
-                    <span className="text-xs uppercase tracking-wide text-outline">from </span>
-                    <span className="font-bold text-on-background">{price.label}</span>
-                    <span className="text-xs text-outline"> / child</span>
-                  </>
-                )}
+                <span className="text-xs uppercase tracking-wide text-outline">from </span>
+                <span className="font-bold text-on-background">{partyPrice.from}</span>
+                {partyPrice.unit ? <span className="text-xs text-outline"> {partyPrice.unit}</span> : null}
+              </p>
+            ) : isFreePark ? (
+              <p className="text-sm leading-tight">
+                <span className="font-bold text-tertiary">Free</span>
+                <span className="text-xs text-outline"> · outdoor party spot</span>
               </p>
             ) : (
-              <p className="text-xs text-outline">Tap to see details</p>
+              <p className="text-xs text-outline">Tap for details</p>
             )}
           </div>
 
-          <Link
-            href={`/venue/${venue.slug}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              plausible('VenueViewed', {
-                props: { venueId: venue.id, source: 'detail_link' },
-              });
-            }}
-            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary-container text-on-primary-container px-5 py-2.5 text-sm font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
-            aria-label={`View full details for ${venue.name}`}
-          >
-            View
-            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            {partyCapable && enquiryUrl ? (
+              <a
+                href={enquiryUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => handleEnquiry(e, 'enquiry')}
+                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-2.5 text-sm font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
+                aria-label={`Enquire about a party at ${venue.name}`}
+              >
+                Enquire
+              </a>
+            ) : partyCapable && venue.phone ? (
+              <a
+                href={`tel:${venue.phone}`}
+                onClick={(e) => handleEnquiry(e, 'call')}
+                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-2.5 text-sm font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
+                aria-label={`Call ${venue.name} about a party`}
+              >
+                <span className="material-symbols-outlined text-[16px]">call</span>
+                Call
+              </a>
+            ) : null}
+
+            <Link
+              href={`/venue/${venue.slug}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                plausible('VenueViewed', {
+                  props: { venueId: venue.id, source: 'detail_link' },
+                });
+              }}
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary-container text-on-primary-container px-4 py-2.5 text-sm font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
+              aria-label={`View full details for ${venue.name}`}
+            >
+              View
+            </Link>
+          </div>
         </div>
       </div>
     </article>

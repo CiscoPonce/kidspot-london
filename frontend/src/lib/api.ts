@@ -24,7 +24,19 @@ export interface Venue {
   description?: string;
   domain?: string;
   features?: string[];
+  parent_facets?: string[];
+  images?: string[];
+  opening_hours?: any;
   enriched_at?: string;
+  // Trust (verifiable, Phase 18C FE-11)
+  fhrs_establishment_id?: number | null;
+  claimed_at?: string | null;
+  // Party data (Phase 18D)
+  party_capable?: boolean | null;
+  party_price_from?: number | null;
+  party_price_unit?: 'per_child' | 'per_hour' | 'flat' | null;
+  party_max_capacity?: number | null;
+  party_enquiry_url?: string | null;
 }
 
 export interface YelpReview {

@@ -202,6 +202,49 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ---
 
+## Phase 18D: Party Data Extraction (Weeks 25-26) — RUN FIRST (data spine for 18C)
+**Status**: **PLANNED**
+**Goal**: Give KidSpot the data its PRIMARY job (birthday parties / reunions) needs. The party-capable categories currently have **0% booking links, ~0% party pricing, and no party-capability flag at all** (only 33 of 14,676 venues mention "party"). Extend the Phase 18B engine (browser-grade crawl + NVIDIA LLM fallback) with a party-focused extraction pass. Backend-only; sequenced ahead of / parallel to 18C, which renders these fields.
+
+**Addressable now** (~4,400 venues with a website): softplay (321 @ 100% web), leisure centres (~3,800 @ 92%), community halls with sites (~310 @ 20%).
+
+**Requirements**:
+- **DATA-PARTY-01**: Schema (`026_add_party_data.sql`) — `party_capable`, `party_price_from`, `party_price_unit`, `party_max_capacity`, `party_packages`, `party_enquiry_url`, `party_source`, `party_extracted_at` + partial index
+- **DATA-PARTY-02**: LLM party extractor (`partyExtraction.ts`) — regex pre-pass + non-streaming NVIDIA fallback → strict validated JSON (hosts_parties, price_from, unit, capacity, packages, enquiry_url)
+- **DATA-PARTY-03**: Wire into `direct-crawl-enrichment.ts` (COALESCE/NULLIF safe) + repeatable `enrich-party-data` BullMQ job with crawl delay
+- **DATA-PARTY-04**: Populate enquiry/booking link; route website-less community halls (7% phone) to the 18B contact pipeline
+
+**Success**: `party_capable` known for ≥80% of softplay & ≥60% of leisure/community-hall-with-sites; `party_price_from` for ≥40% of party-capable softplay; enquiry/booking link for ≥50% of party-capable venues; validated (no hallucinated values); backfill ETA tracked.
+
+---
+
+## Phase 18C: Party-First Frontend & Mobile-First Experience (Weeks 25-26)
+**Status**: **PLANNED** (depends on Phase 18D)
+**Goal**: Rebuild the frontend around KidSpot's PRIMARY job — helping a parent find and book a venue for a child's **birthday party or family reunion** — mobile-first and honest about its data. The hero flow (search → shortlist → **compare** → **share/enquire**) ships **locally with no auth**; server-backed persistence + accounts defer to Phase 19. Lean into the party-planning job general maps don't do, not the glossy 2% of softplay chains.
+
+**Data reality driving this phase** (active venues): party-capable categories have 0% booking links / ~0% party price today (filled by 18D); parks (52%) are a *secondary* free-outdoor-party option rendered map/features-first. So cards must be **category-aware and party-first** with honest empty states, degrading to contact-to-enquire until 18D coverage lands.
+
+**Requirements**:
+- **FE-01**: Party-intent landing ("birthday/reunion") with party-capable categories foregrounded + one-tap geolocation search (removes dead age control)
+- **FE-02**: Category-aware, party-first venue cards — party-capable → hosts-parties + £/child + capacity + age + Enquire/Call (Book only when booking_url exists); parks → Free + features + map; honest non-blank empty states; open-now parses both hours formats
+- **FE-03**: Unified category filter (single source of truth, incl. party-capable facet) + `viewportFit:'cover'` safe-area fix; remove dead CSS
+- **FE-04**: Persistent Party Shortlist (localStorage, API-ready)
+- **FE-05**: Full-screen mobile map via List⇄Map segmented control; lazy MapLibre; bigger touch markers + recenter
+- **FE-06**: Installable PWA (manifest + maskable icons + offline shell)
+- **FE-07**: Personalization — kids' ages (→ party age-fit), favourite categories, recent searches (client-side)
+- **FE-08**: LCP/CLS — `next/image`, preload hero asset, self-host/preload icon font (kill FOUT)
+- **FE-09**: Virtualized/paginated venue list on mobile
+- **FE-10**: WCAG 2.1 AA — modal focus trap, keyboard-reachable map results, chip contrast
+- **FE-11**: Real trust signals — replace the fake `isSafeChecked()` (rating≥4) with verifiable FHRS hygiene (`fhrs_establishment_id`), accessibility, owner-verified, and data provenance; honest "not verified" states
+- **FE-12** *(NEW)*: **Compare** shortlisted party venues side-by-side (£/child, capacity, age, distance, trust, per-column CTA); honest "—" where 18D data absent
+- **FE-13** *(NEW)*: **Share a shortlist** via an encoded no-auth URL (Web Share API + copy-link); shared link rehydrates a read-only shortlist with save-locally
+
+**Depends on Phase 18D** for party_capable / price / capacity / enquiry-link; cards & compare degrade honestly until coverage lands.
+
+**Success (product, not vanity)**: party-enquiry/call/booking click-through on party-capable venues; non-zero shortlist creation, compare, and share usage (Plausible). Guardrails: Lighthouse mobile Perf ≥90 & A11y ≥95; LCP <2.5s; CLS <0.1; zero horizontal scroll at 320px; installable PWA.
+
+---
+
 ## Phase 19: Revenue Monetization V2 (Planned)
 **Status**: **PLANNED**
 **Goal**: Enable venue owner self-service claiming and premium sponsorship tiers, leveraging the enriched contact data from Phase 18.
@@ -233,5 +276,5 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 ---
 
 ## Last Updated
-May 18, 2026
+June 3, 2026
 

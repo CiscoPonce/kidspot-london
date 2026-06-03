@@ -65,6 +65,13 @@ async function setupRepeatingJobs() {
       ...jobOpts,
     });
 
+    // Phase 18D: Party data extraction (capability, price, capacity, enquiry link)
+    await discoveryQueue.add('enrich-party-data', { batchSize: 50 }, {
+      repeat: { pattern: '20 */6 * * *' },
+      jobId: 'repeat:enrich-party-data',
+      ...jobOpts,
+    });
+
     await discoveryQueue.add('enrich-apify', { batchSize: 20 }, {
       repeat: { pattern: '0 3 * * *' },
       jobId: 'repeat:enrich-apify',
@@ -191,6 +198,15 @@ case 'enrich-osm-hours': {
   const batchSize = (job.data as EnrichmentJobData)?.batchSize || 100;
   const result = await enrichOsmOpeningHours(batchSize);
           logger.info({ result }, 'OSM opening hours enrichment complete');
+          return { status: 'completed', ...result };
+        }
+
+case 'enrich-party-data': {
+  await crawlDelay(800);
+  const { enrichPartyData } = await import('../scripts/discovery/sources/party-data-enrichment.js');
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
+  const result = await enrichPartyData(batchSize);
+          logger.info({ result }, 'Party data enrichment complete');
           return { status: 'completed', ...result };
         }
 
