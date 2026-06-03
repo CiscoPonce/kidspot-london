@@ -1,256 +1,283 @@
 # KidSpot London 🇬🇧
 
-**KidSpot London** is a hyper-local search engine designed to solve the data fragmentation problem for parents looking for child-friendly venues in London. By combining public datasets, autonomous background enrichment, and real-time web search fallbacks, KidSpot provides an instant, geo-aware directory of safe, age-appropriate locations for parties, play, and gatherings.
+**KidSpot London** helps parents find and compare places to host a child's birthday party or a family reunion in London. It combines open-source and public datasets (OpenStreetMap, council data, FHRS, Foursquare, Geoapify, and more) with an autonomous enrichment engine that continuously improves contact details, opening hours, images — and **party-specific data** (pricing, capacity, booking links).
 
 ---
 
-## 📊 Live Platform Stats
+## 📊 Platform scale (approximate)
 
 | Metric | Value |
 |:---|---:|
-| **Active Venues** | 16,667 |
-| **Venue Types** | 8 (softplay, parks, leisure centres, community halls, museums, libraries, cafes, other) |
-| **With Real Website** | 3,878 (23.3%) |
-| **With Phone** | 2,349 (14.1%) |
-| **With Email** | 1,039 (6.2%) |
-| **With Postcode** | 15,170 (91.0%) |
-| **With Opening Hours** | 629 (3.8%) |
-| **With Images** | 272 (1.6%) |
+| **Active venues** | ~14,700 |
+| **Venue types** | softplay, parks, leisure centres, community halls, museums, libraries, cafes, other |
+| **Party-eligible venues with a crawlable website** | ~3,600 |
+| **Party data processed** | Growing daily via `enrich-party-data` |
 
-> Data is continuously improving via the autonomous enrichment engine (see below).
+> Run `GET /api/admin/enrichment-stats` (HMAC) or query Postgres for live numbers. Stats change as enrichment runs.
 
 ---
 
-## 🚀 Key Features
+## 🎯 Product focus
 
-- **Hyper-Local Search**: Search by postcode or current location with a customizable radius (1–10 miles).
-- **Agentic Discovery**: Real-time integration with Brave Search API to reduce zero-result searches.
-- **Autonomous Enrichment Engine**: Self-scheduling BullMQ worker runs 24/7 — geocoding, OSM contacts, direct website crawling, Foursquare contact extraction, Geoapify POI matching, and Apify/Brave rich media.
-- **Data Validation & Trust Layer**: Systematic closure detection (auto-deactivate closed venues), phone normalization, and "Last Verified" timestamps to ensure data reliability.
-- **Rich Media Acquisition**: Multi-layered image engine using Google Places (via Apify) and Brave Image Search as a fallback for 100% photo coverage.
-- **Zero-Budget Contact Pipeline**: Foursquare + direct website crawl + Geoapify replace paid Yelp Fusion for phone, email, and website data.
-- **LLM Fallback Extraction (Phase 18B)**: NVIDIA API (free tier) used as a last resort when cheerio+regex yields nothing for all three contact fields — no new per-venue cost incurred.
+1. **Search** — postcode or geolocation, radius, category filters.
+2. **Party-first venue cards** — hosts parties, price from, capacity, Enquire/Call when data exists.
+3. **Party shortlist** — save venues locally (no account).
+4. **Compare** — side-by-side table (price, capacity, trust, contact).
+5. **Share** — `/shortlist?v=…` link; recipient page re-fetches venues from the API (IDs validated server-side).
+
+Planning docs: `.planning/ROADMAP.md`, phases **18C** (frontend) and **18D** (party data extraction).
 
 ---
 
-## 🛠️ Technical Stack
+## 🚀 Key features
+
+- **Hyper-local search** — postcode or current location, 1–10 mile radius, category and facet filters.
+- **Agentic discovery** — Brave Search fallback when the local DB + OSM return few results.
+- **Autonomous enrichment engine** — BullMQ worker runs 24/7: geocoding, OSM contacts/hours, direct website crawl, Foursquare, Geoapify, Apify/Brave images, contact backfill, **party data extraction**.
+- **Party data extraction (Phase 18D)** — crawls `/parties`, `/birthday-parties`, etc.; regex pre-pass + NVIDIA LLM fallback; stores `party_capable`, `party_price_from`, `party_max_capacity`, `party_enquiry_url`, and related fields.
+- **LLM fallback (Phase 18B)** — NVIDIA API (`stepfun-ai/step-3.7-flash`) when cheerio+regex cannot extract contact or party fields; non-streaming JSON parsing.
+- **Verifiable trust signals** — FHRS hygiene rating, owner-verified claim, accessibility from `features` (no fabricated “safe-checked” badges).
+- **Zero-budget contact pipeline** — Foursquare + direct crawl + Geoapify replace paid Yelp for phone, email, and website.
+- **Programmatic SEO** — borough and category landing pages.
+- **Sponsor tiers** — Gold / Silver / Bronze featured listings.
+- **Claim your listing** — owner verification flow.
+
+> **Yelp Fusion** — removed from active enrichment (many softplay rows still have legacy Yelp URLs in `website`; those are skipped by the party crawler).
+
+---
+
+## 🛠️ Technical stack
 
 ### Frontend
 - **Framework**: Next.js 16 (App Router, React 19)
-- **Styling**: Tailwind CSS 4
+- **Styling**: Tailwind CSS 3.4
 - **Maps**: MapLibre GL JS
-- **Trust UI**: Data freshness badges and community reporting tools.
+- **State**: TanStack Query + local shortlist (`localStorage`)
+- **Analytics**: Plausible
 
 ### Backend
-- **Runtime**: Node.js 22 (Express 5)
-- **Database**: PostgreSQL 15 + PostGIS (spatial queries, levenshtein deduplication)
-- **Caching**: Redis 7
-- **Task Queue**: BullMQ (autonomous enrichment engine)
-- **Verification**: Automatic status checks via Google/Brave.
+- **Runtime**: Node.js 22, Express 5, TypeScript
+- **Database**: PostgreSQL 15 + PostGIS
+- **Cache / queue**: Redis 7, BullMQ
+- **Logging**: Pino
 
-### Data Sources
+### Data sources
 
 | Source | Role | Cost |
 |:-------|:-----|:-----|
-| **OpenStreetMap / Overpass** | Discovery, coords, contacts, opening hours | Free (w/ Retry fix) |
-| **Brave Image Search** | Fallback visual media acquisition engine | Paid |
-| **Foursquare Places API** | Contact extraction (phone, website, email) | Free tier |
-| **Direct website crawl** | Contact + Schema.org hours from known URLs | Free |
-| **Geoapify Places API** | POI matching and contact enrichment (OSM-based) | Free tier |
-| **Apify (Google Places)** | Rich media (images) + Closure detection | Free tier |
-
-> **Yelp Fusion API** — fully removed from the codebase (2026-05).
+| **OpenStreetMap / Overpass** | Discovery, coordinates, contacts, opening hours | Free |
+| **Direct website crawl** | Contacts, Schema.org hours, **party pages** | Free |
+| **Foursquare Places** | Phone, website, email | Free tier |
+| **Geoapify** | POI matching, contacts | Free tier |
+| **Brave Search / Images** | Fallback discovery and photos | Paid |
+| **Apify (Google Places)** | Images, closure checks | Free tier |
+| **NVIDIA API** | LLM extraction fallback (contacts + party) | Free tier |
+| **FHRS** | Food hygiene ratings (trust signal) | Free |
+| **Council / charity open data** | Community halls, halls for hire | Free |
 
 ---
 
-## 🔄 Autonomous Enrichment Engine
+## 🔄 Autonomous enrichment engine
 
-KidSpot runs a **self-scheduling BullMQ worker** that continuously enriches venue data without manual intervention.
+A **self-scheduling BullMQ worker** (`backend/src/worker.ts`) registers repeatable jobs on startup.
 
-### Enrichment Pipeline
+### Pipeline overview
 
 ```
-Layer 0:  Nominatim Reverse-Geocoding  → postcode, address, borough
-Layer 1:  OSM Contact Enrichment       → website, phone, email from Overpass tags
-Layer 1b: OSM Opening Hours            → dedicated Overpass pass (resilient w/ retries)
-Layer 2:  Brave Web Scraper            → find websites for venues missing them
-Layer 2b: Direct Website Crawl         → cheerio crawl of known URLs (contact + hours)
-Layer 3:  Apify Google Places          → images, closure detection (webhook powered)
-Layer 3.6: Foursquare Places           → phone, website, email (contact engine)
-Layer 3.7: Brave Images                → visual fallback engine for missing photos
-Layer 3.8: Contact Backfill            → phone normalization + targeted email crawling
-Layer 4:  Smart Parks                  → OSM map links for parks without websites
+Layer 0:   Nominatim reverse-geocoding     → postcode, address, borough
+Layer 1:   OSM contact enrichment          → website, phone, email
+Layer 1b:  OSM opening hours               → dedicated Overpass pass
+Layer 2:   Brave web scraper               → websites for venues missing URLs
+Layer 2b:  Direct website crawl            → cheerio + LLM fallback (contacts)
+Layer 2c:  Party data extraction (18D)    → party_capable, price, capacity, enquiry URL
+Layer 3:   Apify Google Places             → images, closure detection
+Layer 3.6: Foursquare                     → contacts
+Layer 3.7: Geoapify                       → POI / contacts
+Layer 3.8: Contact backfill               → phone normalize, deep email crawl
+Layer 4:   Smart parks                    → OSM map links where needed
 ```
 
-### Scheduled Jobs
+### Scheduled jobs
 
 | Job | Schedule | Batch | Purpose |
 |:----|:---------|------:|:--------|
-| `enrich-geocode` | Every 4 hours | 200 | Fill missing postcodes and addresses |
-| `enrich-osm-contacts` | Every 6 hours | 200 | Extract contacts from OSM Overpass tags |
-| `enrich-osm-hours` | Every 6 hours | 100 | Dedicated resilient Overpass hours pass |
-| `enrich-direct-crawl` | Every 4 hours | 100 | Crawl known websites for contact info |
-| `enrich-apify` | Daily 03:00 UTC | 20 | Google Places images + Closure checks |
-| `enrich-brave-images` | Daily 04:00 UTC | 20 | Brave Image fallback pass |
-| `enrich-foursquare` | Daily 05:00 UTC | 50 | Contact extraction via Foursquare |
-| `enrich-geoapify` | Daily 06:00 UTC | 40 | POI matching via Geoapify |
-| `contact-backfill` | Daily 07:00 UTC | 50 | Phone normalization + Deep email crawl |
-| `dedup-sweep` | Weekly (Sunday) | — | Merge duplicate venues |
-| `run-discovery` | Weekly (Monday) | — | Full OSM discovery run |
+| `enrich-geocode` | Every 4 hours | 200 | Postcodes and addresses |
+| `enrich-osm-contacts` | Every 6 hours | 200 | OSM contact tags |
+| `enrich-osm-hours` | Every 6 hours | 100 | OSM opening hours |
+| `enrich-direct-crawl` | Every 4 hours | 100 | Website contacts + hours (18B LLM fallback) |
+| **`enrich-party-data`** | **Every 6 hours** | **50** | **Party capability, price, capacity, enquiry URL (18D)** |
+| `enrich-web-scrape` | Every 8 hours | 30 | Brave website discovery |
+| `enrich-apify` | Daily 03:00 UTC | 20 | Google Places images / closure |
+| `enrich-brave-images` | Daily 04:00 UTC | 20 | Image fallback |
+| `enrich-foursquare` | Daily 05:00 UTC | 50 | Contacts |
+| `enrich-geoapify` | Daily 06:00 UTC | 40 | POI matching |
+| `contact-backfill` | Daily 07:00 UTC | 50 | Normalize phones, email crawl |
+| `dedup-sweep` | Weekly (Sunday) | — | Merge duplicates |
+| `run-discovery` | Weekly (Monday) | — | Full OSM discovery |
 
-### GitHub Actions Pipelines
+**Throughput (party job):** ~50 venues × 4 runs/day ≈ **200 venues/day** for the ~3,600 eligible pool → first full pass in roughly **2–3 weeks**, then 30-day re-crawl.
 
-| Pipeline | Schedule | Description |
+### Manual party backfill (optional)
+
+```bash
+cd backend
+export DATABASE_URL=postgres://kidspot_admin:PASSWORD@127.0.0.1:5432/kidspot
+export REDIS_URL=redis://127.0.0.1:6379
+# Load NVIDIA_* from ../.env if using LLM fallback
+npx tsx scripts/discovery/sources/party-data-enrichment.ts 80
+```
+
+### GitHub Actions pipelines
+
+| Workflow | Schedule | Description |
 |:---------|:---------|:------------|
 | `party-discovery.yml` | Every 6 hours | Council halls, charity halls, OSM party venues |
-| `venue-expansion.yml` | Every 12 hours | School lettings and church/parish halls |
-| `data-enrichment.yml` | Hourly | Triggers full enrichment pipeline |
+| `venue-expansion.yml` | Every 12 hours | School lettings, church/parish halls |
+| `data-enrichment.yml` | Hourly | Triggers enrichment via admin API |
 | `discovery.yml` | Scheduled | Stale venue refresh |
 
 ---
 
-## 🚦 Getting Started
+## 🚦 Getting started
 
 ### Prerequisites
 - Docker and Docker Compose
-- API keys (see Environment Variables below)
+- API keys (see [Environment variables](#-environment-variables))
 
 ### Setup
 
-1. **Clone the repository**:
+1. **Clone**
    ```bash
    git clone https://github.com/CiscoPonce/kidspot-london.git
    cd kidspot-london
    ```
 
-2. **Configure environment variables**:
+2. **Environment**
    ```bash
    cp .env.example .env
-   # Edit .env with your API keys
+   # Edit .env — at minimum DB_PASSWORD, BRAVE_API_KEY, INGEST_SIGNING_SECRET, CORS_ORIGIN
    ```
 
-3. **Launch with Docker**:
+3. **Start stack**
    ```bash
    docker compose up -d --build
    ```
 
-4. **Access the application**:
-   - **Frontend**: `http://localhost:3005`
-   - **API**: `http://localhost:4000/api/search/venues`
-   - **Health Check**: `http://localhost:4000/health`
-
-5. **Verify the enrichment engine**:
+4. **Apply DB migrations** (if not already applied on your volume)
    ```bash
-   docker compose logs worker --tail 20
-   # Should show: "Repeatable enrichment jobs registered successfully"
-   # Should show: "Worker is running with autonomous enrichment engine..."
+   docker compose exec -T postgres psql -U kidspot_admin -d kidspot -f - < backend/db/migrations/026_add_party_data.sql
+   ```
+   Apply other migrations in `backend/db/migrations/` in numeric order for a fresh database.
+
+5. **Access**
+   - **Frontend**: http://localhost:3005
+   - **API**: http://localhost:4000/api/search/venues
+   - **Health**: http://localhost:4000/health
+   - **Party shortlist (shared)**: http://localhost:3005/shortlist?v=slug1,slug2
+
+6. **Verify worker**
+   ```bash
+   docker compose logs worker --tail 30
+   # Expect: "Repeatable enrichment jobs registered successfully"
+   # Expect: enrich-party-data in the repeatable job list
    ```
 
-6. **Run tests**:
+7. **Tests**
    ```bash
-   docker exec kidspot-worker-1 npx vitest run
+   cd backend && npm test
+   cd ../frontend && npm run build
    ```
 
 ---
 
-## 📁 Project Structure
+## 📁 Project structure
 
 ```
 kidspot-london/
-├── .github/workflows/              # CI/CD and automated data pipelines
-├── .planning/                      # Development roadmap and phase docs
+├── .github/workflows/          # CI + scheduled discovery/enrichment triggers
+├── .planning/                  # ROADMAP, phase CONTEXT/PLAN (18B–18D)
 ├── backend/
 │   ├── src/
-│   │   ├── server.ts               # Express app entrypoint
-│   │   ├── worker.ts               # BullMQ autonomous enrichment engine
-│   │   ├── routes/admin.ts         # Authenticated ingest API endpoints
-│   │   └── services/
-│   │       ├── venueService.ts     # Search, details, click tracking
-│   │       ├── apifyService.ts     # Apify webhook processor
-│   │       ├── foursquareService.ts # Foursquare Places API client
-│   │       ├── geoapifyService.ts  # Geoapify Places API client
-│   │       ├── fhrsService.ts      # Food hygiene ratings
-│   │       └── claimService.ts     # Venue claiming flow
-│   ├── scripts/discovery/
-│   │   ├── run-discovery.ts        # OSM discovery orchestrator
-│   │   ├── data-enrichment.ts      # Manual enrichment orchestrator
-│   │   └── sources/
-│   │       ├── enrichment.ts                 # Layer 0: Nominatim geocoding
-│   │       ├── osm-contact-enrichment.ts     # Layer 1: OSM contacts
-│   │       ├── osm-opening-hours-enrichment.ts # Layer 1b: OSM hours
-│   │       ├── web-scraper-enrichment.ts     # Layer 2: Brave web scraper
-│   │       ├── direct-crawl-enrichment.ts    # Layer 2b: Direct website crawl
-│   │       ├── apify-enrichment.ts           # Layer 3: Apify Google Places
-│   │       ├── foursquare-enrichment.ts    # Layer 3.6: Foursquare contacts
-│   │       └── geoapify-enrichment.ts      # Layer 3.7: Geoapify POI matching
-│   └── db/
-│       ├── schema.sql
-│       └── migrations/             # Incremental DB migrations (023–025)
-├── frontend/                       # Next.js App Router
-└── docker-compose.yml              # Full stack (postgres, redis, api, worker, web)
+│   │   ├── server.ts           # Express API
+│   │   ├── worker.ts           # BullMQ enrichment engine
+│   │   ├── services/venueService.ts  # Search + card hydration (party_* fields)
+│   │   └── utils/
+│   │       ├── nvidia.ts       # LLM client (non-streaming JSON)
+│   │       └── partyExtraction.ts
+│   ├── scripts/discovery/sources/
+│   │   ├── direct-crawl-enrichment.ts   # Layer 2b (exports fetch helpers)
+│   │   └── party-data-enrichment.ts     # Layer 2c (18D)
+│   └── db/migrations/          # … 025_enrichment_layers.sql, 026_add_party_data.sql
+├── frontend/
+│   └── src/
+│       ├── app/saved/          # Party shortlist + compare + share
+│       ├── app/shortlist/      # Shared shortlist (?v=)
+│       ├── components/venues/venue-card.tsx, compare-table.tsx
+│       ├── hooks/use-shortlist.ts
+│       └── lib/trust.ts, opening-hours.ts, shortlist-link.ts
+└── docker-compose.yml          # postgres, redis, api, worker, web
 ```
 
 ---
 
-## 🔍 API Endpoints
+## 🔍 API endpoints
 
-### Public Search
+### Public search
 | Method | Endpoint | Description |
 |:-------|:---------|:------------|
-| GET | `/api/search/venues` | Search by lat/lon, radius, type, borough |
+| GET | `/api/search/venues` | Search by lat/lon, radius, type, borough (includes hydrated `party_*` on list cards) |
 | GET | `/api/search/venues/slug/:slug/details` | Full venue details |
 | GET | `/api/search/facets/venues` | Multi-facet search |
-| GET | `/api/search/slugs` | All venue slugs (for SSG) |
-| POST | `/api/search/venues/:id/click` | Track outbound click |
+| GET | `/api/search/slugs` | All slugs (SSG) |
+| POST | `/api/search/venues/:id/click` | Outbound click tracking |
 
 ### Admin (HMAC-authenticated)
 | Method | Endpoint | Description |
 |:-------|:---------|:------------|
-| POST | `/api/admin/ingest/parties` | Trigger party venue discovery |
-| POST | `/api/admin/ingest/expansion` | Trigger venue expansion |
-| POST | `/api/admin/ingest/enrichment` | Trigger enrichment pipeline |
-| POST | `/api/admin/ingest/stale` | Trigger stale venue refresh |
+| POST | `/api/admin/ingest/parties` | Party venue discovery |
+| POST | `/api/admin/ingest/expansion` | Venue expansion |
+| POST | `/api/admin/ingest/enrichment` | Full enrichment pipeline |
+| POST | `/api/admin/ingest/stale` | Stale venue refresh |
 | GET | `/api/admin/enrichment-stats` | Data quality metrics |
 
 ---
 
-## 🛡️ Security & Performance
+## 🛡️ Security and data safety
 
-- **CORS Locked**: Production origins enforced via `CORS_ORIGIN` env var.
-- **HMAC Authentication**: All admin/ingest endpoints protected with timestamp + SHA-256 signature verification.
-- **Rate Limited**: API protection via `express-rate-limit` (60 req/min).
-- **Secure Headers**: Robust HTTP security via `helmet.js`.
-- **Redis Caching**: 1-hour TTL for venue details and search results.
-- **Deduplication**: PostGIS spatial dedup (200m) + levenshtein fuzzy matching.
-- **Data Safety**: All enrichment uses `COALESCE(NULLIF())` guards to prevent empty values overwriting valid data.
-- **Job Resilience**: BullMQ retry logic (3 attempts, exponential backoff) with stalled job detection.
+- **CORS** — `CORS_ORIGIN` in production.
+- **HMAC** — admin ingest endpoints (timestamp + SHA-256).
+- **Rate limiting** — 60 req/min on API.
+- **Helmet** — security headers.
+- **Redis cache** — search and details TTL.
+- **Dedup** — PostGIS 200 m + levenshtein.
+- **UPSERT safety** — `COALESCE` / `NULLIF` so null or empty enrichment never wipes good data.
+- **Shortlist links** — only venue ids/slugs in URL; pages re-fetch from API.
+- **BullMQ** — 3 retries, exponential backoff, stalled-job detection.
 
 ---
 
-## 🔧 Environment Variables
+## 🔧 Environment variables
 
 | Variable | Required | Description |
 |:---------|:--------:|:------------|
 | `DB_PASSWORD` | ✅ | PostgreSQL password |
 | `DATABASE_URL` | ✅ | PostgreSQL connection string |
-| `REDIS_URL` | ✅ | Redis connection string |
-| `BRAVE_API_KEY` | ✅ | Brave Search API key |
-| `INGEST_SIGNING_SECRET` | ✅ | HMAC key for admin endpoints |
-| `CORS_ORIGIN` | ✅ | Allowed frontend origin(s) |
-| `FOURSQUARE_API_KEY` | ✅ | Foursquare Places API service key |
-| `GEOAPIFY_API_KEY` | ✅ | Geoapify Places API key |
-| `APIFY_TOKEN` | Optional | Apify token for Google Places enrichment |
-| `APIFY_WEBHOOK_SECRET` | Optional | Apify webhook verification secret |
-| `API_BASE_URL` | Optional | Public API URL for webhooks |
-| `NEXT_PUBLIC_API_URL` | Optional | Frontend API URL |
-| `YELP_API_KEY` | — | Disabled (trial expired) |
-| `NVIDIA_API_KEY` | Optional | NVIDIA API key for LLM contact extraction fallback (Phase 18B) |
-| `NVIDIA_MODEL` | Optional | LLM model identifier (default: `stepfun-ai/step-3.7-flash`) |
-| `NVIDIA_BASE_URL` | Optional | NVIDIA API base URL (default: `https://integrate.api.nvidia.com/v1`) |
-| `NODE_ENV` | Optional | `production` or `development` |
+| `REDIS_URL` | ✅ | Redis URL |
+| `BRAVE_API_KEY` | ✅ | Brave Search |
+| `INGEST_SIGNING_SECRET` | ✅ | HMAC for admin ingest |
+| `CORS_ORIGIN` | ✅ | Frontend origin(s) |
+| `FOURSQUARE_API_KEY` | ✅ | Foursquare Places |
+| `GEOAPIFY_API_KEY` | ✅ | Geoapify Places |
+| `NEXT_PUBLIC_API_URL` | ✅ | Frontend → API base URL |
+| `APIFY_TOKEN` | Optional | Google Places via Apify |
+| `APIFY_WEBHOOK_SECRET` | Optional | Apify webhook verification |
+| `NVIDIA_API_KEY` | Optional | LLM fallback (18B contacts, 18D party) |
+| `NVIDIA_MODEL` | Optional | Default: `stepfun-ai/step-3.7-flash` |
+| `NVIDIA_BASE_URL` | Optional | Default: `https://integrate.api.nvidia.com/v1` |
+| `YELP_API_KEY` | — | Legacy; not used by enrichment |
 
 ---
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+MIT — see [LICENSE](LICENSE).
