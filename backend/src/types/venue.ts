@@ -237,7 +237,26 @@ export interface ParsedCsvRecord {
   postcode?: string;
   lat?: number;
   lon?: number;
+  phone?: string;
+  email?: string;
+  website?: string;
+  booking_url?: string;
   raw: any;
+}
+
+/** Column coverage stats from a parsed borough CSV sample. */
+export interface BoroughCsvColumnReport {
+  row_count: number;
+  with_name: number;
+  with_postcode: number;
+  with_coords: number;
+  with_phone: number;
+  with_email: number;
+  with_website: number;
+  with_booking_url: number;
+  with_any_contact: number;
+  detected_headers: string[];
+  contact_header_matches: string[];
 }
 
 export interface OpenActiveFeed {

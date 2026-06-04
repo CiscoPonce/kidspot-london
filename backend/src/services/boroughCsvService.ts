@@ -1,6 +1,47 @@
 import { db } from '../clients/db.js';
 import { logger } from '../config/logger.js';
-import { BoroughCsvSource, BoroughCsvRecord, ParsedCsvRecord } from '../types/venue.js';
+import {
+  BoroughCsvSource,
+  BoroughCsvRecord,
+  ParsedCsvRecord,
+  BoroughCsvColumnReport,
+} from '../types/venue.js';
+import { normalizeUkPhone } from '../utils/phone.js';
+
+const NAME_FIELDS = ['name', 'Name', 'NAME', 'title', 'Title', 'TITLE', 'facility_name', 'Facility Name', 'Venue name'];
+const ADDRESS_FIELDS = ['address', 'Address', 'ADDRESS', 'location', 'Location', 'LOCATION', 'Site Address', 'street'];
+const POSTCODE_FIELDS = ['postcode', 'Postcode', 'POSTCODE', 'post_code', 'Post Code', 'zip', 'Zip'];
+const PHONE_FIELDS = ['phone', 'Phone', 'PHONE', 'telephone', 'Telephone', 'tel', 'Tel', 'contact_phone', 'Contact number'];
+const EMAIL_FIELDS = ['email', 'Email', 'EMAIL', 'contact_email', 'Contact email', 'e-mail'];
+const WEBSITE_FIELDS = ['website', 'Website', 'WEBSITE', 'url', 'URL', 'web', 'Web', 'homepage', 'Homepage', 'link'];
+const BOOKING_FIELDS = ['booking_url', 'booking', 'Booking', 'hire_url', 'book_url', 'enquiry_url', 'booking_link', 'Hire link'];
+const CONTACT_HEADER_PATTERNS = [
+  /phone/i, /telephone/i, /tel/i, /email/i, /e-?mail/i, /website/i, /web\b/i, /url/i,
+  /booking/i, /hire/i, /enquiry/i, /contact/i,
+];
+
+export function resolveBoroughCsvExternalId(record: ParsedCsvRecord): string {
+  return record.external_id || record.name;
+}
+
+function pickField(raw: Record<string, unknown>, fields: string[]): string | undefined {
+  for (const field of fields) {
+    const val = raw[field];
+    if (val != null && String(val).trim()) return String(val).trim();
+  }
+  return undefined;
+}
+
+function normalizeWebsiteUrl(url: string): string | undefined {
+  const u = url.trim();
+  if (!u || /example\.com/i.test(u)) return undefined;
+  const lower = u.toLowerCase();
+  if (lower.includes('yelp.') || lower.includes('tripadvisor.')) return undefined;
+  if (u.startsWith('http://') || u.startsWith('https://')) return u;
+  if (u.startsWith('www.')) return `https://${u}`;
+  if (u.includes('.') && !u.includes(' ')) return `https://${u}`;
+  return undefined;
+}
 
 export const boroughCsvService = {
   /**
@@ -45,6 +86,12 @@ export const boroughCsvService = {
   /**
    * Parse CSV text into records
    */
+  parseHeaders(csvText: string): string[] {
+    const lines = csvText.split(/\r?\n/).filter((line) => line.trim());
+    if (lines.length === 0) return [];
+    return this.parseCsvLine(lines[0]);
+  },
+
   parseCsv(csvText: string): ParsedCsvRecord[] {
     const lines = csvText.split(/\r?\n/).filter(line => line.trim());
     if (lines.length === 0) return [];
@@ -60,7 +107,6 @@ export const boroughCsvService = {
         raw[header] = values[index] || null;
       });
 
-      // Try to extract common fields
       const record: ParsedCsvRecord = {
         name: this.extractName(raw),
         address: this.extractAddress(raw),
@@ -68,6 +114,10 @@ export const boroughCsvService = {
         lat: this.extractLat(raw),
         lon: this.extractLon(raw),
         external_id: this.extractExternalId(raw),
+        phone: this.extractPhone(raw),
+        email: this.extractEmail(raw),
+        website: this.extractWebsite(raw),
+        booking_url: this.extractBookingUrl(raw),
         raw,
       };
 
@@ -108,30 +158,15 @@ export const boroughCsvService = {
    * Extract name from raw CSV data
    */
   extractName(raw: any): string {
-    const nameFields = ['name', 'Name', 'NAME', 'title', 'Title', 'TITLE', 'facility_name', 'Facility Name'];
-    for (const field of nameFields) {
-      if (raw[field]) return String(raw[field]).trim();
-    }
-    return '';
+    return pickField(raw, NAME_FIELDS) || '';
   },
 
-  /**
-   * Extract address from raw CSV data
-   */
   extractAddress(raw: any): string | undefined {
-    const addressFields = ['address', 'Address', 'ADDRESS', 'location', 'Location', 'LOCATION', 'Site Address'];
-    for (const field of addressFields) {
-      if (raw[field]) return String(raw[field]).trim();
-    }
-    return undefined;
+    return pickField(raw, ADDRESS_FIELDS);
   },
 
-  /**
-   * Extract postcode from raw CSV data
-   */
   extractPostcode(raw: any): string | undefined {
-    const postcodeFields = ['postcode', 'Postcode', 'POSTCODE', 'post_code', 'Post Code', 'zip', 'Zip', 'Post Code'];
-    for (const field of postcodeFields) {
+    for (const field of POSTCODE_FIELDS) {
       if (raw[field]) {
         const val = String(raw[field]).trim();
         if (val) return this.normalizePostcode(val);
@@ -173,6 +208,71 @@ export const boroughCsvService = {
       if (raw[field]) return String(raw[field]).trim();
     }
     return undefined;
+  },
+
+  extractPhone(raw: any): string | undefined {
+    const rawPhone = pickField(raw, PHONE_FIELDS);
+    if (!rawPhone) return undefined;
+    return normalizeUkPhone(rawPhone) || rawPhone.replace(/\s+/g, ' ').trim();
+  },
+
+  extractEmail(raw: any): string | undefined {
+    const email = pickField(raw, EMAIL_FIELDS);
+    if (!email || !email.includes('@')) return undefined;
+    return email.toLowerCase();
+  },
+
+  extractWebsite(raw: any): string | undefined {
+    const url = pickField(raw, WEBSITE_FIELDS);
+    return url ? normalizeWebsiteUrl(url) : undefined;
+  },
+
+  extractBookingUrl(raw: any): string | undefined {
+    const url = pickField(raw, BOOKING_FIELDS);
+    return url ? normalizeWebsiteUrl(url) : undefined;
+  },
+
+  /**
+   * Summarise how many parsed rows have location vs contact fields (for feed audits).
+   */
+  reportColumnCoverage(records: ParsedCsvRecord[], headers: string[] = []): BoroughCsvColumnReport {
+    const detected = headers.length ? headers : (records[0] ? Object.keys(records[0].raw) : []);
+    const contact_header_matches = detected.filter((h) =>
+      CONTACT_HEADER_PATTERNS.some((re) => re.test(h)),
+    );
+    let with_name = 0;
+    let with_postcode = 0;
+    let with_coords = 0;
+    let with_phone = 0;
+    let with_email = 0;
+    let with_website = 0;
+    let with_booking_url = 0;
+    let with_any_contact = 0;
+
+    for (const r of records) {
+      if (r.name) with_name++;
+      if (r.postcode) with_postcode++;
+      if (r.lat != null && r.lon != null) with_coords++;
+      if (r.phone) with_phone++;
+      if (r.email) with_email++;
+      if (r.website) with_website++;
+      if (r.booking_url) with_booking_url++;
+      if (r.phone || r.email || r.website || r.booking_url) with_any_contact++;
+    }
+
+    return {
+      row_count: records.length,
+      with_name,
+      with_postcode,
+      with_coords,
+      with_phone,
+      with_email,
+      with_website,
+      with_booking_url,
+      with_any_contact,
+      detected_headers: detected,
+      contact_header_matches,
+    };
   },
 
   /**
@@ -238,7 +338,7 @@ export const boroughCsvService = {
       try {
         // Check if already imported
         // If external_id is missing, use name as external_id to avoid duplicates in the same source
-        const externalId = record.external_id || record.name;
+        const externalId = resolveBoroughCsvExternalId(record);
         
         const existing = await db.query(
           'SELECT id FROM borough_csv_records WHERE borough_csv_source_id = $1 AND external_id = $2',

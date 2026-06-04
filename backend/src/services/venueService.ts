@@ -25,7 +25,7 @@ import {
 } from '../types/venue.js';
 import { operatorService } from './operatorService.js';
 import { fhrsService } from './fhrsService.js';
-import { boroughCsvService } from './boroughCsvService.js';
+import { boroughCsvService, resolveBoroughCsvExternalId } from './boroughCsvService.js';
 import { openactiveService } from './openactiveService.js';
 import env from '../config/env.js';
 import { calculateDistanceMiles } from '../utils/distance.js';
@@ -1331,13 +1331,16 @@ const baseVenueService = {
       for (const record of records) {
         try {
           // Try to match to existing venue
-          const match = await this.matchBoroughCsvRecordToVenue(record, source.dataset_type);
+          const match = await this.matchBoroughCsvRecordToVenue(
+            record,
+            source.dataset_type,
+            source.borough_name,
+          );
 
           if (match) {
-            // Update borough_csv_record with venue_id
             await db.query(
               'UPDATE borough_csv_records SET venue_id = $1 WHERE borough_csv_source_id = $2 AND external_id = $3',
-              [match.venueId, sourceId, record.external_id || null]
+              [match.venueId, sourceId, resolveBoroughCsvExternalId(record)]
             );
 
             // Update venue with borough data if needed
@@ -1368,56 +1371,85 @@ const baseVenueService = {
    */
   async matchBoroughCsvRecordToVenue(
     record: ParsedCsvRecord,
-    datasetType: string
+    datasetType: string,
+    boroughName?: string,
   ): Promise<{ venueId: number; confidence: 'high' | 'medium' | 'low' } | null> {
     try {
-      // Try exact name + postcode match
-      if (record.postcode) {
-        const result = await db.query(
-          `SELECT id FROM venues
-           WHERE name = $1 AND postcode = $2 AND is_active = TRUE
-           LIMIT 1`,
-          [record.name, record.postcode]
-        );
+      const baseClauses = ['is_active = TRUE'];
+      const baseParams: string[] = [];
 
+      if (datasetType === 'community_halls') {
+        baseClauses.push(`COALESCE(venue_scope, 'review') IN ('core', 'review')`);
+        baseClauses.push(`type IN ('community_hall', 'other')`);
+      }
+      const londonWide = boroughName && /^(london|greater london)$/i.test(boroughName.trim());
+      if (boroughName && !londonWide) {
+        baseParams.push(boroughName);
+        baseClauses.push(
+          `LOWER(COALESCE(london_borough, borough)) = LOWER($${baseParams.length})`,
+        );
+      }
+      const baseWhere = baseClauses.join(' AND ');
+
+      const pickBest = (
+        rows: { id: number; name: string; venue_scope?: string }[],
+      ): { venueId: number; confidence: 'high' | 'medium' | 'low' } | null => {
+        let best: { venueId: number; confidence: 'high' | 'medium' | 'low'; score: number } | null = null;
+        for (const venue of rows) {
+          const similarity = boroughCsvService.calculateNameSimilarity(record.name, venue.name);
+          if (similarity <= 0.8) continue;
+          const score = similarity + (venue.venue_scope === 'core' ? 0.05 : 0);
+          if (!best || score > best.score) {
+            best = {
+              venueId: venue.id,
+              confidence: similarity >= 0.95 ? 'high' : similarity >= 0.85 ? 'medium' : 'low',
+              score,
+            };
+          }
+        }
+        return best ? { venueId: best.venueId, confidence: best.confidence } : null;
+      };
+
+      if (record.postcode) {
+        const params = [...baseParams, record.name, record.postcode];
+        const n = baseParams.length;
+        const result = await db.query(
+          `SELECT id, name, venue_scope FROM venues
+           WHERE ${baseWhere} AND name = $${n + 1} AND postcode = $${n + 2}
+           ORDER BY CASE WHEN venue_scope = 'core' THEN 0 ELSE 1 END
+           LIMIT 1`,
+          params,
+        );
         if (result.rows.length > 0) {
           return { venueId: result.rows[0].id, confidence: 'high' };
         }
       }
 
-      // Try fuzzy name + postcode match
       if (record.postcode) {
+        const params = [...baseParams, record.postcode];
+        const n = baseParams.length;
         const result = await db.query(
-          `SELECT id, name FROM venues
-           WHERE postcode = $1 AND is_active = TRUE
-           LIMIT 10`,
-          [record.postcode]
+          `SELECT id, name, venue_scope FROM venues
+           WHERE ${baseWhere} AND postcode = $${n + 1}
+           LIMIT 20`,
+          params,
         );
-
-        for (const venue of result.rows) {
-          const similarity = boroughCsvService.calculateNameSimilarity(record.name, venue.name);
-          if (similarity > 0.8) {
-            return { venueId: venue.id, confidence: 'medium' };
-          }
-        }
+        const match = pickBest(result.rows);
+        if (match) return match;
       }
 
-      // Try location match (within 50 meters)
       if (record.lat && record.lon) {
+        const params = [...baseParams, record.lon, record.lat];
+        const n = baseParams.length;
         const result = await db.query(
-          `SELECT id, name FROM venues
-           WHERE ST_DWithin(ST_MakePoint(lon, lat)::geography, ST_MakePoint($1, $2)::geography, 50)
-           AND is_active = TRUE
-           LIMIT 10`,
-          [record.lon, record.lat]
+          `SELECT id, name, venue_scope FROM venues
+           WHERE ${baseWhere}
+           AND ST_DWithin(ST_MakePoint(lon, lat)::geography, ST_MakePoint($${n + 1}, $${n + 2})::geography, 50)
+           LIMIT 20`,
+          params,
         );
-
-        for (const venue of result.rows) {
-          const similarity = boroughCsvService.calculateNameSimilarity(record.name, venue.name);
-          if (similarity > 0.8) {
-            return { venueId: venue.id, confidence: 'low' };
-          }
-        }
+        const match = pickBest(result.rows);
+        if (match) return { ...match, confidence: 'low' };
       }
 
       return null;
@@ -1474,25 +1506,48 @@ const baseVenueService = {
              postcode = COALESCE(NULLIF($2, ''), postcode),
              lat = COALESCE($3, lat),
              lon = COALESCE($4, lon),
-             parent_facets = $5,
+             phone = COALESCE(NULLIF($5, ''), phone),
+             email = COALESCE(NULLIF($6, ''), email),
+             website = COALESCE(NULLIF($7, ''), website),
+             booking_url = COALESCE(NULLIF($8, ''), booking_url),
+             parent_facets = $9,
              updated_at = NOW()
-         WHERE id = $6`,
+         WHERE id = $10`,
         [
           record.address || null,
           record.postcode || null,
           record.lat || null,
           record.lon || null,
+          record.phone || null,
+          record.email || null,
+          record.website || null,
+          record.booking_url || null,
           newFacets,
           venueId,
         ]
       );
 
-      // Log provenance
       await logProvenance({
         venue_id: venueId,
         field_name: 'borough_csv_import',
-        old_value: JSON.stringify({ address: currentVenue.address, postcode: currentVenue.postcode, facets: currentFacets }),
-        new_value: JSON.stringify({ address: record.address, postcode: record.postcode, facets: newFacets }),
+        old_value: JSON.stringify({
+          address: currentVenue.address,
+          postcode: currentVenue.postcode,
+          phone: currentVenue.phone,
+          email: currentVenue.email,
+          website: currentVenue.website,
+          booking_url: currentVenue.booking_url,
+          facets: currentFacets,
+        }),
+        new_value: JSON.stringify({
+          address: record.address,
+          postcode: record.postcode,
+          phone: record.phone,
+          email: record.email,
+          website: record.website,
+          booking_url: record.booking_url,
+          facets: newFacets,
+        }),
         source: `borough_csv:${datasetType}`,
         changed_by: 'system:borough-csv-import',
         reason: `Updated from borough CSV dataset: ${datasetType}`,
