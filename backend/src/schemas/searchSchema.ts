@@ -25,7 +25,11 @@ export const searchQuerySchema = z.object({
   }, z.array(z.enum(FACETS)).optional()),
   borough: z.string().optional(),
   postcode: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).optional()
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  include_parks: z
+    .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
+    .optional()
+    .transform((v) => v === true || v === 'true' || v === '1'),
 }).refine(data => data.borough || (data.lat !== undefined && data.lon !== undefined) || data.type || (data.facets && data.facets.length > 0), {
   message: 'Either borough, (lat and lon), type, or facets are required',
   path: ['lat', 'lon', 'borough', 'type', 'facets']
@@ -41,5 +45,9 @@ export const facetSearchSchema = z.object({
   }, z.array(z.enum(FACETS)).default([])),
   borough: z.string().optional(),
   postcode: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).optional()
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  include_parks: z
+    .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
+    .optional()
+    .transform((v) => v === true || v === 'true' || v === '1'),
 });

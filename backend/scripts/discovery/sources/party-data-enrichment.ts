@@ -66,6 +66,7 @@ export async function enrichPartyData(batchSize: number = 50): Promise<PartyEnri
        AND website NOT ILIKE '%example%'
        AND (party_extracted_at IS NULL OR party_extracted_at < NOW() - INTERVAL '30 days')
      ORDER BY
+       CASE WHEN venue_scope = 'core' THEN 0 ELSE 1 END,
        CASE type
          WHEN 'softplay' THEN 1
          WHEN 'leisure_centre' THEN 2

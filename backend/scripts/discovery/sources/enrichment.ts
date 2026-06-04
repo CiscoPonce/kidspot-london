@@ -1,6 +1,7 @@
 import { db } from '../../../src/clients/db.js';
 import { browserHeaders } from '../../../src/utils/httpHeaders.js';
 import { crawlDelay } from '../../../src/utils/rateLimiter.js';
+import { normalizeLondonBorough } from '../../../src/utils/londonBoroughs.js';
 
 export interface EnrichmentResult {
   enriched: number;
@@ -50,7 +51,9 @@ export async function enrichMissingDetails(): Promise<EnrichmentResult> {
         const postcode = address.postcode || '';
         const road = address.road || '';
         const houseNumber = address.house_number || '';
-        const borough = address.suburb || address.city_district || address.town || '';
+        const neighbourhood = address.suburb || address.city_district || address.town || '';
+        const nominatimBorough = address.borough || address['ISO3166-2-lvl8'] || '';
+        const londonBorough = normalizeLondonBorough(nominatimBorough);
         const fullAddress = [houseNumber, road].filter(Boolean).join(' ').trim();
 
         if (!postcode && !fullAddress) {
@@ -63,12 +66,13 @@ export async function enrichMissingDetails(): Promise<EnrichmentResult> {
              postcode = COALESCE(NULLIF($1, ''), postcode),
              address = COALESCE(NULLIF($2, ''), address),
              borough = COALESCE(NULLIF($3, ''), borough),
+             london_borough = COALESCE($4, london_borough),
              enriched_at = NOW()
-           WHERE id = $4`,
-          [postcode, fullAddress, borough, venue.id]
+           WHERE id = $5`,
+          [postcode, fullAddress, neighbourhood, londonBorough, venue.id]
         );
 
-        console.log(`Enriched: ${venue.name} → ${postcode}, ${fullAddress}, ${borough}`);
+        console.log(`Enriched: ${venue.name} → ${postcode}, ${fullAddress}, ${neighbourhood}, ${londonBorough ?? '?'}`);
         result.enriched++;
       } catch (err: any) {
         console.error(`Failed to enrich venue ${venue.name}:`, err.message);

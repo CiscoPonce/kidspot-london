@@ -63,6 +63,9 @@ export interface Venue {
   manual_source?: string | null;
   primary_label?: string | null;
   fhrs_establishment_id?: number | null;
+  borough?: string | null;
+  london_borough?: string | null;
+  venue_scope?: 'core' | 'secondary' | 'review' | 'excluded' | null;
 }
 
 export interface FhrsEstablishment {
@@ -131,6 +134,8 @@ export interface SearchQuery {
   limit?: number;
   borough?: string;
   postcode?: string;
+  /** When true, include parks (venue_scope=secondary). Default search is core party venues only. */
+  include_parks?: boolean;
 }
 
 export interface FacetSearchQuery extends Omit<SearchQuery, 'type'> {
@@ -170,6 +175,8 @@ export interface SearchResponse {
     fallback_source?: string | null;
     fallback_count?: number;
     fallback_triggered?: boolean;
+    /** Which venue_scope values this search returned (default: core only). */
+    venue_scope_filter?: string[];
   };
 }
 

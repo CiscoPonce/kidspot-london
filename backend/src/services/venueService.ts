@@ -29,6 +29,31 @@ import { boroughCsvService } from './boroughCsvService.js';
 import { openactiveService } from './openactiveService.js';
 import env from '../config/env.js';
 import { calculateDistanceMiles } from '../utils/distance.js';
+import { geocodeBoroughCentroid, normalizeLondonBorough } from '../utils/londonBoroughs.js';
+
+/** Merge card-relevant fields (contact, party data, london_borough) into search rows. */
+async function hydrateVenueCardFields(rows: Venue[]): Promise<Venue[]> {
+  if (!rows?.length) return rows;
+  const ids = rows.map((r) => r.id);
+  try {
+    const { rows: extra } = await db.query(
+      `SELECT id, website, phone, email, booking_url, borough, london_borough, venue_scope, images, opening_hours,
+              fhrs_establishment_id, claimed_at,
+              party_capable, party_price_from, party_price_unit,
+              party_max_capacity, party_enquiry_url
+       FROM venues WHERE id = ANY($1)`,
+      [ids],
+    );
+    const byId = new Map(extra.map((e: Venue) => [String(e.id), e]));
+    return rows.map((r) => {
+      const e = byId.get(String(r.id));
+      return e ? { ...r, ...e } : r;
+    });
+  } catch (err) {
+    logger.warn({ err }, 'Venue card hydration failed');
+    return rows;
+  }
+}
 
 /**
  * Hydrate search-result rows with the card-relevant fields the spatial search
@@ -118,12 +143,36 @@ const CACHE_TTL = {
   BRAVE_FALLBACK: 3600 // 1 hour for Brave Search fallback results
 };
 
+/** Default search = party catalogue (core). Parks only when include_parks or explicit park/outdoor facet. */
+function allowedVenueScopes(query: {
+  include_parks?: boolean;
+  type?: string;
+  facets?: string[];
+}): string[] {
+  const wantsParks =
+    query.include_parks === true ||
+    query.type === 'park' ||
+    (query.facets?.includes('outdoor_play') ?? false);
+  return wantsParks ? ['core', 'secondary'] : ['core'];
+}
+
+function filterRowsByScope(rows: Venue[], scopes: string[]): Venue[] {
+  return rows.filter((v) => v.venue_scope && scopes.includes(v.venue_scope));
+}
+
 // Helper to generate cache keys
-const getSearchCacheKey = (lat?: number, lon?: number, radiusMiles?: number, type?: string, borough?: string) => {
+const getSearchCacheKey = (
+  lat?: number,
+  lon?: number,
+  radiusMiles?: number,
+  type?: string,
+  borough?: string,
+  scopeTag = 'core',
+) => {
   if (borough) {
-    return `search:borough:${borough.toLowerCase().replace(/\s+/g, '_')}:${type || 'all'}`;
+    return `search:borough:${borough.toLowerCase().replace(/\s+/g, '_')}:${type || 'all'}:${scopeTag}`;
   }
-  return `search:${lat?.toFixed(4)}:${lon?.toFixed(4)}:${radiusMiles}:${type || 'all'}`;
+  return `search:${lat?.toFixed(4)}:${lon?.toFixed(4)}:${radiusMiles}:${type || 'all'}:${scopeTag}`;
 };
 
 const getVenueDetailsCacheKey = (id: string | number) => {
@@ -456,10 +505,12 @@ const baseVenueService = {
    * Search venues based on criteria
    */
   async searchVenues(query: SearchQuery): Promise<SearchResponse> {
-    const { lat, lon, radius_miles = 5, type, limit = 50, borough, postcode } = query;
+    const { lat, lon, radius_miles = 5, type, limit = 50, borough, postcode, facets } = query;
     const radiusMeters = radius_miles * 1609.34;
+    const scopes = allowedVenueScopes({ include_parks: query.include_parks, type, facets });
+    const scopeTag = scopes.includes('secondary') ? 'core_parks' : 'core';
 
-    const cacheKey = `${getSearchCacheKey(lat, lon, radius_miles, type, borough)}:${postcode || 'nopc'}`;
+    const cacheKey = `${getSearchCacheKey(lat, lon, radius_miles, type, borough, scopeTag)}:${postcode || 'nopc'}`;
     // Try cache
     try {
       const cached = await redis.get(cacheKey);
@@ -485,7 +536,8 @@ const baseVenueService = {
                 NULL as distance_miles, sponsor_tier, sponsor_priority, slug, parent_facets
          FROM venues
          WHERE is_active = TRUE
-         AND LOWER(borough) = LOWER($1)
+         AND venue_scope = ANY($4::text[])
+         AND LOWER(COALESCE(london_borough, borough)) = LOWER($1)
          AND ($2::TEXT IS NULL OR type = $2::TEXT)
          ORDER BY
              CASE
@@ -497,7 +549,7 @@ const baseVenueService = {
              sponsor_priority DESC NULLS LAST,
              name ASC
          LIMIT $3`,
-        [borough, type, limit]
+        [borough, type, limit, scopes]
       );
       rows = result.rows;
     } else if (lat !== undefined && lon !== undefined) {
@@ -512,6 +564,7 @@ const baseVenueService = {
                 NULL as distance_miles, sponsor_tier, sponsor_priority, slug, parent_facets
          FROM venues
          WHERE is_active = TRUE
+         AND venue_scope = ANY($3::text[])
          AND ($1::TEXT IS NULL OR type = $1::TEXT)
          ORDER BY
              CASE
@@ -523,12 +576,15 @@ const baseVenueService = {
              sponsor_priority DESC NULLS LAST,
              name ASC
          LIMIT $2`,
-        [type, limit]
+        [type, limit, scopes]
       );
       rows = result.rows;
     }
 
     rows = await hydrateVenueCardFields(rows);
+    if (lat !== undefined && lon !== undefined) {
+      rows = filterRowsByScope(rows, scopes);
+    }
 
     const sponsored = rows.filter(v => v.sponsor_tier);
     let regular = rows.filter(v => !v.sponsor_tier);
@@ -616,7 +672,8 @@ const baseVenueService = {
         cache_hit: false,
         fallback_source: fallbackSource,
         fallback_count: fallbackVenues?.length || 0,
-        fallback_triggered: !!fallbackVenues && fallbackVenues.length > 0
+        fallback_triggered: !!fallbackVenues && fallbackVenues.length > 0,
+        venue_scope_filter: scopes,
       }
     };
 
@@ -874,19 +931,8 @@ const baseVenueService = {
    * Geocode a borough name to approximate lat/lon
    */
   async geocodeBorough(borough: string): Promise<{ lat: number; lon: number } | null> {
-    const boroughs: Record<string, { lat: number; lon: number }> = {
-      'newham': { lat: 51.53, lon: 0.04 },
-      'tower hamlets': { lat: 51.51, lon: -0.01 },
-      'hackney': { lat: 51.54, lon: -0.06 },
-      'greenwich': { lat: 51.48, lon: 0.01 },
-      'islington': { lat: 51.54, lon: -0.10 },
-      'camden': { lat: 51.54, lon: -0.14 },
-      'southwark': { lat: 51.48, lon: -0.08 },
-      'lambeth': { lat: 51.46, lon: -0.11 },
-      'wandsworth': { lat: 51.45, lon: -0.19 },
-      'lewisham': { lat: 51.44, lon: -0.02 },
-    };
-    return boroughs[borough.toLowerCase()] || null;
+    const c = geocodeBoroughCentroid(normalizeLondonBorough(borough) ?? borough);
+    return c ? { lat: c.lat, lon: c.lon } : null;
   },
 
   /**
@@ -908,6 +954,7 @@ const baseVenueService = {
    */
   async searchVenuesByFacets(query: FacetSearchQuery): Promise<FacetSearchResponse> {
     const { lat, lon, radius_miles = 5, facets = [], limit = 50, borough, postcode } = query;
+    const scopes = allowedVenueScopes({ include_parks: query.include_parks, facets });
     let searchLat = lat;
     let searchLon = lon;
 
@@ -929,7 +976,7 @@ const baseVenueService = {
     }
 
     const radiusMeters = radius_miles * 1609.34;
-    const cacheKey = `search:facets:${facets.sort().join(',')}:${searchLat?.toFixed(4)}:${searchLon?.toFixed(4)}:${radius_miles}:${borough || 'noboro'}:${postcode || 'nopc'}`;
+    const cacheKey = `search:facets:${facets.sort().join(',')}:${searchLat?.toFixed(4)}:${searchLon?.toFixed(4)}:${radius_miles}:${borough || 'noboro'}:${postcode || 'nopc'}:${scopes.join('_')}`;
 
     try {
       const cached = await redis.get(cacheKey);
@@ -958,8 +1005,9 @@ const baseVenueService = {
                 NULL as distance_miles, sponsor_tier, sponsor_priority, slug, parent_facets
          FROM venues
          WHERE is_active = TRUE
+         AND venue_scope = ANY($4::text[])
          AND ($1::TEXT[] IS NULL OR parent_facets && $1::TEXT[])
-         AND ($2::TEXT IS NULL OR LOWER(borough) = LOWER($2))
+         AND ($2::TEXT IS NULL OR LOWER(COALESCE(london_borough, borough)) = LOWER($2))
          ORDER BY
              CASE
                  WHEN sponsor_tier = 'gold' THEN 1
@@ -970,12 +1018,15 @@ const baseVenueService = {
              sponsor_priority DESC NULLS LAST,
              name ASC
          LIMIT $3`,
-        [facets.length > 0 ? facets : null, borough || null, limit]
+        [facets.length > 0 ? facets : null, borough || null, limit, scopes]
       );
       rows = result.rows;
     }
 
     rows = await hydrateVenueCardFields(rows);
+    if (searchLat !== undefined && searchLon !== undefined) {
+      rows = filterRowsByScope(rows, scopes);
+    }
 
     const sponsored = rows.filter(v => v.sponsor_tier);
     const regular = rows.filter(v => !v.sponsor_tier);
@@ -1003,7 +1054,8 @@ const baseVenueService = {
           silver_count: sponsored.filter(v => v.sponsor_tier === 'silver').length,
           bronze_count: sponsored.filter(v => v.sponsor_tier === 'bronze').length
         },
-        cache_hit: false
+        cache_hit: false,
+        venue_scope_filter: scopes,
       }
     };
 
