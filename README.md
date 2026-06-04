@@ -148,6 +148,20 @@ export REDIS_URL=redis://127.0.0.1:6379
 npx tsx scripts/discovery/sources/party-data-enrichment.ts 80
 ```
 
+### Borough CSV ingest (hall contacts — Tier 1)
+
+Registry table `borough_csv_sources` + `npx tsx scripts/import-borough-csvs.ts` match open-data rows to existing venues and fill **phone, email, website, booking_url** when columns exist (COALESCE-safe).
+
+**Audit feeds before bulk import:**
+
+```bash
+cd backend
+npx tsx scripts/maintenance/audit-borough-csv-feeds.ts          # DB sources + London Datastore candidates
+npx tsx scripts/maintenance/audit-borough-csv-feeds.ts --extra-only
+```
+
+Verified seed: migration `029_seed_cim_community_centres.sql` (Cultural Infrastructure Map — ~904 community centres, ~46% have `website` in CSV).
+
 ### Data curation (Phase 19, re-runnable SQL)
 
 After migrations **027** and **028**, run maintenance scripts in order on a fresh or existing DB:
@@ -243,7 +257,7 @@ kidspot-london/
 │   │       ├── nvidia.ts
 │   │       └── partyExtraction.ts
 │   ├── scripts/
-│   │   ├── maintenance/             # Phase 19 classify, cleanup, borough SQL
+│   │   ├── maintenance/             # Phase 19 SQL + audit-borough-csv-feeds.ts
 │   │   └── discovery/sources/
 │   │       ├── direct-crawl-enrichment.ts
 │   │       ├── party-data-enrichment.ts
