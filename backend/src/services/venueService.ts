@@ -56,36 +56,6 @@ async function hydrateVenueCardFields(rows: Venue[]): Promise<Venue[]> {
 }
 
 /**
- * Hydrate search-result rows with the card-relevant fields the spatial search
- * functions don't return (contact, booking, images, trust + Phase 18D party
- * data). Single id-batched query; merges by id. Keeps the SQL functions
- * untouched while making list cards rich and party-first.
- */
-async function hydrateVenueCardFields(rows: Venue[]): Promise<Venue[]> {
-  if (!rows || rows.length === 0) return rows;
-  const ids = rows.map((r) => r.id);
-  try {
-    const { rows: extra } = await db.query(
-      `SELECT id, website, phone, email, booking_url, borough, images, opening_hours,
-              fhrs_establishment_id, claimed_at,
-              party_capable, party_price_from, party_price_unit,
-              party_max_capacity, party_enquiry_url
-       FROM venues
-       WHERE id = ANY($1)`,
-      [ids],
-    );
-    const byId = new Map<string, any>(extra.map((e: any) => [String(e.id), e]));
-    return rows.map((r) => {
-      const e = byId.get(String(r.id));
-      return e ? { ...r, ...e } : r;
-    });
-  } catch (err) {
-    logger.warn({ err }, 'Venue card hydration failed; returning base rows');
-    return rows;
-  }
-}
-
-/**
  * Log a change to a venue field for provenance tracking
  */
 export async function logProvenance(change: ProvenanceChange): Promise<void> {
