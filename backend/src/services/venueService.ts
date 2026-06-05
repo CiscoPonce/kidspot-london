@@ -1331,10 +1331,12 @@ const baseVenueService = {
       for (const record of records) {
         try {
           // Try to match to existing venue
-          const match = await this.matchBoroughCsvRecordToVenue(
+          const recordBorough =
+            (record.raw?.borough_name as string | undefined) || source.borough_name;
+          const match = await baseVenueService.matchBoroughCsvRecordToVenue(
             record,
             source.dataset_type,
-            source.borough_name,
+            recordBorough,
           );
 
           if (match) {
@@ -1343,8 +1345,11 @@ const baseVenueService = {
               [match.venueId, sourceId, resolveBoroughCsvExternalId(record)]
             );
 
-            // Update venue with borough data if needed
-            await this.updateVenueFromBoroughCsv(match.venueId, record, source.dataset_type);
+            await baseVenueService.updateVenueFromBoroughCsv(
+              match.venueId,
+              record,
+              source.dataset_type,
+            );
 
             metrics.matched++;
           }
@@ -1511,7 +1516,7 @@ const baseVenueService = {
              website = COALESCE(NULLIF($7, ''), website),
              booking_url = COALESCE(NULLIF($8, ''), booking_url),
              parent_facets = $9,
-             updated_at = NOW()
+             enriched_at = NOW()
          WHERE id = $10`,
         [
           record.address || null,

@@ -192,6 +192,20 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ---
 
+## Phase 18E: Deduplication & Search Ranking Hotfix (June 2026)
+**Status**: **COMPLETED**
+**Goal**: Address data loss issues where specific venue types (softplay, community halls) were silently deactivated during deduplication, and fix search ranking to prioritize proximity over Kid Score.
+
+**Completed**:
+- ✅ **Deduplication Data Recovery**: Updated `dedup-sweep.ts` to merge types, parent facets, features, ratings, kid scores, and party details from deactivated duplicates to the keeper.
+- ✅ **Database Repair (Migration 031)**: Restored data for 846 duplicate groups in the production database, restoring Atherton Leisure Centre and 44 other high-quality core venues.
+- ✅ **Search Ranking Fix (Migration 032)**: Redefined `search_venues_by_radius` function to sort results by **Distance** first (closest first) instead of Kid Score first.
+- ✅ **Container Redeployment & Validation**: Rebuilt and restarted API, web, and worker containers to compile the updated TS code, verifying that local searches correctly return Atherton and other core venues.
+
+---
+
+---
+
 ## Phase 18B: Contact Extraction Yield Optimization (Weeks 23-24)
 **Status**: **PLANNED**
 **Goal**: Increase the yield of the direct-crawl contact extraction pipeline by ~30% through browser-grade HTTP headers and LLM fallback extraction, without adding new infrastructure.

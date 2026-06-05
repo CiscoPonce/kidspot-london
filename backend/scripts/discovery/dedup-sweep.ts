@@ -83,7 +83,59 @@ export async function runDedupSweep(dryRun: boolean = false): Promise<DedupResul
               booking_url = COALESCE(NULLIF(booking_url, ''), (SELECT NULLIF(booking_url, '') FROM venues WHERE id = $1)),
               description = COALESCE(NULLIF(description, ''), (SELECT NULLIF(description, '') FROM venues WHERE id = $1)),
               opening_hours = COALESCE(NULLIF(opening_hours, ''), (SELECT NULLIF(opening_hours, '') FROM venues WHERE id = $1)),
-              images = COALESCE(images, (SELECT images FROM venues WHERE id = $1))
+              images = COALESCE(images, (SELECT images FROM venues WHERE id = $1)),
+              
+              -- Inherit specific type if keeper is generic
+              type = CASE 
+                WHEN type NOT IN ('softplay', 'community_hall') AND (SELECT type FROM venues WHERE id = $1) IN ('softplay', 'community_hall') 
+                THEN (SELECT type FROM venues WHERE id = $1) 
+                ELSE type 
+              END,
+              
+              -- Merge parent facets (array union)
+              parent_facets = (
+                SELECT ARRAY(
+                  SELECT DISTINCT x 
+                  FROM (
+                    SELECT unnest(parent_facets) x
+                    UNION ALL
+                    SELECT unnest((SELECT parent_facets FROM venues WHERE id = $1)) x
+                  ) sub 
+                  WHERE x IS NOT NULL
+                )
+              ),
+              
+              -- Merge features (JSONB array union)
+              features = (
+                SELECT COALESCE(jsonb_agg(x), '[]'::jsonb)
+                FROM (
+                  SELECT DISTINCT x FROM (
+                    SELECT jsonb_array_elements(COALESCE(features, '[]'::jsonb)) x
+                    UNION ALL
+                    SELECT jsonb_array_elements(COALESCE((SELECT features FROM venues WHERE id = $1), '[]'::jsonb)) x
+                  ) sub
+                ) sub2
+              ),
+              
+              -- Ratings & Scores
+              rating = COALESCE(rating, (SELECT rating FROM venues WHERE id = $1)),
+              user_ratings_total = COALESCE(user_ratings_total, (SELECT user_ratings_total FROM venues WHERE id = $1)),
+              price_level = COALESCE(price_level, (SELECT price_level FROM venues WHERE id = $1)),
+              kid_score = CASE WHEN COALESCE(kid_score, 0) = 0 THEN COALESCE((SELECT kid_score FROM venues WHERE id = $1), kid_score) ELSE kid_score END,
+              
+              -- Party Data
+              party_capable = COALESCE(party_capable, (SELECT party_capable FROM venues WHERE id = $1)),
+              party_price_from = COALESCE(party_price_from, (SELECT party_price_from FROM venues WHERE id = $1)),
+              party_price_unit = COALESCE(NULLIF(party_price_unit, ''), (SELECT NULLIF(party_price_unit, '') FROM venues WHERE id = $1)),
+              party_max_capacity = COALESCE(party_max_capacity, (SELECT party_max_capacity FROM venues WHERE id = $1)),
+              party_packages = COALESCE(party_packages, (SELECT party_packages FROM venues WHERE id = $1)),
+              party_enquiry_url = COALESCE(NULLIF(party_enquiry_url, ''), (SELECT NULLIF(party_enquiry_url, '') FROM venues WHERE id = $1)),
+              party_source = COALESCE(NULLIF(party_source, ''), (SELECT NULLIF(party_source, '') FROM venues WHERE id = $1)),
+              party_extracted_at = COALESCE(party_extracted_at, (SELECT party_extracted_at FROM venues WHERE id = $1)),
+              
+              -- Trust signals & locks
+              fhrs_establishment_id = COALESCE(fhrs_establishment_id, (SELECT fhrs_establishment_id FROM venues WHERE id = $1)),
+              editor_locked = editor_locked OR (SELECT editor_locked FROM venues WHERE id = $1)
             WHERE id = $2
           `, [dupeId, keepId]);
         }

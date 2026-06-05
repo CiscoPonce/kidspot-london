@@ -2,7 +2,7 @@
 
 import { db } from '../src/clients/db.js';
 import { logger } from '../src/config/logger.js';
-import { importBoroughCsv, getBoroughCsvSources } from '../src/services/venueService.js';
+import { venueService } from '../src/services/venueService.js';
 import { BoroughCsvSource } from '../src/types/venue.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -57,7 +57,7 @@ export async function runBoroughCsvImport(options?: {
       );
       sources = source.rows;
     } else {
-      sources = await getBoroughCsvSources();
+      sources = await venueService.getBoroughCsvSources();
     }
 
     overallMetrics.total_sources = sources.length;
@@ -83,7 +83,7 @@ export async function runBoroughCsvImport(options?: {
           continue;
         }
 
-        const result = await importBoroughCsv(source.id);
+        const result = await venueService.importBoroughCsv(source.id);
 
         overallMetrics.total_imported += result.imported;
         overallMetrics.total_matched += result.matched;

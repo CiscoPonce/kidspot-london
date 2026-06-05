@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-02T10:57:02.805Z"
+last_updated: "2026-06-05T22:00:00.000Z"
 progress:
   total_phases: 22
-  completed_phases: 11
+  completed_phases: 12
   total_plans: 56
   completed_plans: 52
-  percent: 50
+  percent: 54
 ---
 
 # KidSpot London - Project State
@@ -27,7 +27,7 @@ Plan: 1 of 1
 - **Rich Data live**: Opening hours and images integrated into UI and API.
 - **Asynchronous Webhooks live**: Background ingestion from Apify active.
 
-**Last Updated**: May 15, 2026
+**Last Updated**: June 5, 2026
 
 ## Completed Phases
 
@@ -53,6 +53,7 @@ Plan: 1 of 1
 - 18.0 - Autonomous Enrichment Engine & Code Quality
 - 18.5 - Chain Enrichment & Categorization Polish
 - 18.0-18.5 Data Validation (closure detection, Brave images, phone normalisation, contact-backfill worker, enriched_at timestamp)
+- 18E - Deduplication & Search Ranking Hotfix
 
 ## Active Phase: 18B - Contact Extraction Yield Optimization
 
@@ -76,12 +77,19 @@ Increase contact extraction yield of the direct-crawl pipeline by ~30% via brows
 - ✅ **Categorization Overrides**: DB trigger for brands (Flip Out, Oxygen, etc.)
 - ✅ **Chain Expansion**: Seeded missing Flip Out and Gravity locations
 
+### Phase 18E Deduplication & Search Ranking Hotfix (Completed)
+
+- ✅ **Deduplication Data Recovery**: Updated `dedup-sweep.ts` to merge types, parent facets, features, ratings, kid scores, and party details from deactivated duplicates to the keeper.
+- ✅ **Database Repair (Migration 031)**: Restored data for 846 duplicate groups in the production database, restoring Atherton Leisure Centre and 44 other high-quality core venues.
+- ✅ **Search Ranking Fix (Migration 032)**: Redefined `search_venues_by_radius` function to sort results by Distance first (closest first) instead of Kid Score first.
+- ✅ **Container Redeployment & Validation**: Rebuilt and restarted API, web, and worker containers to compile the updated TS code, verifying that local searches correctly return Atherton and other core venues.
+
 ### Database Stats (June 2026)
 
 - 16,844 total venues (14,676 active, 2,168 inactive)
 - Image coverage: 303 (~2%)
-- Email coverage: 1,216 (~8%)
-- Phone coverage: 3,191 (~22%)
+- Email coverage: 2,380 (~14.1%)
+- Phone coverage: 4,165 (~24.7%)
 - Enriched venues: 16,767 (recently backfilled)
 
 ---

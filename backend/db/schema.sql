@@ -234,10 +234,10 @@ BEGIN
         END,
         -- Within same tier, higher priority first
         v.sponsor_priority DESC NULLS LAST,
-        -- Secondary ranking: Kid Score
-        v.kid_score DESC NULLS LAST,
-        -- Then by distance
-        ST_Distance(ST_MakePoint(v.lon, v.lat)::geography, ST_MakePoint(search_lon, search_lat)::geography) ASC
+        -- Then by distance (closest first)
+        ST_Distance(ST_MakePoint(v.lon, v.lat)::geography, ST_MakePoint(search_lon, search_lat)::geography) ASC,
+        -- Secondary ranking: Kid Score (tie-breaker)
+        v.kid_score DESC NULLS LAST
     LIMIT limit_count;
 END;
 $$ LANGUAGE plpgsql;
