@@ -96,7 +96,7 @@ export async function enrichViaWebScraping(batchSize: number = 10): Promise<WebS
         if (!braveRes.ok) {
           if (braveRes.status === 429) {
             console.warn('  Brave API rate limited — stopping.');
-            break;
+            throw new Error('RateLimitError: 429 Too Many Requests');
           }
           console.warn(`  Brave returned ${braveRes.status} — skipping.`);
           result.failed++;

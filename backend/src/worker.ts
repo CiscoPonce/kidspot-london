@@ -30,6 +30,7 @@ interface DedupJobData {
 }
 
 const discoveryQueue = new Queue('discovery', { connection: redis });
+const enrichmentQueue = new Queue('enrichment', { connection: redis });
 
 const jobOpts = {
   removeOnComplete: { count: 10 },
@@ -109,7 +110,7 @@ async function setupRepeatingJobs() {
       ...jobOpts,
     });
 
-    await discoveryQueue.add('contact-backfill', { batchSize: 50 }, {
+    await enrichmentQueue.add('contact-backfill', { batchSize: 50 }, {
       repeat: { pattern: '0 7 * * *' },
       jobId: 'repeat:contact-backfill',
       ...jobOpts,
@@ -139,9 +140,7 @@ async function setupRepeatingJobs() {
   }
 }
 
-const worker = new Worker(
-  'discovery',
-  async (job: Job) => {
+async function processJob(job: Job) {
     const startMs = Date.now();
     logger.info({ jobId: job.id, jobName: job.name, data: job.data }, 'Processing job...');
 
@@ -268,6 +267,15 @@ case 'enrich-brave-images': {
           return { status: 'completed', ...result };
         }
 
+case 'enrich-streetview': {
+  await crawlDelay(500);
+  const { enrichViaStreetView } = await import('../scripts/discovery/sources/streetview-enrichment.js');
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
+  const result = await enrichViaStreetView(batchSize);
+          logger.info({ result }, 'Street View enrichment complete');
+          return { status: 'completed', ...result };
+        }
+
 case 'contact-backfill': {
   await crawlDelay(700);
   const { runContactBackfill } = await import('../scripts/discovery/sources/contact-backfill.js');
@@ -296,33 +304,45 @@ case 'contact-backfill': {
     const durationMs = Date.now() - startMs;
     logger.info({ jobId: job.id, jobName: job.name, durationMs }, 'Job finished');
     return { status: 'completed' };
-  },
-  {
-    connection: redis,
-    concurrency: 1,
-    stalledInterval: 30000,
-  },
-);
+}
 
-worker.on('completed', (job) => {
-  logger.info({ jobId: job.id, jobName: job.name }, 'Job completed successfully');
+const discoveryWorker = new Worker('discovery', processJob, {
+  connection: redis,
+  concurrency: 1,
+  stalledInterval: 30000,
 });
 
-worker.on('failed', (job, err) => {
-  logger.error({ jobId: job?.id, jobName: job?.name, err }, 'Job failed');
+const enrichmentWorker = new Worker('enrichment', processJob, {
+  connection: redis,
+  concurrency: 3,
+  stalledInterval: 30000,
+});
+
+[discoveryWorker, enrichmentWorker].forEach((worker) => {
+  worker.on('completed', (job) => {
+    logger.info({ jobId: job.id, jobName: job.name }, 'Job completed successfully');
+  });
+
+  worker.on('failed', (job, err) => {
+    logger.error({ jobId: job?.id, jobName: job?.name, err }, 'Job failed');
+  });
 });
 
 process.on('SIGTERM', async () => {
   logger.info('Worker shutting down (SIGTERM)...');
-  await worker.close();
+  await discoveryWorker.close();
+  await enrichmentWorker.close();
   await discoveryQueue.close();
+  await enrichmentQueue.close();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   logger.info('Worker shutting down (SIGINT)...');
-  await worker.close();
+  await discoveryWorker.close();
+  await enrichmentWorker.close();
   await discoveryQueue.close();
+  await enrichmentQueue.close();
   process.exit(0);
 });
 

@@ -45,7 +45,7 @@ export const braveService = {
 
       if (response.status === 429) {
         logger.warn('Brave Search rate limit exceeded during image search');
-        return [];
+        throw new Error('RateLimitError: 429 Too Many Requests');
       }
 
       const results = response.data?.results || [];

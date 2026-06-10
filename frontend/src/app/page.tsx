@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Header } from '@/components/layout/header';
 import { Hero } from '@/components/layout/hero';
 import { QuickFilters } from '@/components/layout/quick-filters';
@@ -37,6 +37,7 @@ function MapPanel({
         facets
       ),
     enabled: lat !== null && lon !== null,
+    placeholderData: keepPreviousData,
   });
 
   const venues = venuesResponse?.data.all || [];

@@ -214,10 +214,10 @@ export function VenueCard({
           onClick={handleSaveToggle}
           aria-pressed={isSaved}
           aria-label={isSaved ? `Remove ${venue.name} from shortlist` : `Add ${venue.name} to shortlist`}
-          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-surface-container-lowest/90 backdrop-blur-sm shadow-sm hover:bg-surface-container-lowest active:scale-90 transition"
+          className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-lowest/90 backdrop-blur-sm shadow-sm hover:bg-surface-container-lowest active:scale-90 transition"
         >
           <Heart
-            size={18}
+            size={20}
             strokeWidth={2.5}
             className={isSaved ? 'fill-primary text-primary' : 'text-on-surface-variant'}
           />
@@ -319,7 +319,7 @@ export function VenueCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => handleEnquiry(e, 'enquiry')}
-                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-2.5 text-sm font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
+                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-3 text-sm min-h-[44px] font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
                 aria-label={`Enquire about a party at ${venue.name}`}
               >
                 Enquire
@@ -328,7 +328,7 @@ export function VenueCard({
               <a
                 href={`tel:${venue.phone}`}
                 onClick={(e) => handleEnquiry(e, 'call')}
-                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-2.5 text-sm font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
+                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-3 text-sm min-h-[44px] font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
                 aria-label={`Call ${venue.name} about a party`}
               >
                 <span className="material-symbols-outlined text-[16px]">call</span>
@@ -344,7 +344,7 @@ export function VenueCard({
                   props: { venueId: venue.id, source: 'detail_link' },
                 });
               }}
-              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary-container text-on-primary-container px-4 py-2.5 text-sm font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary-container text-on-primary-container px-4 py-3 text-sm min-h-[44px] font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
               aria-label={`View full details for ${venue.name}`}
             >
               View

@@ -84,6 +84,16 @@ export function VenueMapSnippet({ lat, lon, name, zoom = 15 }: VenueMapSnippetPr
     mapRef.current.setCenter([lon, lat]);
   }, [lat, lon]);
 
+  // Handle bottom sheet animation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.resize();
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, []);
+
   if (mapUnavailable) {
     return <MapFallback variant="snippet" />;
   }

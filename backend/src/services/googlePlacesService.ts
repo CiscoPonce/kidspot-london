@@ -45,6 +45,10 @@ class GooglePlacesService {
       });
 
       if (!searchResponse.ok) {
+        if (searchResponse.status === 429) {
+          logger.warn('Google Places API rate limit exceeded');
+          throw new Error('RateLimitError: 429 Too Many Requests');
+        }
         logger.error(`Google Places Search failed with status ${searchResponse.status}`);
         return null;
       }

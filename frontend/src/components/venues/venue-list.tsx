@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { fetchVenues, type Venue } from '@/lib/api';
 import { useSearch } from '@/hooks/use-search';
 import { VenueCard } from './venue-card';
@@ -68,6 +68,7 @@ export function VenueList({ onVenueSelect, selectedId }: VenueListProps) {
     queryFn: () =>
       fetchVenues(lat!, lon!, radius, venueType || undefined, postcode || undefined, 50, facets),
     enabled: lat !== null && lon !== null,
+    placeholderData: keepPreviousData,
   });
 
   if (lat === null || lon === null) {
