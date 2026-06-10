@@ -4,6 +4,13 @@ import { logger } from './config/logger.js';
 import env from './config/env.js';
 import { StaleIngestLockedError, withStaleIngestLock } from './services/ingestLock.js';
 import { crawlDelay } from './utils/rateLimiter.js';
+import http from 'http';
+
+// Healthcheck server for Docker
+http.createServer((_, res) => {
+  res.writeHead(200);
+  res.end('ok');
+}).listen(4001);
 
 logger.info('=== KidSpot London - Background Worker ===');
 logger.info(`Connected to Redis at: ${env.REDIS_URL}`);
@@ -69,6 +76,12 @@ async function setupRepeatingJobs() {
     await discoveryQueue.add('enrich-party-data', { batchSize: 50 }, {
       repeat: { pattern: '20 */6 * * *' },
       jobId: 'repeat:enrich-party-data',
+      ...jobOpts,
+    });
+
+    await discoveryQueue.add('enrich-google-places', { batchSize: 50 }, {
+      repeat: { pattern: '0 */4 * * *' },
+      jobId: 'repeat:enrich-google-places',
       ...jobOpts,
     });
 
@@ -225,6 +238,15 @@ case 'enrich-foursquare': {
   const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
   const result = await enrichViaFoursquare(batchSize);
           logger.info({ result }, 'Foursquare enrichment complete');
+          return { status: 'completed', ...result };
+        }
+
+case 'enrich-google-places': {
+  await crawlDelay(500);
+  const { enrichViaGooglePlaces } = await import('../scripts/discovery/sources/google-places-enrichment.js');
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
+  const result = await enrichViaGooglePlaces(batchSize);
+          logger.info({ result }, 'Google Places enrichment complete');
           return { status: 'completed', ...result };
         }
 

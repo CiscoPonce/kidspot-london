@@ -51,6 +51,8 @@ export interface Venue {
   address?: string;
   postcode?: string;
   phone?: string;
+  email?: string;
+  booking_url?: string;
   rating?: number;
   user_ratings_total?: number;
   kid_score?: number;

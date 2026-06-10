@@ -52,18 +52,22 @@ export async function enrichPartyData(batchSize: number = 50): Promise<PartyEnri
   };
 
   const { rows: venues } = await db.query(
-    `SELECT id, name, type, website
+    `SELECT id, name, type, website, phone
      FROM venues
      WHERE is_active = TRUE
-       AND type = ANY($2)
-       AND website IS NOT NULL AND website != ''
-       AND website ILIKE 'http%'
-       AND website NOT ILIKE '%openstreetmap.org%'
-       AND website NOT ILIKE '%facebook.com%'
-       AND website NOT ILIKE '%instagram.com%'
-       AND website NOT ILIKE '%yelp.%'
-       AND website NOT ILIKE '%tripadvisor.%'
-       AND website NOT ILIKE '%example%'
+       AND venue_scope = 'core'
+       AND party_capable IS NULL
+       AND (
+         (website IS NOT NULL AND website != '' AND website ILIKE 'http%'
+          AND website NOT ILIKE '%openstreetmap.org%'
+          AND website NOT ILIKE '%facebook.com%'
+          AND website NOT ILIKE '%instagram.com%'
+          AND website NOT ILIKE '%yelp.%'
+          AND website NOT ILIKE '%tripadvisor.%'
+          AND website NOT ILIKE '%example%')
+         OR phone IS NOT NULL
+         OR type IN ('softplay', 'leisure_centre')
+       )
        AND (party_extracted_at IS NULL OR party_extracted_at < NOW() - INTERVAL '30 days')
      ORDER BY
        CASE WHEN venue_scope = 'core' THEN 0 ELSE 1 END,
@@ -76,7 +80,7 @@ export async function enrichPartyData(batchSize: number = 50): Promise<PartyEnri
        END,
        id ASC
      LIMIT $1`,
-    [batchSize, PARTY_TYPES],
+    [batchSize],
   );
 
   if (venues.length === 0) {
