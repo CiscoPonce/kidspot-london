@@ -565,19 +565,22 @@ export default function manifest(): MetadataRoute.Manifest {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Do FHRS database columns already exist?**
+   - **RESOLVED:** PATTERNS.md §639-645 confirmed via code audit that `fhrs_establishment_id` exists on `venues` (FK to `fhrs_establishments` table) but `fhrs_rating_value`, `fhrs_rating_date`, and `fhrs_matched_at` do NOT exist on `venues`. Plan 03-01 therefore creates migration `034_add_fhrs_venue_rating_fields.sql` to add these denormalized columns for fast reads. See PATTERNS.md §643-645 for the full audit.
    - What we know: The Venue type in `api.ts` has `fhrs_establishment_id?: number | null`. The venueService.ts references `fhrs_establishment_id`, `postcode`, `rating_value`, `rating_key`, `rating_date` in UPDATE queries (line 1184). This strongly suggests the columns exist.
    - What's unclear: Whether `fhrs_rating_value` (string rating), `fhrs_matched_at`, and `fhrs_rating_date` columns exist as distinct DB columns, since the API response is a string like "5" or "AwaitingInspection".
    - Recommendation: Check `backend/db/schema.sql` or run `\d venues` on the database to confirm exact column names before planning FHRS batch job.
 
 2. **What's the exact difference between D1 "Google Places discovery" and the existing `enrich-google-places`?**
+   - **RESOLVED:** D1 is true discovery — finding venues not in the DB via borough/category keyword searches. The existing `enrich-google-places.ts` enriches existing DB venues. Plan 01-01 creates a new `google-places-discovery.ts` script for the D1 discovery sweeps, while `enrich-google-places` continues running as the existing enrichment job.
    - What we know: `enrich-google-places.ts` queries DB venues missing contacts and finds matches — it enriches existing venues, it doesn't discover new ones.
    - What's unclear: Does D1 require a new script that searches Google Places by keyword/borough to find NEW venues not in DB?
    - Recommendation: If D1 means true discovery, create a new `google-places-discovery.ts` script. If it means running the enrichment sweep, just trigger the existing job. CONTEXT.md mentions "Google Places discovery" which suggests discovery, not enrichment.
 
 3. **Is the postcodes.io script a one-shot CLI or a repeating BullMQ job?**
+   - **RESOLVED:** Implemented as a one-shot CLI script (`postcodesio-geocoding.ts`) per Plan 01-02. Starting as CLI-only simplifies the initial implementation; can be added as a BullMQ repeating job later if needed. The script exports `geocodeViaPostcodesIo()` for both CLI and programmatic use.
    - What we know: All existing enrichment scripts support both CLI and BullMQ patterns. Postcodes.io would be a new addition.
    - Recommendation: Start as a one-shot CLI script (simpler). Can be added as a repeating job later if needed.
 
