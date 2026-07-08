@@ -366,6 +366,23 @@ export function VenueDetailContent({
               )}
             </div>
 
+            {/* Food Hygiene Rating */}
+            {(venue as Venue).fhrs_establishment_id && (venue as Venue).fhrs_rating_value !== undefined && (
+              <div className="flex items-center gap-3 p-4 bg-surface rounded-[16px] border border-outline-variant">
+                <span className="material-symbols-outlined text-outline">verified_user</span>
+                <div>
+                  <span className="font-body-md text-body-md text-on-surface">
+                    Food Hygiene Rating: {(venue as Venue).fhrs_rating_value}/5
+                  </span>
+                  {(venue as Venue).fhrs_rating_date && (
+                    <span className="block text-xs text-on-surface-variant">
+                      Rated {new Date((venue as Venue).fhrs_rating_date!).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Opening Hours */}
             {hours && hours.open && <OpeningHours hours={hours} />}
 

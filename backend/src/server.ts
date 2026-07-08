@@ -14,6 +14,7 @@ import adminRoutes from './routes/admin.js';
 import claimRoutes from './routes/claim.js';
 import billingRoutes from './routes/billing.js';
 import ownerRoutes from './routes/owner.js';
+import fhrsRoutes from './routes/fhrs.js';
 
 // Create Express app
 const app = express();
@@ -102,6 +103,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/venues', claimRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/owner', ownerRoutes);
+app.use('/api/fhrs', fhrsRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

@@ -30,6 +30,8 @@ export interface Venue {
   enriched_at?: string;
   // Trust (verifiable, Phase 18C FE-11)
   fhrs_establishment_id?: number | null;
+  fhrs_rating_value?: string | null;
+  fhrs_rating_date?: string | null;
   claimed_at?: string | null;
   // Party data (Phase 18D)
   party_capable?: boolean | null;
