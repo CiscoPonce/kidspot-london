@@ -4,27 +4,29 @@
 
 ---
 
-## Where the project stands (June 2026)
+## Where the project stands (July 2026)
 
-The platform is in a **much stronger position** than a few weeks ago:
+The platform is **launch-ready** after Phase 22:
 
 | Area | Status |
 |:-----|:-------|
-| **Product** | Party-first UI (18C): cards, shortlist, compare, share. API defaults to the **core catalogue**. |
-| **Data structure** | `venue_scope` (core / secondary / review / excluded) and **`london_borough`** (33 boroughs) are in place. |
-| **Noise reduction** | ~2,500 junk venues deactivated; parks moved to `secondary`, not mixed into default search. |
-| **Party facts** | 18D extraction live; core venues crawled first; counts growing via `enrich-party-data`. |
-| **Gaps** | ~**670 listable** core venues (type-aware); **~41** with confirmed `party_capable`; **~1,300+ core halls** still lack phone/website — council hall-hire ingest is the next data win. |
+| **Product** | Party-first UI: cards, shortlist, compare, share, **PWA installable**, **FHRS trust signals**. API defaults to **core catalogue**. |
+| **Data structure** | `venue_scope` (core / secondary / review / excluded) and **`london_borough`** (33 boroughs) in place. FHRS denormalized rating fields on venues. |
+| **Noise reduction** | ~2,500 junk venues deactivated; parks moved to `secondary`. |
+| **Party facts** | 18D extraction live; core venues crawled first. |
+| **PWA** | Service worker (network-first search, stale-while-revalidate detail), manifest, install prompt. |
+| **Trust signals** | FHRS food hygiene scores on detail pages — batch (daily 8am) + lazy on-demand matching. |
+| **Gaps** | ~**670 listable** core venues; Google Places API key needed for Street View images and venue discovery. |
 
-**Honest summary:** The database and API now match the product story. Depth (contacts, confirmed party pricing) is still catching up; the architecture is right for that work.
+**Honest summary:** All 21 must-haves for launch readiness are verified. Frontend is mobile-first with offline caching. Remaining depth is data-side (contacts, pricing) — architecture is complete.
 
-Planning: `.planning/ROADMAP.md` — phases **18B–18D** (contacts + party extraction + frontend), **19** (data curation, in repo).
+Planning: `.planning/ROADMAP.md` — phases **18B–22** complete.
 
 ---
 
 ## 📊 Platform scale (production snapshot)
 
-Figures from the curated Postgres database after Phase 19 cleanup (run live queries for exact counts).
+Figures from the curated Postgres database (run live queries for exact counts).
 
 | Metric | Approx. value |
 |:-------|-------------:|
@@ -43,10 +45,12 @@ Figures from the curated Postgres database after Phase 19 cleanup (run live quer
 ## 🎯 Product focus
 
 1. **Search** — postcode or geolocation, radius, borough; **core venues by default**; optional parks via `include_parks=true`.
-2. **Party-first venue cards** — hosts parties, price from, capacity, Enquire/Call when data exists.
-3. **Party shortlist** — save venues locally (no account).
+2. **Party-first venue cards** — hosts parties, price from, capacity, Enquire/Call when data exists (Phase 22 redesign: party info above info row on mobile).
+3. **Party shortlist** — save venues locally (no account, persists across tabs).
 4. **Compare** — side-by-side table (price, capacity, trust, contact).
 5. **Share** — `/shortlist?v=…` link; recipient page re-fetches venues from the API (IDs validated server-side).
+6. **PWA installable** — service worker, manifest, offline caching for search + detail pages.
+7. **FHRS trust signals** — food hygiene rating cards on venue detail pages (batch + lazy matching).
 
 ---
 
@@ -59,11 +63,13 @@ Figures from the curated Postgres database after Phase 19 cleanup (run live quer
 - **Autonomous enrichment engine** — BullMQ worker 24/7: geocoding, OSM contacts/hours, direct website crawl, Foursquare, Geoapify, Apify/Brave images, contact backfill, **party data extraction**.
 - **Party data extraction (Phase 18D)** — crawls `/parties`, `/birthday-parties`, etc.; regex + NVIDIA LLM fallback; stores `party_capable`, `party_price_from`, `party_max_capacity`, `party_enquiry_url`.
 - **LLM fallback (Phase 18B)** — NVIDIA API when cheerio+regex cannot extract contact or party fields; non-streaming JSON parsing.
-- **Verifiable trust signals** — FHRS hygiene rating, owner-verified claim, accessibility from `features`.
+- **Verifiable trust signals** — FHRS hygiene rating (0–5 with date), owner-verified claim, accessibility from `features`.
 - **Zero-budget contact pipeline** — Foursquare + direct crawl + Geoapify (Yelp removed from active enrichment).
 - **Programmatic SEO** — borough and category landing pages.
 - **Sponsor tiers** — Gold / Silver / Bronze featured listings.
 - **Claim your listing** — owner verification flow.
+- **PWA** — installable to home screen; offline fallback for search + detail pages; network-first caching for API; stale-while-revalidate for venue details.
+- **Data Max sweeps** — Google Places discovery (needs key), postcodes.io geocoding, chain expansion, concurrent orchestrator via `data-max-runner.ts`.
 
 ---
 
@@ -92,6 +98,8 @@ Figures from the curated Postgres database after Phase 19 cleanup (run live quer
 | **Geoapify** | POI matching, contacts | Free tier |
 | **Brave Search / Images** | Fallback discovery and photos | Paid |
 | **Apify (Google Places)** | Images, closure checks | Free tier |
+| **Google Places API** | Venue discovery, Street View images | Paid (key needed) |
+| **Postcodes.io** | Forward/reverse batch geocoding | Free |
 | **NVIDIA API** | LLM extraction fallback (contacts + party) | Free tier |
 | **FHRS** | Food hygiene ratings (trust signal) | Free |
 | **Council / charity open data** | Community halls, halls for hire | Free |
@@ -115,6 +123,8 @@ Layer 3:   Apify Google Places             → images, closure detection
 Layer 3.6: Foursquare                     → contacts
 Layer 3.7: Geoapify                       → POI / contacts
 Layer 3.8: Contact backfill               → phone normalize, deep email crawl
+Layer 3.9: **FHRS batch matching**        → daily 8am, 50 venues/batch, 90-day retry window
+Layer 3.10: **Postcodes.io geocoding**     → forward (postcode→lat/lon) + reverse (lat/lon→postcode)
 Layer 4:   Smart parks                    → OSM map links where needed
 ```
 
@@ -133,6 +143,7 @@ Layer 4:   Smart parks                    → OSM map links where needed
 | `enrich-foursquare` | Daily 05:00 UTC | 50 | Contacts |
 | `enrich-geoapify` | Daily 06:00 UTC | 40 | POI matching |
 | `contact-backfill` | Daily 07:00 UTC | 50 | Normalize phones, email crawl |
+| `enrich-fhrs-batch` | Daily 08:00 UTC | 50 | FHRS hygiene rating matching |
 | `dedup-sweep` | Weekly (Sunday) | — | Merge duplicates |
 | `run-discovery` | Weekly (Monday) | — | Full OSM discovery |
 
@@ -219,7 +230,7 @@ Scripts live in `backend/scripts/maintenance/` (`classify-venue-scope.sql`, `cle
      docker compose exec -T postgres psql -U kidspot_admin -d kidspot < "$f"
    done
    ```
-   Key recent migrations: `026_add_party_data.sql`, `027_add_venue_scope.sql`, `028_add_london_borough.sql`.
+   Key recent migrations: `026_add_party_data.sql`, `027_add_venue_scope.sql`, `028_add_london_borough.sql`, `038_add_fhrs_venue_rating_fields.sql`.
 
 5. **Access**
    - **Frontend**: http://localhost:3005
@@ -246,31 +257,50 @@ Scripts live in `backend/scripts/maintenance/` (`classify-venue-scope.sql`, `cle
 ```
 kidspot-london/
 ├── .github/workflows/          # CI + scheduled discovery/enrichment
-├── .planning/                  # ROADMAP, phase CONTEXT/PLAN (18B–18D, 19)
+├── .planning/                  # ROADMAP, phase CONTEXT/PLAN (18B–22)
 ├── backend/
 │   ├── src/
-│   │   ├── server.ts
-│   │   ├── worker.ts
-│   │   ├── services/venueService.ts   # Search, scope filter, card hydration
+│   │   ├── server.ts                 # CORS, rate limiting, route mounting
+│   │   ├── worker.ts                 # BullMQ: enrich-fhrs-batch job
+│   │   ├── services/venueService.ts  # Search, scope filter, card hydration
+│   │   ├── services/googlePlacesService.ts  # textSearch() + findPlace()
+│   │   ├── services/fhrsService.ts   # FHRS API matching
+│   │   ├── controllers/fhrsController.ts   # GET /api/fhrs/match/:id
+│   │   ├── routes/fhrs.ts
 │   │   └── utils/
-│   │       ├── londonBoroughs.ts    # 33 boroughs + normalizeLondonBorough()
+│   │       ├── londonBoroughs.ts     # 33 boroughs + normalizeLondonBorough()
 │   │       ├── nvidia.ts
 │   │       └── partyExtraction.ts
 │   ├── scripts/
 │   │   ├── maintenance/             # Phase 19 SQL + audit-borough-csv-feeds.ts
-│   │   └── discovery/sources/
-│   │       ├── direct-crawl-enrichment.ts
-│   │       ├── party-data-enrichment.ts
-│   │       └── enrichment.ts        # Nominatim → borough + london_borough
+│   │   ├── discovery/data-max-runner.ts      # Orchestrator: 4 sweeps concurrently
+│   │   ├── discovery/osm-discovery.ts        # Free OSM venue discovery
+│   │   ├── discovery/sources/
+│   │   │   ├── direct-crawl-enrichment.ts
+│   │   │   ├── party-data-enrichment.ts
+│   │   │   ├── enrichment.ts         # Nominatim → borough + london_borough
+│   │   │   ├── google-places-discovery.ts    # Borough-targeted discovery
+│   │   │   ├── postcodesio-geocoding.ts      # Forward + reverse batch geocoding
+│   │   │   └── fhrs-batch-match.ts           # Daily FHRS batch matching
 │   └── db/migrations/
 │       ├── 026_add_party_data.sql
 │       ├── 027_add_venue_scope.sql
-│       └── 028_add_london_borough.sql
+│       ├── 028_add_london_borough.sql
+│       └── 038_add_fhrs_venue_rating_fields.sql
 ├── frontend/
+│   ├── public/
+│   │   ├── sw.js                  # Service worker (163 lines, 4 caches)
+│   │   ├── icon-192x192.png
+│   │   └── icon-512x512.png
 │   └── src/
-│       ├── app/saved/               # Party shortlist + compare
-│       ├── app/shortlist/           # Shared shortlist (?v=)
-│       └── components/venues/       # venue-card, compare-table
+│       ├── app/manifest.ts        # Dynamic Web App Manifest
+│       ├── app/layout.tsx         # PWA wiring + SW registration
+│       ├── app/saved/             # Party shortlist + compare
+│       ├── app/shortlist/         # Shared shortlist (?v=)
+│       └── components/
+│           ├── venues/venue-card.tsx        # Mobile-first party card
+│           ├── venues/venue-detail-content.tsx  # FHRS score card
+│           └── layout/pwa-install-prompt.tsx    # Install banner
 └── docker-compose.yml
 ```
 
@@ -298,6 +328,12 @@ curl "http://localhost:4000/api/search/venues?borough=Hackney&limit=20"
 curl "http://localhost:4000/api/search/venues?borough=Hackney&include_parks=true&limit=20"
 ```
 
+### FHRS (food hygiene)
+
+| Method | Endpoint | Description |
+|:-------|:---------|:------------|
+| GET | `/api/fhrs/match/:id` | Lazy on-demand FHRS matching for a venue (returns rating/5 + date) |
+
 ### Admin (HMAC-authenticated)
 
 | Method | Endpoint | Description |
@@ -321,15 +357,18 @@ curl "http://localhost:4000/api/search/venues?borough=Hackney&include_parks=true
 - **UPSERT safety** — `COALESCE` / `NULLIF` so null enrichment never wipes good data.
 - **Shortlist links** — only venue ids/slugs in URL; pages re-fetch from API.
 - **BullMQ** — 3 retries, exponential backoff, stalled-job detection.
+- **FHRS matching** — per-venue rate limiting (600ms crawl delay), 90-day retry window for unmatched venues.
 
 ---
 
 ## 🔭 Next priorities
 
-1. **Council hall-hire contact ingest** — unlock listable community halls missing phone/website.
-2. **Discovery guardrails** — stop refilling OSM noise into the active catalogue.
-3. **Frontend `include_parks` toggle** — wire to API (no client-side hiding of bad data).
-4. **Continue party verification crawl** on `venue_scope=core` until `party_capable` coverage is meaningful.
+1. **Obtain Google Places API key** — enables Street View images, venue discovery sweep, and chain expansion via Places Text Search.
+2. **Council hall-hire contact ingest** — unlock listable community halls missing phone/website.
+3. **Discovery guardrails** — stop refilling OSM noise into the active catalogue.
+4. **Frontend `include_parks` toggle** — wire to API (no client-side hiding of bad data).
+5. **Continue party verification crawl** on `venue_scope=core` until `party_capable` coverage is meaningful.
+6. **SSL/HTTPS** — when domain is registered, configure reverse proxy with TLS.
 
 ---
 
@@ -346,6 +385,7 @@ curl "http://localhost:4000/api/search/venues?borough=Hackney&include_parks=true
 | `FOURSQUARE_API_KEY` | ✅ | Foursquare Places |
 | `GEOAPIFY_API_KEY` | ✅ | Geoapify Places |
 | `NEXT_PUBLIC_API_URL` | ✅ | Frontend → API base URL |
+| `GOOGLE_PLACES_API_KEY` | Optional | Google Places Text Search + Street View |
 | `APIFY_TOKEN` | Optional | Google Places via Apify |
 | `APIFY_WEBHOOK_SECRET` | Optional | Apify webhook verification |
 | `NVIDIA_API_KEY` | Optional | LLM fallback (18B contacts, 18D party) |
