@@ -54,7 +54,7 @@ export async function runDataMaxSweeps(dryRun: boolean = false): Promise<DataMax
     const { Queue } = await import('bullmq');
     const { redis: redisClient } = await import('../../src/clients/redis.js');
 
-    const discoveryQueue = new Queue('kidspot-discovery', { connection: redisClient });
+    const discoveryQueue = new Queue('discovery', { connection: redisClient });
 
     const jobs = [];
 

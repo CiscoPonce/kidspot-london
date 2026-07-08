@@ -93,9 +93,9 @@ export async function discoverChains(isDryRun: boolean = false) {
         } else {
           // Real Apify Search (Synchronous for this specialized discovery script)
           logger.info(`Triggering live Apify search for ${chain.name}...`);
-          const response = await fetch(`https://api.apify.com/v2/acts/${ACTOR_ID}/runs?token=${APIFY_TOKEN}`, {
+          const response = await fetch(`https://api.apify.com/v2/acts/${ACTOR_ID}/runs`, {
             method: 'POST',
-            headers: { ...browserHeaders(), 'Content-Type': 'application/json' },
+            headers: { ...browserHeaders(), 'Content-Type': 'application/json', 'Authorization': `Bearer ${APIFY_TOKEN}` },
             body: JSON.stringify({
               searchStringsArray: [searchString],
               maxCrawledPlacesPerSearch: 10,
@@ -116,8 +116,8 @@ export async function discoverChains(isDryRun: boolean = false) {
           logger.info(`Waiting for results (Run ID: ${runId})...`);
           let finished = false;
           while (!finished) {
-            const statusRes = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`, {
-              headers: browserHeaders(),
+            const statusRes = await fetch(`https://api.apify.com/v2/actor-runs/${runId}`, {
+              headers: { ...browserHeaders(), 'Authorization': `Bearer ${APIFY_TOKEN}` },
             });
             const statusData = await statusRes.json() as any;
             if (statusData.data.status === 'SUCCEEDED') {
@@ -130,9 +130,9 @@ export async function discoverChains(isDryRun: boolean = false) {
           }
 
           const datasetRes = await fetch(
-            `https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${APIFY_TOKEN}`,
+            `https://api.apify.com/v2/actor-runs/${runId}/dataset/items`,
             {
-              headers: browserHeaders(),
+              headers: { ...browserHeaders(), 'Authorization': `Bearer ${APIFY_TOKEN}` },
             },
           );
           results = await datasetRes.json() as any[];
