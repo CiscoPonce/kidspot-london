@@ -299,13 +299,13 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - **22-T1..T2**: Food Hygiene Rating Scheme (FHRS) score rendering and data provenance indicators.
 - **22-I1..I3**: SSL proxy integration, API cors hardening, fail2ban setup.
 
-**Plans:** 4 plans
+**Plans:** 4/4 plans complete
 
 **Plan list:**
-- [ ] 22-01-PLAN.md — Data Max: Google Places discovery, postcodes.io geocoding, chain expansion, orchestrator
-- [ ] 22-02-PLAN.md — PWA: Service worker, manifest, icons, install prompt, next.config.js headers
-- [ ] 22-03-PLAN.md — FHRS Integration: DB migration, batch matching, BullMQ job, API endpoint, detail page display
-- [ ] 22-04-PLAN.md — Frontend Polish: Mobile-first party card redesign, verify shortlist/compare/share/trust/infra
+- [x] 22-01-PLAN.md — Data Max: Google Places discovery, postcodes.io geocoding, chain expansion, orchestrator
+- [x] 22-02-PLAN.md — PWA: Service worker, manifest, icons, install prompt, next.config.js headers
+- [x] 22-03-PLAN.md — FHRS Integration: DB migration, batch matching, BullMQ job, API endpoint, detail page display
+- [x] 22-04-PLAN.md — Frontend Polish: Mobile-first party card redesign, verify shortlist/compare/share/trust/infra
 
 ---
 
