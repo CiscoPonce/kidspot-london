@@ -9,6 +9,19 @@ interface GooglePlaceMatch {
   businessStatus?: string;
 }
 
+interface GooglePlaceTextSearchResult {
+  placeId: string;
+  name: string;
+  website?: string;
+  phone?: string;
+  address?: string;
+  lat?: number;
+  lon?: number;
+  photos?: string[];
+  businessStatus?: string;
+  types?: string[];
+}
+
 class GooglePlacesService {
   private readonly baseUrl = 'https://places.googleapis.com/v1/places';
   
@@ -76,6 +89,71 @@ class GooglePlacesService {
     } catch (err) {
       logger.error({ err }, 'Error in Google Places Service');
       return null;
+    }
+  }
+
+  /**
+   * Text Search for places by query string, returning multiple results.
+   */
+  async textSearch(
+    query: string,
+    opts?: { type?: string; locationBias?: { lat: number; lon: number }; radius?: number; maxResults?: number }
+  ): Promise<GooglePlaceTextSearchResult[]> {
+    if (!env.GOOGLE_PLACES_API_KEY) return [];
+
+    try {
+      const maxResults = opts?.maxResults || 10;
+      const body: Record<string, unknown> = { textQuery: query };
+
+      if (opts?.locationBias) {
+        body.locationBias = {
+          circle: {
+            center: { latitude: opts.locationBias.lat, longitude: opts.locationBias.lon },
+            radius: (opts.radius || 50000.0)
+          }
+        };
+      }
+
+      const response = await fetch(`${this.baseUrl}:searchText`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': env.GOOGLE_PLACES_API_KEY,
+          'X-Goog-FieldMask': 'places.id,places.displayName,places.websiteUri,places.nationalPhoneNumber,places.formattedAddress,places.location,places.photos,places.businessStatus,places.types'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          logger.warn('Google Places Text Search rate limit exceeded');
+          throw new Error('RateLimitError: 429 Too Many Requests');
+        }
+        logger.error(`Google Places Text Search failed with status ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json() as { places?: any[] };
+
+      if (!data.places || data.places.length === 0) return [];
+
+      return data.places.slice(0, maxResults).map((place: any) => ({
+        placeId: place.id,
+        name: place.displayName?.text || '',
+        website: place.websiteUri,
+        phone: place.nationalPhoneNumber,
+        address: place.formattedAddress,
+        lat: place.location?.latitude,
+        lon: place.location?.longitude,
+        photos: place.photos
+          ? place.photos.map((p: any) => p.name).slice(0, 5)
+          : [],
+        businessStatus: place.businessStatus,
+        types: place.types || []
+      }));
+    } catch (err) {
+      logger.error({ err, query }, 'Error in Google Places Text Search');
+      throw err;
     }
   }
 }
