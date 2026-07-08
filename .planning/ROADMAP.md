@@ -289,6 +289,27 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ---
 
+## Phase 22: Parent-Facing Launch & Production Readiness (Planned)
+**Status**: **PLANNED** (depends on Phase 21)
+**Goal**: Package the platform for public adoption in London by completing key data sweeps, introducing custom sharing & comparison tools, integrating trust symbols, and completing SSL/API security hardening.
+
+**Requirements**:
+- **22-D1..D4**: Google Places discovery, chain expansion fallback, postcode.io geocoder, image enrichment.
+- **22-F1..F5**: Listing card redo, persistent shortlists, side-by-side compare dashboard, base64 shortlist sharing, and installable PWA.
+- **22-T1..T2**: Food Hygiene Rating Scheme (FHRS) score rendering and data provenance indicators.
+- **22-I1..I3**: SSL proxy integration, API cors hardening, fail2ban setup.
+
+**Plans:** 4 plans
+
+**Plan list:**
+- [ ] 22-01-PLAN.md — Data Max: Google Places discovery, postcodes.io geocoding, chain expansion, orchestrator
+- [ ] 22-02-PLAN.md — PWA: Service worker, manifest, icons, install prompt, next.config.js headers
+- [ ] 22-03-PLAN.md — FHRS Integration: DB migration, batch matching, BullMQ job, API endpoint, detail page display
+- [ ] 22-04-PLAN.md — Frontend Polish: Mobile-first party card redesign, verify shortlist/compare/share/trust/infra
+
+---
+
 ## Last Updated
-June 3, 2026
+July 8, 2026
+
 
