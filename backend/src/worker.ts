@@ -110,6 +110,12 @@ async function setupRepeatingJobs() {
       ...jobOpts,
     });
 
+    await discoveryQueue.add('enrich-fhrs-batch', { batchSize: 50 }, {
+      repeat: { pattern: '0 8 * * *' },  // Daily at 8am
+      jobId: 'repeat:enrich-fhrs-batch',
+      ...jobOpts,
+    });
+
     await enrichmentQueue.add('contact-backfill', { batchSize: 50 }, {
       repeat: { pattern: '0 7 * * *' },
       jobId: 'repeat:contact-backfill',
@@ -273,6 +279,15 @@ case 'enrich-streetview': {
   const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
   const result = await enrichViaStreetView(batchSize);
           logger.info({ result }, 'Street View enrichment complete');
+          return { status: 'completed', ...result };
+        }
+
+case 'enrich-fhrs-batch': {
+  await crawlDelay(600);
+  const { batchMatchFhrs } = await import('../scripts/discovery/sources/fhrs-batch-match.js');
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
+  const result = await batchMatchFhrs(batchSize);
+          logger.info({ result }, 'FHRS batch matching complete');
           return { status: 'completed', ...result };
         }
 
