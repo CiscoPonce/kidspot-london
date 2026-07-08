@@ -367,7 +367,7 @@ export function VenueDetailContent({
             </div>
 
             {/* Food Hygiene Rating */}
-            {(venue as Venue).fhrs_establishment_id && (venue as Venue).fhrs_rating_value !== undefined && (
+            {(venue as Venue).fhrs_establishment_id && (venue as Venue).fhrs_rating_value != null && (
               <div className="flex items-center gap-3 p-4 bg-surface rounded-[16px] border border-outline-variant">
                 <span className="material-symbols-outlined text-outline">verified_user</span>
                 <div>

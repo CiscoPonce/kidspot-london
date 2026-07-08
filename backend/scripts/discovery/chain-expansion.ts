@@ -152,8 +152,8 @@ export async function discoverChains(isDryRun: boolean = false) {
         try {
           const name = item.title;
           const sourceId = item.placeId;
-          const lat = item.location?.lat;
-          const lon = item.location?.lng;
+          const lat = item.location?.lat ?? null;
+          const lon = item.location?.lng ?? null;
           const slug = `${slugify(name)}-google-${sourceId}`;
 
           // Use the insert function logic
