@@ -1,5 +1,6 @@
 import { db } from '../../src/clients/db.js';
 import { logger } from '../../src/config/logger.js';
+import { googlePlacesService } from '../../src/services/googlePlacesService.js';
 import { browserHeaders } from '../../src/utils/httpHeaders.js';
 import * as dotenv from 'dotenv';
 import path from 'path';
@@ -50,66 +51,92 @@ export async function discoverChains(isDryRun: boolean = false) {
       const searchString = `${chain.name} London UK`;
       let results: any[] = [];
 
-      if (!APIFY_TOKEN || APIFY_TOKEN.includes('dummy') || isDryRun) {
-        logger.info(`Dummy/Dry-Run Mode: Simulating results for ${chain.name}`);
-        // Simulate finding 1-2 locations per chain if they don't exist
-        results = [
-          {
-            title: `${chain.name} Test Location`,
-            location: { lat: 51.5074 + (Math.random() - 0.5) * 0.1, lng: -0.1278 + (Math.random() - 0.5) * 0.1 },
-            placeId: `dummy_${slugify(chain.name)}_${Math.floor(Math.random() * 1000)}`,
-            website: `https://www.${slugify(chain.name)}.co.uk`,
-            phone: '+44 20 0000 0000',
-            totalScore: 4.5,
-            reviewsCount: 100
-          }
-        ];
-      } else {
-  // Real Apify Search (Synchronous for this specialized discovery script)
-  logger.info(`Triggering live Apify search for ${chain.name}...`);
-  const response = await fetch(`https://api.apify.com/v2/acts/${ACTOR_ID}/runs?token=${APIFY_TOKEN}`, {
-    method: 'POST',
-    headers: { ...browserHeaders(), 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      searchStringsArray: [searchString],
-      maxCrawledPlacesPerSearch: 10,
-      language: 'en',
-      countryCode: 'gb',
-    }),
-  });
+      // Primary: Google Places Text Search
+      try {
+        const googleResults = await googlePlacesService.textSearch(searchString, {
+          maxResults: 10,
+          locationBias: { lat: 51.5074, lon: -0.1278 },
+          radius: 50000 // 50km across London
+        });
 
-        if (!response.ok) {
-          logger.error(`Apify search failed for ${chain.name}: ${response.statusText}`);
-          continue;
+        if (googleResults.length > 0) {
+          results = googleResults.map((r) => ({
+            title: r.name,
+            placeId: r.placeId,
+            location: { lat: r.lat, lng: r.lon },
+            website: r.website,
+            phone: r.phone,
+            totalScore: null,
+            reviewsCount: null
+          }));
+          logger.info({ chain: chain.name, count: results.length }, 'Google Places results obtained');
         }
+      } catch (err) {
+        logger.warn({ err, chain: chain.name }, 'Google Places search failed, falling back to Apify/dummy');
+      }
 
-        const runData = await response.json() as any;
-        const runId = runData.data.id;
-        
-        // Poll for results (since this is a one-off discovery script)
-        logger.info(`Waiting for results (Run ID: ${runId})...`);
-        let finished = false;
-while (!finished) {
-  const statusRes = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`, {
-    headers: browserHeaders(),
-  });
-          const statusData = await statusRes.json() as any;
-          if (statusData.data.status === 'SUCCEEDED') {
-            finished = true;
-          } else if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(statusData.data.status)) {
-            throw new Error(`Apify run ${runId} failed with status: ${statusData.data.status}`);
-          } else {
-            await new Promise(resolve => setTimeout(resolve, 5000));
+      // Fallback: Apify or dummy mode when Google Places returned no results
+      if (results.length === 0) {
+        if (!APIFY_TOKEN || APIFY_TOKEN.includes('dummy') || isDryRun) {
+          logger.info(`Dummy/Dry-Run Mode: Simulating results for ${chain.name}`);
+          results = [
+            {
+              title: `${chain.name} Test Location`,
+              location: { lat: 51.5074 + (Math.random() - 0.5) * 0.1, lng: -0.1278 + (Math.random() - 0.5) * 0.1 },
+              placeId: `dummy_${slugify(chain.name)}_${Math.floor(Math.random() * 1000)}`,
+              website: `https://www.${slugify(chain.name)}.co.uk`,
+              phone: '+44 20 0000 0000',
+              totalScore: 4.5,
+              reviewsCount: 100
+            }
+          ];
+        } else {
+          // Real Apify Search (Synchronous for this specialized discovery script)
+          logger.info(`Triggering live Apify search for ${chain.name}...`);
+          const response = await fetch(`https://api.apify.com/v2/acts/${ACTOR_ID}/runs?token=${APIFY_TOKEN}`, {
+            method: 'POST',
+            headers: { ...browserHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              searchStringsArray: [searchString],
+              maxCrawledPlacesPerSearch: 10,
+              language: 'en',
+              countryCode: 'gb',
+            }),
+          });
+
+          if (!response.ok) {
+            logger.error(`Apify search failed for ${chain.name}: ${response.statusText}`);
+            continue;
           }
-        }
 
-        const datasetRes = await fetch(
-  `https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${APIFY_TOKEN}`,
-  {
-    headers: browserHeaders(),
-  },
-);
-        results = await datasetRes.json() as any[];
+          const runData = await response.json() as any;
+          const runId = runData.data.id;
+          
+          // Poll for results (since this is a one-off discovery script)
+          logger.info(`Waiting for results (Run ID: ${runId})...`);
+          let finished = false;
+          while (!finished) {
+            const statusRes = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${APIFY_TOKEN}`, {
+              headers: browserHeaders(),
+            });
+            const statusData = await statusRes.json() as any;
+            if (statusData.data.status === 'SUCCEEDED') {
+              finished = true;
+            } else if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(statusData.data.status)) {
+              throw new Error(`Apify run ${runId} failed with status: ${statusData.data.status}`);
+            } else {
+              await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+          }
+
+          const datasetRes = await fetch(
+            `https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${APIFY_TOKEN}`,
+            {
+              headers: browserHeaders(),
+            },
+          );
+          results = await datasetRes.json() as any[];
+        }
       }
 
       logger.info(`Found ${results.length} potential locations for ${chain.name}`);
