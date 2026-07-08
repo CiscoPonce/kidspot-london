@@ -2,66 +2,61 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-06-05T22:00:00.000Z"
+status: executing
+last_updated: "2026-07-08T11:03:10.797Z"
 progress:
-  total_phases: 22
-  completed_phases: 12
-  total_plans: 56
-  completed_plans: 52
-  percent: 54
+  total_phases: 26
+  completed_phases: 10
+  total_plans: 58
+  completed_plans: 51
+  percent: 38
 ---
 
 # KidSpot London - Project State
 
 ## Current Position
 
-Phase: 18B (Contact Extraction Yield Optimization) — EXECUTING
-Plan: 1 of 1
-**Phase**: 17 - High-Velocity Enrichment
-**Wave**: Complete
-**Status**: 
+**Phase**: 21 — Party Catalogue Maximisation (**ACTIVE**)
+**Plan:** `.planning/phases/21-party-catalogue-maximisation/21-PLAN.md`
+**Quick ref:** `NEXT_ACTIONS.md`
 
-- **Phase 12 Complete**: Party Portal Reliability live.
-- **Phase 17 Complete**: High-velocity enrichment via Apify live.
-- **Rich Data live**: Opening hours and images integrated into UI and API.
-- **Asynchronous Webhooks live**: Background ingestion from Apify active.
+- **June 11 Recovery**: Database rebuilt after Phase 20 volume incident
+- **Core catalogue**: ~2,118 active party venues (scope-filtered search live)
+- **Priority**: Google Places → contacts → party extraction → discovery sweep
+- **Data gaps**: ~19% core websites, ~0% phones/images, ~3 party_capable
 
-**Last Updated**: June 5, 2026
+**Last Updated**: June 11, 2026
 
 ## Completed Phases
 
-- 01 - Data Foundation
-- 02 - Continuous Discovery
-- 03 - Agentic Search API
-- 04 - Frontend Core
-- 05 - SEO & Detail Pages
-- 06 - Polish & Launch
-- 07 - Improvement
-- 07.5 - Cleanup Sprint
-- 08.0 - Framework Modernization & Polish
-- 08.5 - UX & Data Quality Verification
-- 09.0 - Sponsorship & Revenue
-- 10.0 - Sponsor Features & Engagement
-- 11.0 - Search Experience V2
-- 12.0 - Party Portal Reliability
-- 13.0 - UI/UX Modernization
-- 14.0 - Data Enrichment
-- 15.0 - Data Quality Enrichment
-- 16.0 - Accelerated Enrichment & Partnership
-- 17.0 - High-Velocity Enrichment
-- 18.0 - Autonomous Enrichment Engine & Code Quality
-- 18.5 - Chain Enrichment & Categorization Polish
-- 18.0-18.5 Data Validation (closure detection, Brave images, phone normalisation, contact-backfill worker, enriched_at timestamp)
-- 18E - Deduplication & Search Ranking Hotfix
+- 01–17 (Data Foundation through High-Velocity Enrichment)
+- 18.0–18.5 Data Validation & Chain Enrichment
+- 18E — Deduplication & Search Ranking Hotfix
+- 20 (partial) — Security hardening, backups, Google Places/Street View jobs, PostGIS cluster, mobile UX
 
-## Active Phase: 18B - Contact Extraction Yield Optimization
+## Active Work: Phase 21 — Party Catalogue Maximisation
 
-### Objective
+### Objectives
 
-Increase contact extraction yield of the direct-crawl pipeline by ~30% via browser-grade HTTP headers, OpenRouter LLM fallback extraction, and a BullMQ queue rate limiter.
+1. **Wave A:** Google Places full pass → direct crawl → party extraction → borough CSVs
+2. **Wave B:** Google discovery sweep + chain expansion (no Apify) + postcodes.io geocoding
+3. Re-classify and dedup after each bulk batch; hit success criteria in 21-CONTEXT.md
+4. Phase 20 infra (HTTPS/domain) deferred until catalogue depth improves
 
-## Completed Phases Detail
+### Database Stats (June 11, 2026 — post-rebuild)
+
+- ~16,400 total venues ingested; ~2,130 active **core** (party catalogue)
+- ~8,400 secondary (parks, excluded from default search)
+- ~3,500 excluded/deactivated by cleanup-moderate.sql
+- Contact/image/party coverage growing via enrichment pipeline
+
+## Recovery Notes (do not repeat)
+
+- Phase 20 `docker system prune --volumes` + volume mount change wiped production DB (Jun 9)
+- Always verify backup dump size (expect ~1MB+) before infra changes
+- Use `scripts/rebuild-catalog.sh` and `scripts/run-enrichment-pipeline.sh` for full rebuilds
+
+## Environment Variables Required
 
 ### Phase 18 Data Validation (Completed)
 
@@ -133,11 +128,14 @@ Increase contact extraction yield of the direct-crawl pipeline by ~30% via brows
 
 ## Next Steps
 
-1. **Phase 18B yield optimisation (current focus):**
-- Deploy browser-grade headers to all venue crawls
-- Wire OpenRouter LLM fallback into `direct-crawl-enrichment.ts`
-- Add BullMQ queue rate limiter
-- Verify coverage lift via before/after SQL queries
-2. Monitor Phase 18.5 and 18B pipeline runs for 2 weeks; confirm email/phone coverage rises from 8%/22% toward 11%/28%+
-3. Re-run `coverage-eval.ts` and report yield delta to team.
-4. Proceed to Phase 19 (Revenue Monetization V2) once contact coverage meets targets.
+1. **Phase 21 Wave A & B (Current Focus)**:
+   - Run manual batches for Google Places enrichment and direct website crawls.
+   - Run the party extraction script over all core venues with websites.
+   - Implement the Google Places discovery sweep script and chain expansion fallback.
+   - Perform postcode reverse geocoding via postcodes.io.
+2. **Phase 22 Launch and Production Readiness**:
+   - Redesign frontend listing cards for mobile, highlighting party capacity/pricing.
+   - Create local shortlist persistence and comparison dashboard.
+   - Integrate base64 URL sharing for shortlists.
+   - Display Food Hygiene Rating Scheme (FHRS) scores.
+   - Set up reverse proxy SSL, CORS lockouts, and Express rate limiting.
