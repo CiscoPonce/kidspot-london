@@ -194,7 +194,6 @@ export function VenueCard({
       <div className="relative shrink-0 overflow-hidden bg-surface-variant sm:w-[40%] sm:min-w-[180px]">
         <div className="aspect-[16/10] sm:aspect-auto sm:h-full sm:min-h-[180px]">
           {imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={imageUrl}
               alt={venue.name}
@@ -262,6 +261,53 @@ export function VenueCard({
             {venue.name}
           </h3>
 
+          {/* Party data + quick action — price, capacity, Enquire/Call */}
+          {(partyPrice || capacity) && (partyCapable || isFreePark) ? (
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                {partyPrice ? (
+                  <p className="text-sm leading-tight">
+                    <span className="text-xs uppercase tracking-wide text-outline">from </span>
+                    <span className="font-bold text-on-background text-base">{partyPrice.from}</span>
+                    {partyPrice.unit ? <span className="text-xs text-outline"> {partyPrice.unit}</span> : null}
+                  </p>
+                ) : isFreePark ? (
+                  <p className="text-sm leading-tight">
+                    <span className="font-bold text-tertiary text-base">Free</span>
+                    <span className="text-xs text-outline"> · outdoor party</span>
+                  </p>
+                ) : null}
+                {capacity ? (
+                  <span className="inline-flex items-center gap-1 text-sm text-on-surface-variant">
+                    <Users size={14} strokeWidth={2.5} />
+                    Up to {capacity}
+                  </span>
+                ) : null}
+              </div>
+              {partyCapable && enquiryUrl ? (
+                <a
+                  href={enquiryUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => handleEnquiry(e, 'enquiry')}
+                  className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-2.5 text-sm font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
+                  aria-label={`Enquire about a party at ${venue.name}`}
+                >
+                  Enquire
+                </a>
+              ) : partyCapable && venue.phone ? (
+                <a
+                  href={`tel:${venue.phone}`}
+                  onClick={(e) => handleEnquiry(e, 'call')}
+                  className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-2.5 text-sm font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
+                  aria-label={`Call ${venue.name} about a party`}
+                >
+                  Call
+                </a>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-on-surface-variant">
             {venue.rating ? (
               <span className="inline-flex items-center gap-1 font-semibold text-on-background">
@@ -269,12 +315,7 @@ export function VenueCard({
                 {Number(venue.rating).toFixed(1)}
               </span>
             ) : null}
-            {capacity ? (
-              <span className="inline-flex items-center gap-1">
-                <Users size={13} strokeWidth={2.5} />
-                Up to {capacity}
-              </span>
-            ) : null}
+
             {openState !== 'unknown' && (
               <span
                 className={`inline-flex items-center gap-1 font-semibold ${
@@ -294,26 +335,14 @@ export function VenueCard({
           </div>
         </div>
 
-        <div className="mt-4 flex items-end justify-between gap-3">
+        <div className="mt-3 flex items-end justify-between gap-3">
           <div className="min-w-0">
-            {partyPrice ? (
-              <p className="text-sm leading-tight text-on-surface-variant">
-                <span className="text-xs uppercase tracking-wide text-outline">from </span>
-                <span className="font-bold text-on-background">{partyPrice.from}</span>
-                {partyPrice.unit ? <span className="text-xs text-outline"> {partyPrice.unit}</span> : null}
-              </p>
-            ) : isFreePark ? (
-              <p className="text-sm leading-tight">
-                <span className="font-bold text-tertiary">Free</span>
-                <span className="text-xs text-outline"> · outdoor party spot</span>
-              </p>
-            ) : (
+            {!partyCapable && !isFreePark ? (
               <p className="text-xs text-outline">Tap for details</p>
-            )}
+            ) : null}
           </div>
-
           <div className="flex shrink-0 items-center gap-2">
-            {partyCapable && enquiryUrl ? (
+            {!partyCapable && enquiryUrl ? (
               <a
                 href={enquiryUrl}
                 target="_blank"
@@ -324,18 +353,7 @@ export function VenueCard({
               >
                 Enquire
               </a>
-            ) : partyCapable && venue.phone ? (
-              <a
-                href={`tel:${venue.phone}`}
-                onClick={(e) => handleEnquiry(e, 'call')}
-                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-3 text-sm min-h-[44px] font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
-                aria-label={`Call ${venue.name} about a party`}
-              >
-                <span className="material-symbols-outlined text-[16px]">call</span>
-                Call
-              </a>
             ) : null}
-
             <Link
               href={`/venue/${venue.slug}`}
               onClick={(e) => {
