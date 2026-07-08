@@ -116,6 +116,17 @@ Data Max enrichment scripts are ready for execution. Next steps:
 - Or run individual sweeps: `npx tsx scripts/discovery/sources/google-places-discovery.ts`
 - Proceed to Plan 02 (FHRS batch matching integration)
 
+## Self-Check: PASSED
+
+- ✅ `backend/src/services/googlePlacesService.ts` — `textSearch()` method added
+- ✅ `backend/scripts/discovery/sources/google-places-discovery.ts` — created
+- ✅ `backend/scripts/discovery/sources/postcodesio-geocoding.ts` — created
+- ✅ `backend/scripts/discovery/chain-expansion.ts` — Google Places primary, Apify fallback
+- ✅ `backend/scripts/discovery/data-max-runner.ts` — orchestrator created
+- ✅ All 4 commits present: `b162bb1`, `cd615e2`, `c5c2ccd`, `e692530`
+- ✅ TypeScript compiles: `npx tsc --noEmit` passes with no errors
+- ✅ Scripts load without import errors (DB-dependent timeouts expected in dev environment)
+
 ---
 
 *Phase: 22-launch-readiness*
