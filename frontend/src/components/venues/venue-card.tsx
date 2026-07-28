@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   Trees,
@@ -134,6 +135,7 @@ export function VenueCard({
   const plausible = usePlausible();
   const { has, toggle } = useShortlist();
 
+  const [imgFailed, setImgFailed] = useState(false);
   const isSaved = has(venue.id);
   const imageUrl = firstImage(venue);
   const trust = trustSignals(venue);
@@ -193,15 +195,16 @@ export function VenueCard({
       {/* Image / category placeholder */}
       <div className="relative shrink-0 overflow-hidden bg-surface-variant sm:w-[40%] sm:min-w-[180px]">
         <div className="aspect-[16/10] sm:aspect-auto sm:h-full sm:min-h-[180px]">
-          {imageUrl ? (
+          {!imgFailed && imageUrl ? (
             <img
               src={imageUrl}
               alt={venue.name}
               loading="lazy"
+              onError={() => setImgFailed(true)}
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center">
+            <div className="flex h-full w-full items-center justify-center bg-surface-variant">
               <Icon size={56} strokeWidth={1.5} className="text-on-surface-variant/40" />
             </div>
           )}
