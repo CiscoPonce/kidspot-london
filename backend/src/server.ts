@@ -15,6 +15,7 @@ import claimRoutes from './routes/claim.js';
 import billingRoutes from './routes/billing.js';
 import ownerRoutes from './routes/owner.js';
 import fhrsRoutes from './routes/fhrs.js';
+import metricsRoutes from './routes/metrics.js';
 
 // Create Express app
 const app = express();
@@ -95,6 +96,10 @@ app.get('/ready', async (req: Request, res: Response) => {
     });
   }
 });
+
+// Prometheus telemetry metrics
+app.use('/metrics', metricsRoutes);
+
 
 // API routes
 app.use('/api/sponsors', sponsorRoutes);
