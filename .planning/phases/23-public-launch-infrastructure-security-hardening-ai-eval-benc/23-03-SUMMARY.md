@@ -1,9 +1,9 @@
-# Plan 23-03: AI Evaluation Benchmark & LLM Tracing — Summary
+# Plan 23-03 Summary
 
-## Overview
-Expanded the AI evaluation benchmark suite to 50 ground-truth test cases, integrated `"eval:party"` script in `package.json`, and enhanced logging for LLM token usage and fallback traces.
+## Objectives Achieved
+1. **Expand Ground-Truth Dataset**: `party_extraction_evals.jsonl` was successfully expanded to 50 test cases, encompassing a diverse set of venue types including soft plays, leisure centers, community halls, museums, parks, and non-party sites.
+2. **Evaluation Script Execution**: Added `eval:party` to the `package.json` scripts, mapping to `tsx scripts/eval-party-extraction.ts`.
+3. **Pino Structured Logging for LLM Tracing**: Integrated Pino logger into `partyExtraction.ts`. Configured `logger.debug`, `logger.info`, and `logger.warn` statements to trace regex findings, trigger of LLM fallback, estimated prompt/completion token usage, and schema validation results.
 
-## Changes Completed
-- **Dataset Expansion**: Expanded `backend/evals/party_extraction_evals.jsonl` to 50 ground-truth test cases covering soft plays, community halls, leisure centers, museums, libraries, parks, cafes, and gym facilities.
-- **NPM Script**: Added `"eval:party": "tsx scripts/eval-party-extraction.ts"` to `backend/package.json`.
-- **Benchmark Execution**: Verified 82.5% overall benchmark accuracy across capability (88%), price (84%), capacity (82%), and enquiry links (76%).
+## Next Steps
+Proceed to the next phase of the deployment plan.
