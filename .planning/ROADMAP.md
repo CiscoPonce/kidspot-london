@@ -375,13 +375,14 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - **23-UX-01**: **Image Fallbacks & API Integration Tests** — Implement client-side retry logic for broken remote images and write Vitest integration test suites for spatial search endpoints.
 
 **Depends on:** Phase 22  
-**Plans:** 0/4 plans created
+**Plans:** 0/4 plans completed (4 plans created)
 
 **Planned Breakdown:**
 - [ ] 23-01-PLAN.md — **Infrastructure & SSL**: Caddy/Nginx reverse proxy, Let's Encrypt HTTPS, domain mapping, production CORS lockdown
 - [ ] 23-02-PLAN.md — **Backup Replication & Disaster Recovery**: Offsite S3/R2 backup script, automated sync cron, environment key hardening
 - [ ] 23-03-PLAN.md — **AI Evaluation Framework & Tracing**: `evals.jsonl` dataset, Promptfoo benchmark harness, Langfuse tracing integration
 - [ ] 23-04-PLAN.md — **SEO, Analytics & Frontend Polish**: `sitemap.xml`, `robots.txt`, Plausible analytics, client image fallback retry logic
+
 
 ---
 
