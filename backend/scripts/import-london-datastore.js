@@ -1,12 +1,20 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const { Pool } = require('pg');
-const csv = require('csv-parser');
-const axios = require('axios');
-const { generateSlug } = require('../src/utils/slug');
-require('dotenv').config();
+import fs from 'fs';
+import path from 'path';
+import pg from 'pg';
+const { Pool } = pg;
+import csv from 'csv-parser';
+import axios from 'axios';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { generateSlug } = require('../src/utils/slug.js');
+import dotenv from 'dotenv';
+dotenv.config();
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuration
 const DATA_DIR = path.join(__dirname, '../data');
@@ -97,7 +105,7 @@ async function insertVenue(venue) {
       `INSERT INTO venues (
         source, source_id, name, type, lat, lon, borough, slug, last_scraped
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-      ON CONFLICT (source_id) DO NOTHING
+      ON CONFLICT (source, source_id) DO NOTHING
       RETURNING id`,
       [
         venue.source,
@@ -326,7 +334,9 @@ async function importAllData() {
 }
 
 // Run the import
-if (require.main === module) {
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMainModule) {
   importAllData()
     .then(() => process.exit(0))
     .catch(error => {
@@ -335,4 +345,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { importAllData, importVenues, geocodePostcode, mapVenueType };
+export { importAllData, importVenues, geocodePostcode, mapVenueType };

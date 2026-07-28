@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { fetchOverpassWithRetry } from './overpass-utils.js';
 
 export interface ChurchHall {
   id: string;
@@ -22,20 +22,12 @@ export async function fetchChurchHalls(): Promise<ChurchHall[]> {
       node["building"="church_hall"](area.searchArea);
       way["building"="church_hall"](area.searchArea);
     );
-    out center body limit 100;
+    out center 100;
   `;
 
   try {
-    const response = await axios.post(
-      'https://overpass-api.de/api/interpreter',
-      `data=${encodeURIComponent(query)}`,
-      {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        timeout: 30000,
-      }
-    );
-
-    const elements = response.data?.elements || [];
+    const data = await fetchOverpassWithRetry(query);
+    const elements = data?.elements || [];
     const venues: ChurchHall[] = [];
 
     for (const el of elements) {

@@ -296,16 +296,40 @@ export function VenueMap({ venues, onVenueSelect }: VenueMapProps) {
     };
   }, [mapLoaded, venues, onVenueSelect]);
 
-  // Fly to search location when it changes
+  // Fly to search location or fit bounds to venues
   useEffect(() => {
-    if (!mapRef.current || !mapLoaded || lat === null || lon === null) return;
+    if (!mapRef.current || !mapLoaded) return;
 
-    mapRef.current.flyTo({
-      center: [lon, lat],
-      zoom: DEFAULT_ZOOM,
-      duration: 1000,
-    });
-  }, [lat, lon, mapLoaded]);
+    if (venues.length > 0) {
+      const bounds = new maplibregl.LngLatBounds();
+      
+      // Optionally include search center
+      if (lat !== null && lon !== null) {
+        bounds.extend([lon, lat]);
+      }
+
+      venues.forEach((venue) => {
+        if (venue.lat !== null && venue.lon !== null) {
+          bounds.extend([venue.lon, venue.lat]);
+        }
+      });
+
+      if (!bounds.isEmpty()) {
+        mapRef.current.fitBounds(bounds, {
+          padding: { top: 50, bottom: 50, left: 50, right: 50 },
+          maxZoom: 15,
+          duration: 1000,
+        });
+      }
+    } else if (lat !== null && lon !== null) {
+      // Fallback if no venues but we have a search location
+      mapRef.current.flyTo({
+        center: [lon, lat],
+        zoom: DEFAULT_ZOOM,
+        duration: 1000,
+      });
+    }
+  }, [lat, lon, mapLoaded, venues]);
 
   if (mapUnavailable) {
     return (

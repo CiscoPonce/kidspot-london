@@ -48,7 +48,7 @@ jobs:
 
           RESPONSE=$(curl -sS \
             --retry 3 --retry-all-errors --retry-delay 15 \
-            --connect-timeout 10 --max-time 300 \
+            --connect-timeout 10 --max-time 900 \
             -o /tmp/response.json -w "%{http_code}" \
             -X POST "${API_URL%/}/api/admin/ingest/enrichment" \
             -H "x-ingest-timestamp: ${TS}" \

@@ -28,6 +28,20 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
       priority: 1,
     });
 
+    routes.push({
+      url: `${BASE_URL}/shortlist`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.5,
+    });
+
+    routes.push({
+      url: `${BASE_URL}/saved`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.5,
+    });
+
     // 2. All borough landing pages
     LONDON_AREAS.forEach((borough) => {
       routes.push({

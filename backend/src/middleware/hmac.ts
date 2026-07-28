@@ -16,11 +16,11 @@ export const verifyHmac = (req: Request, res: Response, next: NextFunction) => {
       return res.status(500).json({ success: false, error: 'Internal server error configuration' });
     }
 
-    // Verify timestamp to prevent replay attacks (5 minutes = 300 seconds)
+    // Verify timestamp to prevent replay attacks (15 minutes = 900 seconds)
     const requestTime = parseInt(timestampHeader, 10);
     const currentTime = Math.floor(Date.now() / 1000);
     
-    if (isNaN(requestTime) || Math.abs(currentTime - requestTime) > 300) {
+    if (isNaN(requestTime) || Math.abs(currentTime - requestTime) > 900) {
       return res.status(401).json({ success: false, error: 'Request timestamp is invalid or expired' });
     }
 

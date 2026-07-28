@@ -27,6 +27,7 @@ export async function enrichViaGeoapify(batchSize: number = 40): Promise<Geoapif
     `SELECT id, name, type, lat, lon, website, phone, email, opening_hours
      FROM venues
      WHERE is_active = TRUE
+       AND venue_scope = 'core'
        AND lat IS NOT NULL AND lon IS NOT NULL
        AND (
          (phone IS NULL OR phone = '')

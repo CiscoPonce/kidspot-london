@@ -7,10 +7,10 @@ import { redis } from '../../clients/redis.js';
 // Mock db and redis
 vi.mock('../../clients/db.js', () => ({
   db: {
-    query: vi.fn(),
+    query: vi.fn().mockResolvedValue({ rows: [] }),
   },
   default: {
-    query: vi.fn(),
+    query: vi.fn().mockResolvedValue({ rows: [] }),
   }
 }));
 
@@ -64,7 +64,8 @@ describe('Search API Integration Tests', () => {
           latitude: 51.5,
           longitude: -0.1,
           types: ['park'],
-          kid_score: 10
+          kid_score: 10,
+          venue_scope: 'core'
         }
       ];
 
@@ -89,7 +90,8 @@ describe('Search API Integration Tests', () => {
           latitude: 51.54,
           longitude: -0.05,
           types: ['softplay'],
-          kid_score: 15
+          kid_score: 15,
+          venue_scope: 'core'
         }
       ];
 

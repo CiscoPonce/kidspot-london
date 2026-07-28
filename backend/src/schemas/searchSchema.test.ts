@@ -17,7 +17,8 @@ describe('searchQuerySchema', () => {
         lon: -0.1278,
         radius_miles: 5,
         type: 'park',
-        borough: 'camden'
+        borough: 'camden',
+        include_parks: false
       });
     }
   });

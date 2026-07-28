@@ -48,6 +48,11 @@ WITH classified AS (
            AND name ~* '(soft ?play|trampolin|bounce|inflatable|play ?(centre|center)|\ykids\y|children|junior|\yparty\y|climbing|laser ?tag|adventure)'
         THEN ARRAY['core','leisure_kids_signal']
 
+      ---- Better Gym / GLL leisure centres (softplay + party hire on site)
+      WHEN type IN ('leisure_centre', 'softplay', 'other')
+           AND name ~* '(better gym|better leisure|greenwich leisure|\yatherton leisure centre\y)'
+        THEN ARRAY['core','better_gym_leisure']
+
       ----------------------------------------------- EXCLUDE: adult gyms
       WHEN name ~* '(pure ?gym|gym group|fitness first|virgin active|nuffield health|everlast|snap fitness|\yjd gym\y|david lloyd|anytime fitness|\yf45\y)'
            AND name !~* '(kids|children|junior|family|\yplay\y|party)'

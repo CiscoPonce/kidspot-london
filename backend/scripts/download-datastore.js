@@ -1,9 +1,15 @@
 #!/usr/bin/env node
 
-const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
-require('dotenv').config();
+import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuration
 const DATA_DIR = path.join(__dirname, '../data');
@@ -132,7 +138,8 @@ async function downloadAllDatasets() {
 }
 
 // Run the download
-if (require.main === module) {
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+if (isMain) {
   downloadAllDatasets()
     .then(() => process.exit(0))
     .catch(error => {
@@ -141,4 +148,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { downloadAllDatasets, downloadFile };
+export { downloadAllDatasets, downloadFile };

@@ -524,8 +524,26 @@ const baseVenueService = {
       rows = result.rows;
     } else if (lat !== undefined && lon !== undefined) {
       const result = await db.query(
-        'SELECT * FROM search_venues_by_radius($1, $2, $3, $4, $5)',
-        [lat, lon, radiusMeters, type, limit]
+        `SELECT v.id, v.source, v.source_id, v.name, v.type, v.lat, v.lon, v.rating, v.price_level,
+                ST_Distance(ST_MakePoint(v.lon, v.lat)::geography, ST_MakePoint($2, $1)::geography) / 1609.34 AS distance_miles,
+                v.sponsor_tier, v.sponsor_priority, v.slug, v.parent_facets, v.kid_score, v.venue_scope
+         FROM venues v
+         WHERE v.is_active = TRUE
+         AND v.venue_scope = ANY($6::text[])
+         AND ST_DWithin(ST_MakePoint(v.lon, v.lat)::geography, ST_MakePoint($2, $1)::geography, $3)
+         AND ($4::TEXT IS NULL OR v.type = $4::TEXT)
+         ORDER BY
+             CASE
+                 WHEN v.sponsor_tier = 'gold' THEN 1
+                 WHEN v.sponsor_tier = 'silver' THEN 2
+                 WHEN v.sponsor_tier = 'bronze' THEN 3
+                 ELSE 4
+             END,
+             v.sponsor_priority DESC NULLS LAST,
+             ST_Distance(ST_MakePoint(v.lon, v.lat)::geography, ST_MakePoint($2, $1)::geography) ASC,
+             v.kid_score DESC NULLS LAST
+         LIMIT $5`,
+        [lat, lon, radiusMeters, type, limit, scopes]
       );
       rows = result.rows;
     } else {
@@ -562,7 +580,7 @@ const baseVenueService = {
     let fallbackVenues: Venue[] | null = null;
     let fallbackSource: string | null = null;
     
-    if (rows.length < (limit || 50) && !borough && lat !== undefined && lon !== undefined) {
+    if (rows.length === 0 && !borough && lat !== undefined && lon !== undefined) {
       // Step 1: try OSM Overpass first — it returns real geocoded venues.
       const osmVenues = await fetchOsmSearchResults(lat, lon, radius_miles, type);
 

@@ -136,6 +136,7 @@ export function VenueCard({
   const { has, toggle } = useShortlist();
 
   const [imgFailed, setImgFailed] = useState(false);
+  const [imgRetries, setImgRetries] = useState(0);
   const isSaved = has(venue.id);
   const imageUrl = firstImage(venue);
   const trust = trustSignals(venue);
@@ -197,10 +198,16 @@ export function VenueCard({
         <div className="aspect-[16/10] sm:aspect-auto sm:h-full sm:min-h-[180px]">
           {!imgFailed && imageUrl ? (
             <img
-              src={imageUrl}
+              src={imgRetries > 0 ? `${imageUrl}?retry=${imgRetries}` : imageUrl}
               alt={venue.name}
               loading="lazy"
-              onError={() => setImgFailed(true)}
+              onError={() => {
+                if (imgRetries < 1) {
+                  setImgRetries((r) => r + 1);
+                } else {
+                  setImgFailed(true);
+                }
+              }}
               className="h-full w-full object-cover"
             />
           ) : (

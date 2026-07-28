@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { fetchOverpassWithRetry } from './overpass-utils.js';
 
 export interface OSMVenue {
   id: string;
@@ -20,16 +20,12 @@ export async function fetchOSMPartyVenues(): Promise<OSMVenue[]> {
       node["leisure"="indoor_play"](area.searchArea);
       node["leisure"="trampoline_park"](area.searchArea);
     );
-    out body limit 20;
+    out body 20;
   `;
 
   try {
-    const response = await axios.post('https://overpass-api.de/api/interpreter', `data=${encodeURIComponent(query)}`, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      timeout: 30000
-    });
-
-    const elements = response.data?.elements || [];
+    const data = await fetchOverpassWithRetry(query);
+    const elements = data?.elements || [];
     const venues: OSMVenue[] = [];
 
     for (const el of elements) {

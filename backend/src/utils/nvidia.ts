@@ -54,7 +54,7 @@ export async function callNvidia({
       Authorization: `Bearer ${env.NVIDIA_API_KEY}`,
     },
     body: JSON.stringify(body),
-    signal,
+    signal: signal || AbortSignal.timeout(30000),
   });
 
   if (!response.ok) {

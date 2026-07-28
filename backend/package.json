@@ -33,6 +33,7 @@
     "cron": "tsx scripts/cron-agent.ts",
     "report:clicks": "tsx scripts/generate-click-report.ts",
     "claim:admin": "tsx scripts/claim-admin.ts",
+    "eval:party": "tsx scripts/eval-party-extraction.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

@@ -1,0 +1,21 @@
+#!/bin/bash
+set -euo pipefail
+
+ROOT="${ROOT:-/home/ubuntu/kidspot}"
+cd "$ROOT"
+set -a
+source ./.env
+set +a
+
+PSQL="docker compose exec -T -e PGPASSWORD=${DB_PASSWORD} postgres psql -h localhost -U kidspot_admin -d kidspot"
+
+echo "Running schema.sql..."
+$PSQL < "$ROOT/backend/db/schema.sql"
+
+echo "Running migrations..."
+for f in $(ls "$ROOT/backend/db/migrations"/*.sql | sort); do
+  echo "Running $f..."
+  $PSQL < "$f"
+done
+
+echo "All migrations complete!"
