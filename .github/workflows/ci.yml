@@ -63,6 +63,12 @@ jobs:
         REDIS_URL: redis://localhost:6379
         ADMIN_KEY: test_key
 
+    - name: AI Extraction Benchmark
+      run: |
+        cd backend
+        npm run eval:party
+
+
     - name: Frontend Lint & Build
       run: |
         cd frontend

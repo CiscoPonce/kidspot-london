@@ -1,0 +1,81 @@
+openapi: 3.0.3
+info:
+  title: KidSpot London API
+  description: Party-first venue discovery and enrichment API for Greater London.
+  version: 1.2.0
+servers:
+  - url: https://api.kidspot.london
+    description: Production API Server
+  - url: http://localhost:4000
+    description: Local Development Server
+
+paths:
+  /health:
+    get:
+      summary: Liveness Probe
+      description: Returns basic liveness status.
+      responses:
+        '200':
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  version:
+                    type: string
+                    example: 1.2.0
+
+  /ready:
+    get:
+      summary: Readiness Probe
+      description: Deep health check testing Postgres and Redis connections.
+      responses:
+        '200':
+          description: Service is ready to accept traffic
+        '503':
+          description: Service unavailable due to database or cache outage
+
+  /api/search/venues:
+    get:
+      summary: Search Venues
+      description: Radius and borough search for party venues with PostGIS spatial indexing.
+      parameters:
+        - name: lat
+          in: query
+          required: false
+          schema:
+            type: number
+            example: 51.5074
+        - name: lon
+          in: query
+          required: false
+          schema:
+            type: number
+            example: -0.1278
+        - name: radius_miles
+          in: query
+          required: false
+          schema:
+            type: number
+            default: 5.0
+        - name: borough
+          in: query
+          required: false
+          schema:
+            type: string
+            example: Hackney
+        - name: include_parks
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: List of matching core party venues
+        '400':
+          description: Invalid query parameters
