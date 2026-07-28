@@ -1,0 +1,7 @@
+kidspot.london {
+    reverse_proxy web:3000
+}
+
+api.kidspot.london {
+    reverse_proxy api:4000
+}
