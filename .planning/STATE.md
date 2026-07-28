@@ -137,8 +137,16 @@ Plan: 1 of 4
    - Implement the Google Places discovery sweep script and chain expansion fallback.
    - Perform postcode reverse geocoding via postcodes.io.
 2. **Phase 22 Launch and Production Readiness**:
-   - Redesign frontend listing cards for mobile, highlighting party capacity/pricing.
-   - Create local shortlist persistence and comparison dashboard.
-   - Integrate base64 URL sharing for shortlists.
-   - Display Food Hygiene Rating Scheme (FHRS) scores.
-   - Set up reverse proxy SSL, CORS lockouts, and Express rate limiting.
+   - ✅ Redesign frontend listing cards for mobile, highlighting party capacity/pricing.
+   - ✅ Create local shortlist persistence and comparison dashboard.
+   - ✅ Integrate base64 URL sharing for shortlists.
+   - ✅ Display Food Hygiene Rating Scheme (FHRS) scores.
+3. **Phase 23 Public Launch Infrastructure, Security Hardening & AI Eval Benchmark**:
+   - Set up SSL reverse proxy (Nginx/Caddy) with Let's Encrypt for `https://kidspot.london` and `https://api.kidspot.london`.
+   - Update `NEXT_PUBLIC_API_URL`, lock down `CORS_ORIGIN`, and provision `GOOGLE_PLACES_API_KEY`.
+   - Replicate nightly PostGIS database backups (`scripts/backup.sh`) to offsite cloud storage (S3 / Cloudflare R2).
+   - Build 50-item synthetic ground-truth AI dataset (`evals.jsonl`) and Promptfoo benchmark suite for LLM extraction.
+   - Integrate AI tracing (Langfuse) to monitor production LLM calls.
+   - Generate `sitemap.xml`, `robots.txt`, and integrate Plausible privacy analytics.
+   - Implement client-side image fallback retry handlers and Vitest API integration tests.
+
