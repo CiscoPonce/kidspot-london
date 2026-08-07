@@ -470,7 +470,11 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - [x] 25-01 — Mount FHRS + `/metrics`; fix empty-body 400 errors; API v1.3.0
 - [x] 25-02 — Wave B discovery (6 runs: +90 venues, core 2,236→2,311); free-tier caps applied
 - [x] 25-03 — Docker rebuild + smoke tests (51/51 pass)
-- [x] 25-04 — Phase 24+25 commit + push; borough CSV + party extraction ops
+- [x] 25-04 — Phase 24+25 commit (`21fd0cc`); push blocked (Apify token in history)
+
+**Deferred until domain:** DNS, HTTPS, offsite backups.
+
+**Push blocked:** GitHub push protection rejects 20 unpushed commits — Apify API token in `.env.backup.20260609_2231` (commit `055ee1e`). Requires history rewrite or secret allowlist.
 
 ---
 

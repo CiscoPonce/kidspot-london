@@ -24,7 +24,7 @@ progress:
 | **Active phases** | **21** (catalogue depth) + **25** (pre-launch hardening) |
 | **Platform status** | **Launch-ready** — product complete; catalogue depth + DNS/HTTPS remain |
 | **Last VPS audit** | 7 Aug 2026 — all containers healthy, 51/51 tests pass, crons green |
-| **Uncommitted work** | None — Phase 24 + 25 committed and pushed |
+| **Uncommitted work** | None locally — Phase 24+25 committed (`21fd0cc`); **push blocked** by GitHub secret scanning (Apify token in commit `055ee1e`) |
 
 ### What we're doing now (Phase 21)
 

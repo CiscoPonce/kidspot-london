@@ -25,3 +25,7 @@ coverage/
 
 # Local-only OS scratch
 .cache/
+
+# Env backups (never commit)
+.env.backup*
+
