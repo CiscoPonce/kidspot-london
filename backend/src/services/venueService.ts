@@ -509,7 +509,14 @@ const baseVenueService = {
          AND venue_scope = ANY($4::text[])
          AND LOWER(COALESCE(london_borough, borough)) = LOWER($1)
          AND ($2::TEXT IS NULL OR type = $2::TEXT)
+         AND (party_capable = TRUE OR type = 'softplay' OR name ILIKE '%soft play%' OR name ILIKE '%play centre%' OR name ILIKE '%trampoline%' OR name ILIKE '%party%')
+         AND name NOT ILIKE 'OSM %'
          ORDER BY
+             CASE
+                 WHEN type = 'softplay' OR name ILIKE '%soft play%' OR name ILIKE '%party%' OR name ILIKE '%play centre%' OR name ILIKE '%trampoline%' THEN 1
+                 WHEN party_capable = TRUE THEN 2
+                 ELSE 3
+             END ASC,
              CASE
                  WHEN sponsor_tier = 'gold' THEN 1
                  WHEN sponsor_tier = 'silver' THEN 2
@@ -532,7 +539,14 @@ const baseVenueService = {
          AND v.venue_scope = ANY($6::text[])
          AND ST_DWithin(ST_MakePoint(v.lon, v.lat)::geography, ST_MakePoint($2, $1)::geography, $3)
          AND ($4::TEXT IS NULL OR v.type = $4::TEXT)
+         AND (v.party_capable = TRUE OR v.type = 'softplay' OR v.name ILIKE '%soft play%' OR v.name ILIKE '%play centre%' OR v.name ILIKE '%trampoline%' OR v.name ILIKE '%party%')
+         AND v.name NOT ILIKE 'OSM %'
          ORDER BY
+             CASE
+                 WHEN v.type = 'softplay' OR v.name ILIKE '%soft play%' OR v.name ILIKE '%party%' OR v.name ILIKE '%play centre%' OR v.name ILIKE '%trampoline%' THEN 1
+                 WHEN v.party_capable = TRUE THEN 2
+                 ELSE 3
+             END ASC,
              CASE
                  WHEN v.sponsor_tier = 'gold' THEN 1
                  WHEN v.sponsor_tier = 'silver' THEN 2
@@ -554,7 +568,14 @@ const baseVenueService = {
          WHERE is_active = TRUE
          AND venue_scope = ANY($3::text[])
          AND ($1::TEXT IS NULL OR type = $1::TEXT)
+         AND (party_capable = TRUE OR type = 'softplay' OR name ILIKE '%soft play%' OR name ILIKE '%play centre%' OR name ILIKE '%trampoline%' OR name ILIKE '%party%')
+         AND name NOT ILIKE 'OSM %'
          ORDER BY
+             CASE
+                 WHEN type = 'softplay' OR name ILIKE '%soft play%' OR name ILIKE '%party%' OR name ILIKE '%play centre%' OR name ILIKE '%trampoline%' THEN 1
+                 WHEN party_capable = TRUE THEN 2
+                 ELSE 3
+             END ASC,
              CASE
                  WHEN sponsor_tier = 'gold' THEN 1
                  WHEN sponsor_tier = 'silver' THEN 2

@@ -1,146 +1,73 @@
-# Technical Overview – KidSpot London (v5 - Automated Discovery + Combined Search)
+# Technical Overview
 
-## 1. System Architecture & VPS Deployment
+> **This file is a quick reference.** For full detail see [README.md](README.md) and [.planning/STATE.md](.planning/STATE.md).
 
-The system is optimized for an ARM-based Virtual Private Server (VPS). We use Docker Compose to orchestrate the environment, ensuring portability and strict resource boundaries.
+## Architecture
 
-### 1.1 Core Stack
-
-**Frontend:** Next.js 15 (React 19), TailwindCSS 4, MapLibre GL JS 5
-
-**Backend:** Node.js 22, Express 5, BullMQ (Task Queue), Pino Logging
-
-**Data/AI:** PostgreSQL 15 + PostGIS, Redis 7 (Caching & Queues), OpenRouter (LLM Parsing), Brave Search API (Fallback), Yelp Fusion API (Discovery & Validation)
-
-### 1.2 Docker Compose Configuration (Latest)
-
-```yaml
-services:
-  postgres:
-    image: kartoza/postgis:15
-    environment:
-      POSTGRES_USER: kidspot_admin
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: kidspot
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-
-  api:
-    build: ./backend
-    environment:
-      - DATABASE_URL=postgres://kidspot_admin:${DB_PASSWORD}@postgres:5432/kidspot
-      - REDIS_URL=redis://redis:6379
-      - BRAVE_API_KEY=${BRAVE_API_KEY}
-      - YELP_API_KEY=${YELP_API_KEY}
-      - YELP_CLIENT_ID=${YELP_CLIENT_ID}
-      - INGEST_SIGNING_SECRET=${INGEST_SIGNING_SECRET}
-      - ADMIN_KEY=${ADMIN_KEY}
-      - NODE_ENV=production
-    ports:
-      - "4000:4000"
-    depends_on:
-      - postgres
-      - redis
-    restart: unless-stopped
-
-  worker:
-    build: 
-      context: ./backend
-      dockerfile: Dockerfile.worker
-    environment:
-      - DATABASE_URL=postgres://kidspot_admin:${DB_PASSWORD}@postgres:5432/kidspot
-      - REDIS_URL=redis://redis:6379
-      - YELP_API_KEY=${YELP_API_KEY}
-    depends_on:
-      - redis
-      - postgres
-    restart: unless-stopped
-
-  web:
-    build: ./frontend
-    ports:
-      - "3005:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://${VPS_IP}:4000/api
-    depends_on:
-      - api
-    restart: unless-stopped
-
-volumes:
-  pgdata:
+```
+Caddy :80 → Next.js :3005 (frontend)
+         → Express  :4000 (API)
+              ↓
+         PostgreSQL + PostGIS
+         Redis (cache + BullMQ)
+              ↓
+         BullMQ Worker (42 scheduled enrichment jobs)
+              ↓
+         External APIs (Google Places, Brave, NVIDIA, FHRS, OSM, …)
 ```
 
-## 2. Database Schema (Lean Database Approach)
+## Stack (Aug 2026)
 
-### 2.1 Philosophy
+| Component | Technology |
+|-----------|------------|
+| Frontend | Next.js 16, React 19, Tailwind 3.4, MapLibre GL |
+| Backend | Node.js 22, Express 5, TypeScript |
+| Database | PostgreSQL 15 + PostGIS |
+| Queue/Cache | Redis 7, BullMQ |
+| Deploy | Docker Compose (5 services) on ARM VPS |
+| Proxy | Caddy (port 80; HTTPS pending DNS) |
+| CI | GitHub Actions — 4 scheduled ingest crons |
 
-**Store essential metadata locally:** name, location, type, source, kid_score, rating, last_scraped.
+## Docker services
 
-**Self-Healing Data:** A nightly cron job validates every venue against live sources to detect closures and update scores.
+| Service | Port | Role |
+|---------|------|------|
+| `web` | 3005 | Next.js frontend |
+| `api` | 4000 | Express REST API |
+| `worker` | 4001 (internal) | BullMQ enrichment engine |
+| `postgres` | 127.0.0.1:5432 | PostGIS database |
+| `redis` | 127.0.0.1:6379 | Cache + job queue |
 
-### 2.2 Venues Table
+## Key API routes
 
-```sql
-CREATE TABLE venues (
-    id BIGSERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    lat DOUBLE PRECISION NOT NULL,
-    lon DOUBLE PRECISION NOT NULL,
-    type TEXT NOT NULL,           -- 'softplay', 'community_hall', 'park', etc.
-    source TEXT NOT NULL,         -- 'yelp', 'osm', 'manual'
-    source_id TEXT UNIQUE,        -- External ID (e.g. Yelp Business ID)
-    rating DOUBLE PRECISION,
-    user_ratings_total INTEGER,
-    kid_score INTEGER DEFAULT 0,
-    last_scraped TIMESTAMPTZ,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
+| Route | Auth | Purpose |
+|-------|------|---------|
+| `GET /health`, `/ready` | Public | Liveness / readiness |
+| `GET /api/search/venues` | Public | Core catalogue search |
+| `GET /api/search/venues/slug/:slug/details` | Public | Venue detail |
+| `POST /api/admin/ingest/*` | HMAC | GitHub cron ingest |
+| `GET /api/admin/enrichment-stats` | HMAC | Data quality metrics |
+| `GET /api/sponsors/*` | Public/Admin | Sponsor tiers |
 
-## 3. Discovery & Validation Pipeline
+## Scheduled jobs
 
-### 3.1 Nightly Cron Agent (`cron-agent.ts`)
+**GitHub Actions (UTC):**
 
-A unified TypeScript agent that runs every night at 02:00 UTC via GitHub Actions.
+| Workflow | Schedule |
+|----------|----------|
+| Data Enrichment | Hourly |
+| Discovery (stale refresh) | Daily 02:00 |
+| Party Discovery | Every 6h |
+| Venue Expansion | 06:00 & 18:00 |
 
-**Tasks:**
-1. **Validation:** Checks 100 oldest venues for `is_closed` status via Yelp Fusion API. Updates ratings and recalculates Kid Scores.
-2. **Discovery:** Performs keyword-based searches (e.g., "soft play") across London using Yelp and OpenStreetMap to find brand-new venues.
+**VPS cron:** DB backup daily 04:00.
 
-### 3.2 Rate Limiting (Yelp Fusion)
-To respect the Yelp free tier QPS:
-- **Concurrency:** 1 (Serial processing)
-- **Delay:** 1500ms between requests
-- **Daily Batch:** 100 validations + ~200 discovery searches.
+**BullMQ worker:** geocode, OSM contacts, direct crawl, party extraction, Google Places, FHRS batch, dedup sweep, and more — see README enrichment table.
 
-## 4. Agentic Search & Fallbacks
+## Production snapshot (7 Aug 2026)
 
-### 4.1 Search Flow
-
-1. **Local Search:** Query PostgreSQL/PostGIS for active venues within radius.
-2. **Combined Fallback:** If local results = 0, simultaneously query:
-   - **OpenStreetMap (Overpass):** For parks, halls, and public spaces.
-   - **Brave Search API:** For commercial venues and recent web listings.
-3. **Merge & Sort:** Results are merged, deduplicated by name, and sorted using **Haversine Distance** calculated on-the-fly.
-
-### 4.2 OSM Query Refinement
-Query uses specific tags (`leisure=indoor_play`, `amenity=community_centre`) to ensure results are strictly relevant to kids' activities.
-
-## 5. Deployment & Security
-
-### 5.1 GitHub Actions
-- **Discovery Pipeline:** Uses `INGEST_SIGNING_SECRET` to send HMAC-signed POST requests to the `/api/admin/ingest/stale` endpoint.
-
-### 5.2 VPS Access
-- Application is accessible via Port 3005 (Web) and Port 4000 (API).
+- 16,751 total venues · **2,311 core** · **182 party-capable**
+- All containers healthy · 51/51 backend tests pass
 
 ---
-
-**Last Updated:** April 24, 2026
-**Version:** 5.0 - Automated Discovery + Combined Search
+*Last updated: 2026-08-07*

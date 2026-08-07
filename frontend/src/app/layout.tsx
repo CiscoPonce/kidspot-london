@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { AppProviders } from '@/providers';
+import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer';
+import { BottomNav } from '@/components/layout/bottom-nav';
 import { FeedbackButton } from '@/components/feedback-button';
-import { PwaInstallPrompt } from '@/components/layout/pwa-install-prompt';
 import './globals.css';
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -12,15 +14,15 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'KidSpot London — Find brilliant places for kids',
+  title: "KidSpot — Find the Perfect Place for Their Big Day",
   description:
-    'Discover soft play, parks, museums, libraries and party venues for kids across London. Curated, safety-checked, and easy to search.',
+    "The UK's most trusted directory of safety-checked kids' party venues. Discover soft play, trampoline parks, craft studios and party halls.",
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#fff9e6',
+  themeColor: '#FFFDF5',
 };
 
 export default function RootLayout({
@@ -31,12 +33,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/*
-          Material Symbols Outlined — loaded as a real <link> rather than a CSS
-          @import because Next 16 / Turbopack drops remote @import URLs from the
-          bundled stylesheet, which left every icon rendering as its raw
-          ligature text (e.g. "location_on", "apps", "arrow_forward").
-        */}
         <link
           rel="preconnect"
           href="https://fonts.googleapis.com"
@@ -50,27 +46,17 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
         />
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js');
-                });
-              }
-            `,
-          }}
-        />
       </head>
       <body
-        className={`${plusJakartaSans.variable} bg-background text-on-background font-sans antialiased`}
+        className={`${plusJakartaSans.variable} bg-[#FFFDF5] text-brand-dark font-sans antialiased flex flex-col min-h-screen`}
       >
         <AppProviders>
-          {children}
-          <PwaInstallPrompt />
+          <Header />
+          <main className="flex-1">
+            {children}
+          </main>
+          <Footer />
+          <BottomNav />
           <FeedbackButton />
         </AppProviders>
       </body>

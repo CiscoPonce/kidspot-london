@@ -1,158 +1,154 @@
 ---
-gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-current_phase: 23
-status: milestone_complete
-stopped_at: Phase 23 execution & Enterprise hardening complete (4/4 plans)
-last_updated: "2026-07-28T15:50:22.000Z"
+gsd_state_version: 2.0
+milestone: v1.0-public-launch
+status: operating
+current_phase: 25
+last_updated: "2026-08-07T23:00:00.000Z"
 progress:
-  total_phases: 23
-  completed_phases: 23
-  total_plans: 69
-  completed_plans: 69
+  total_phases: 25
+  completed_phases: 22
+  active_phases: 2
+  deferred_phases: 1
+  percent: 92
 ---
 
-# KidSpot London - Project State
+# KidSpot London — Project State
 
-## Current Position
+> **Canonical state file.** Also mirrored at repo root `STATE.md`.
+> Roadmap detail: [ROADMAP.md](./ROADMAP.md) · Next actions: [../NEXT_ACTIONS.md](../NEXT_ACTIONS.md)
 
-Phase: 23
-Plan: 4 of 4
-**Phase**: 23 — Public Launch Infrastructure, Security Hardening & AI Eval Benchmark (**COMPLETED**)
-**Status:** All 4 plans completed, enterprise observability & tests verified
+## Current position
 
-**Quick ref:** `NEXT_ACTIONS.md`
+| Field | Value |
+|-------|-------|
+| **Active phases** | **21** (catalogue depth) + **25** (pre-launch hardening) |
+| **Platform status** | **Launch-ready** — product complete; catalogue depth + DNS/HTTPS remain |
+| **Last VPS audit** | 7 Aug 2026 — all containers healthy, 51/51 tests pass, crons green |
+| **Uncommitted work** | None — Phase 24 + 25 committed and pushed |
 
-- **June 11 Recovery**: Database rebuilt after Phase 20 volume incident
-- **Core catalogue**: ~2,118 active party venues (scope-filtered search live)
-- **Priority**: Google Places → contacts → party extraction → discovery sweep
-- **Data gaps**: ~19% core websites, ~0% phones/images, ~3 party_capable
+### What we're doing now (Phase 21)
 
-**Last Updated**: June 11, 2026
+Enrichment queues have **caught up** on current criteria. Focus shifts to **Wave B**:
 
-## Completed Phases
+1. Google Places **discovery sweep** (new venues by borough)
+2. Chain expansion via Google Places
+3. Borough CSV hall-hire contact ingest
+4. Raise `party_capable` coverage (182 → target 500+)
 
-- 01–17 (Data Foundation through High-Velocity Enrichment)
-- 18.0–18.5 Data Validation & Chain Enrichment
-- 18E — Deduplication & Search Ranking Hotfix
-- 20 (partial) — Security hardening, backups, Google Places/Street View jobs, PostGIS cluster, mobile UX
+Go-live blockers (tracked under Phase 23 gaps):
 
-## Active Work: Phase 21 — Party Catalogue Maximisation
+- DNS for `kidspot.london` not pointed at VPS
+- HTTPS disabled in Caddy (`auto_https disable_redirects`)
+- Offsite backup replication (S3/R2) not configured
 
-### Objectives
+---
 
-1. **Wave A:** Google Places full pass → direct crawl → party extraction → borough CSVs
-2. **Wave B:** Google discovery sweep + chain expansion (no Apify) + postcodes.io geocoding
-3. Re-classify and dedup after each bulk batch; hit success criteria in 21-CONTEXT.md
-4. Phase 20 infra (HTTPS/domain) deferred until catalogue depth improves
+## Production snapshot (7 Aug 2026, post–Wave B)
 
-### Database Stats (June 11, 2026 — post-rebuild)
+Live query against VPS Postgres after 3 Wave B discovery runs + re-classify:
 
-- ~16,400 total venues ingested; ~2,130 active **core** (party catalogue)
-- ~8,400 secondary (parks, excluded from default search)
-- ~3,500 excluded/deactivated by cleanup-moderate.sql
-- Contact/image/party coverage growing via enrichment pipeline
+| Metric | Value |
+|--------|------:|
+| Total venues | 16,751 |
+| Active venues | 16,033 |
+| **Core catalogue** (`venue_scope=core`) | **2,311** |
+| **`party_capable` (core)** | **182** (7.9%) |
+| Google-sourced (active) | 80+ |
 
-## Recovery Notes (do not repeat)
+**Wave B sessions (6 runs total):** +90 discovered · +75 core after classify · ~34 API searches (free tier safe).
 
-- Phase 20 `docker system prune --volumes` + volume mount change wiped production DB (Jun 9)
-- Always verify backup dump size (expect ~1MB+) before infra changes
+**Latest ops session (7 Aug evening):** party extraction (9 processed, 0 new party-capable) · borough CSV (843 matched) · Wave B ×3 (+45 discovered, +1 core).
+
+**Core catalogue data quality** (unchanged — re-run enrichment-stats for live %):
+
+| Field | Coverage |
+|-------|----------|
+| Website | ~78.6% |
+| Phone | ~57.5% |
+| Images | ~16.9% |
+
+---
+
+## Phase status at a glance
+
+| Phase | Name | Status |
+|------:|------|--------|
+| 01–07 | Data foundation → improvement | ✅ Complete |
+| 08.5 | UX & data quality | ✅ Complete |
+| 09–10 | Revenue & sponsor features | ✅ Complete |
+| 11–16 | Scale, enrichment, partnerships | ✅ Complete |
+| 17 | High-velocity enrichment (Apify) | ✅ Complete |
+| 18 | Autonomous enrichment engine | ✅ Complete |
+| 18B | Contact extraction yield (NVIDIA LLM) | ✅ Complete |
+| 18C | Party-first frontend & PWA | ✅ Complete |
+| 18D | Party data extraction | ✅ Complete |
+| 18E | Dedup & search ranking hotfix | ✅ Complete |
+| 18.5 | Chain enrichment | ✅ Complete |
+| 19 | Revenue monetisation V2 | ⏸️ Deferred |
+| 20 | Security, backups, Google Places | ✅ Complete |
+| **21** | **Party catalogue maximisation** | **🔄 Active** |
+| 22 | Launch readiness (PWA, FHRS, cards) | ✅ Complete |
+| 23 | Public launch infra & AI eval | ⚠️ Mostly complete |
+| 24 | Frontend redesign & booking flow | ✅ Complete (uncommitted) |
+
+### Phase 23 remaining gaps
+
+| Item | Status |
+|------|--------|
+| AI eval benchmark (`eval:party`) | ✅ Done |
+| OpenAPI spec | ✅ Done |
+| Prometheus `/metrics` | ✅ Mounted and live |
+| FHRS lazy API | ✅ Mounted — `GET /api/fhrs/match/:id` |
+| Caddy reverse proxy config | ✅ Done (port 80) |
+| DNS + Let's Encrypt HTTPS | ❌ Not done |
+| Offsite backup replication (S3/R2) | ❌ Not done |
+| GitHub `API_URL` | ⚠️ Old public IP (still works) |
+
+---
+
+## Infrastructure health (7 Aug 2026)
+
+| Component | Status |
+|-----------|--------|
+| Docker: api, web, worker, postgres, redis | ✅ All healthy |
+| Worker container | ✅ Rebuilt 7 Aug (was 8 weeks stale) |
+| BullMQ repeatable jobs | ✅ 42 registered |
+| VPS daily backup cron | ✅ 04:00 UTC → `/home/ubuntu/backups/` |
+| GitHub: Data Enrichment (hourly) | ✅ 22/24 success last 24h |
+| GitHub: Discovery (daily 02:00) | ✅ Success today |
+| GitHub: Party Discovery (6h) | ✅ Success today |
+| GitHub: Venue Expansion (12h) | ✅ Success today |
+
+---
+
+## Recovery notes (do not repeat)
+
+- **Jun 9 2026:** Phase 20 `docker system prune --volumes` wiped production DB
+- Always verify backup dump size (expect **≥ 1 MB**, currently ~2.4 MB) before infra changes
 - Use `scripts/rebuild-catalog.sh` and `scripts/run-enrichment-pipeline.sh` for full rebuilds
-
-## Environment Variables Required
-
-### Phase 18 Data Validation (Completed)
-
-- ✅ **Closure Detection**: `is_active` flag set to FALSE when Apify reports permanent closure
-- ✅ **Brave Image Search**: New `braveService.ts` with daily `enrich-brave-images` job
-- ✅ **Phone Normalization**: `normalizeUkPhone()` utility in `backend/src/utils/phone.ts`
-- ✅ **Contact Backfill**: `contact-backfill.ts` worker runs daily at 07:00
-- ✅ **Enriched At**: `enriched_at = NOW()` set on every Apify update
-- ✅ **Webhook**: `/admin/webhooks/apify` endpoint for Apify dataset notifications
-
-### Phase 18.5 Chain Enrichment (Completed)
-
-- ✅ **Categorization Overrides**: DB trigger for brands (Flip Out, Oxygen, etc.)
-- ✅ **Chain Expansion**: Seeded missing Flip Out and Gravity locations
-
-### Phase 18E Deduplication & Search Ranking Hotfix (Completed)
-
-- ✅ **Deduplication Data Recovery**: Updated `dedup-sweep.ts` to merge types, parent facets, features, ratings, kid scores, and party details from deactivated duplicates to the keeper.
-- ✅ **Database Repair (Migration 031)**: Restored data for 846 duplicate groups in the production database, restoring Atherton Leisure Centre and 44 other high-quality core venues.
-- ✅ **Search Ranking Fix (Migration 032)**: Redefined `search_venues_by_radius` function to sort results by Distance first (closest first) instead of Kid Score first.
-- ✅ **Container Redeployment & Validation**: Rebuilt and restarted API, web, and worker containers to compile the updated TS code, verifying that local searches correctly return Atherton and other core venues.
-
-### Database Stats (June 2026)
-
-- 16,844 total venues (14,676 active, 2,168 inactive)
-- Image coverage: 303 (~2%)
-- Email coverage: 2,380 (~14.1%)
-- Phone coverage: 4,165 (~24.7%)
-- Enriched venues: 16,767 (recently backfilled)
+- DB rebuilt Jun 11; catalogue structure recovered, depth rebuilt since
 
 ---
 
-## Project Context
+## Tech stack (current)
 
-### Tech Stack (Latest)
-
-- **Frontend**: Next.js 15 (React 19), TailwindCSS 4, MapLibre GL JS 5
-- **Backend**: Node.js 22, Express 5, BullMQ, Pino Logging
-- **Data/AI**: PostgreSQL 15 + PostGIS, Redis 7, Brave Search API, Yelp Fusion API
-- **Infrastructure**: Docker Compose on ARM VPS, GitHub Actions (Cron)
-
-### Key Constraints
-
-- Focus Area: Greater London
-- Data Accuracy: High priority on opening hours and pricing visibility.
-- Traffic Proofing: Need to track user clicks to external booking/website pages.
+| Layer | Stack |
+|-------|-------|
+| Frontend | Next.js 16, React 19, Tailwind 3.4, MapLibre GL, TanStack Query, PWA |
+| Backend | Node.js 22, Express 5, TypeScript, Pino |
+| Data | PostgreSQL 15 + PostGIS, Redis 7, BullMQ |
+| AI / APIs | NVIDIA LLM, Brave, Google Places, Foursquare, Geoapify, Apify, FHRS |
+| Deploy | Docker Compose on ARM VPS, Caddy, GitHub Actions crons |
 
 ---
 
-## Environment Variables Required
+## Session log
 
-### Database
-
-- `DB_PASSWORD`: PostgreSQL database password
-
-### AI & External Services
-
-- `OPENROUTER_API_KEY`: OpenRouter API key
-- `BRAVE_API_KEY`: Brave Search API key
-- `YELP_API_KEY`: Yelp Fusion API key
-- `YELP_CLIENT_ID`: Yelp Fusion Client ID
-
-### Security
-
-- `ADMIN_KEY`: Admin key for manual actions
-- `INGEST_SIGNING_SECRET`: HMAC secret for GitHub Actions
-
----
-
-## Next Steps
-
-1. **Phase 21 Wave A & B (Current Focus)**:
-   - Run manual batches for Google Places enrichment and direct website crawls.
-   - Run the party extraction script over all core venues with websites.
-   - Implement the Google Places discovery sweep script and chain expansion fallback.
-   - Perform postcode reverse geocoding via postcodes.io.
-2. **Phase 22 Launch and Production Readiness**:
-   - ✅ Redesign frontend listing cards for mobile, highlighting party capacity/pricing.
-   - ✅ Create local shortlist persistence and comparison dashboard.
-   - ✅ Integrate base64 URL sharing for shortlists.
-   - ✅ Display Food Hygiene Rating Scheme (FHRS) scores.
-3. **Phase 23 Public Launch Infrastructure, Security Hardening & AI Eval Benchmark**:
-   - Set up SSL reverse proxy (Nginx/Caddy) with Let's Encrypt for `https://kidspot.london` and `https://api.kidspot.london`.
-   - Update `NEXT_PUBLIC_API_URL`, lock down `CORS_ORIGIN`, and provision `GOOGLE_PLACES_API_KEY`.
-   - Replicate nightly PostGIS database backups (`scripts/backup.sh`) to offsite cloud storage (S3 / Cloudflare R2).
-   - Build 50-item synthetic ground-truth AI dataset (`evals.jsonl`) and Promptfoo benchmark suite for LLM extraction.
-   - Integrate AI tracing (Langfuse) to monitor production LLM calls.
-   - Generate `sitemap.xml`, `robots.txt`, and integrate Plausible privacy analytics.
-   - Implement client-side image fallback retry handlers and Vitest API integration tests.
-
-## Session
-
-**Last session:** 2026-07-28T15:50:22.148Z
-**Stopped at:** Phase 23 execution & Enterprise hardening complete (4/4 plans)
-**Resume file:** .planning/ROADMAP.md
+| Date | Event |
+|------|-------|
+| 2026-08-07 | Ops session: party extraction, borough CSV (843 matched), Wave B ×3 (+45, core→2,311); Phase 24+25 committed |
+| 2026-08-07 | Wave B: 3 runs, +45 venues, core 2,236→2,310; free-tier limits applied |
+| 2026-08-04 | Phase 24 frontend redesign deployed to VPS |
+| 2026-07-28 | Phase 23 completed (4/4 plans) |
+| 2026-07-08 | Phase 22 launch readiness verified (21/21 must-haves) |
+| 2026-06-11 | DB rebuilt after Phase 20 volume incident |

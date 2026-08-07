@@ -1,107 +1,97 @@
-# KidSpot London - Project Context
+# KidSpot London — Project Context
 
-## What This Is
-KidSpot London is a hyper-local, community-driven search engine for child-friendly venues in London. It solves the data fragmentation problem by combining public datasets, intelligent LLM-powered scraping, and real-time web search fallbacks.
+## What this is
 
-## Problem Statement
-Finding a venue for a child's birthday party in London is highly inefficient:
-- **Data Fragmentation**: Information scattered across council websites, business pages, and parish sites
-- **Data Decay**: Operating hours and pricing change frequently, manual directories become stale
-- **Zero-Result Frustration**: Existing directories yield zero results for specific postcodes
-- **Lack of Geo-Context**: Parents need distance, parking, and nearby amenities
+KidSpot London is a **party-first** venue discovery platform for parents in Greater London. It helps find and compare places for children's birthday parties and family events — community halls, soft play, museums with party programmes — not a raw OpenStreetMap dump.
 
-## Core Value
-A unified, geo-aware directory that:
-1. Aggregates public datasets (London Datastore), open-source mapping (OSM), and unstructured web data
-2. Guarantees results with live API fallbacks
-3. Provides mobile-first, lightning-fast UI without account requirements
+## Problem
 
-## Target Users
-- **Time-Poor Parent** (Primary): 28-45, working professional, 1-3 kids. Needs instant radius search, clear contact details, price indicators
-- **The Organizer** (Secondary): PTA member, nursery manager. Needs advanced filtering, map view for logistics
-- **The Venue Owner** (Tertiary/Future): Local church admin, soft-play manager. Needs simple listing management
+Finding a venue for a child's birthday party in London is inefficient:
 
-## Requirements
-1. **Smart Search Bar**: Powered by Photon/Nominatim with auto-suggest for London boroughs and postcodes
-2. **Dynamic Map View**: Toggle between list and map view using MapLibre GL JS with pin clustering
-3. **Never Zero Engine**: Fallback to external web search if no local results
-4. **SEO-Optimized Venue Pages**: Programmatic SEO for long-tail search traffic
+- **Data fragmentation** — scattered across council sites, business pages, parish sites
+- **Data decay** — hours and pricing go stale; directories don't keep up
+- **Zero-result frustration** — postcode searches often return nothing useful
+- **No party context** — generic maps don't show capacity, pricing, or booking links
 
-## Technical Architecture
+## Core value
 
-### Infrastructure
-- **Deployment**: ARM-based VPS with Docker Compose
-- **Database**: PostgreSQL 15 + PostGIS for spatial queries
-- **Cache/Queue**: Redis for caching and BullMQ task queues
+A curated, geo-aware party catalogue that:
 
-### Backend
-- **API**: Node.js 20 + Express
-- **Scraping**: BullMQ workers with Cheerio/Playwright
-- **AI**: OpenRouter API for LLM-powered HTML parsing
-- **Fallback**: Brave Search API for zero-result scenarios
+1. Aggregates OSM, council open data, Google Places, and direct website crawls
+2. Enriches contacts, party pricing, capacity, and FHRS hygiene ratings autonomously
+3. Surfaces **core party venues by default** (parks optional via `include_parks=true`)
+4. Provides mobile-first search, shortlist, compare, and share — **no account required**
 
-### Frontend
-- **Framework**: Next.js (React 18)
-- **Styling**: TailwindCSS
-- **Maps**: MapLibre GL JS
-- **State**: React Query for data fetching
+## Target users
 
-### Key Technical Decisions
-- **ARM Optimization**: Use arm64-specific Docker images
-- **Spatial Indexing**: PostGIS GIST index for fast radius queries
-- **Deduplication**: Levenshtein distance + 50m proximity check
-- **Caching Strategy**: 1-hour search cache, 30-day geocoding cache
-- **Rate Limiting**: 60 requests/minute per IP
+| User | Need |
+|------|------|
+| **Time-poor parent** (primary) | Radius search, party price/capacity, Enquire/Call CTA |
+| **Organiser** (secondary) | Borough/category filters, map view, shortlist compare |
+| **Venue owner** (future) | Claim listing, sponsor tier, analytics dashboard |
 
-## Data Sources
-1. **London Datastore**: Public CSV datasets for leisure centres, community halls
-2. **OpenStreetMap (OSM)**: Overpass API for venue data
-3. **Web Scraping**: LLM-powered parsing of church hall and business websites
-4. **Fallback**: Brave Search API for zero-result scenarios
+## Technical architecture
 
-## Development Roadmap (12 Weeks)
-- **Weeks 1-2**: Data Foundation (VPS, Docker, PostgreSQL, initial imports)
-- **Weeks 3-4**: Ingestion Engine (BullMQ, OpenRouter, OSM integration)
-- **Weeks 5-6**: Backend API & Fallback (Express, caching, Brave Search)
-- **Weeks 7-8**: Frontend Core (Next.js, maps, search UI)
-- **Weeks 9-10**: SEO & Detail Pages (programmatic SEO, sharing)
-- **Weeks 11-12**: Polish & Launch (performance, deployment, UAT)
+| Layer | Stack |
+|-------|-------|
+| **Frontend** | Next.js 16, React 19, Tailwind 3.4, MapLibre GL, TanStack Query, PWA |
+| **Backend** | Node.js 22, Express 5, TypeScript, BullMQ worker |
+| **Database** | PostgreSQL 15 + PostGIS |
+| **Cache/Queue** | Redis 7 |
+| **Deploy** | Docker Compose on ARM VPS, Caddy reverse proxy |
+| **CI/CD** | GitHub Actions (4 scheduled ingest pipelines) |
+| **AI** | NVIDIA LLM fallback for contact + party extraction |
 
-## Go-To-Market Strategy
-1. **Phase 1 (Months 1-3)**: Programmatic SEO with thousands of landing pages
-2. **Phase 2 (Months 2-4)**: Community seeding in London Facebook groups
-3. **Phase 3 (Months 3-6)**: Backlink outreach to parenting bloggers
+### Key technical decisions
 
-## Success Metrics
-- **Search Density Map**: Track most-searched postcodes
-- **Fallback Trigger Rate**: Target < 15% after month 3
-- **Outbound CTR**: Measure actual utility (clicks to call/website)
+- **`venue_scope` curation** — `core` / `secondary` / `excluded`; default search is core-only
+- **Autonomous enrichment** — 42 BullMQ repeatable jobs; COALESCE-safe UPSERTs
+- **Party data spine** — `party_capable`, `party_price_from`, `party_max_capacity`, `party_enquiry_url`
+- **Trust signals** — FHRS hygiene ratings (batch + lazy match)
+- **Zero-auth shortlist** — localStorage + shareable `/shortlist?v=` URLs
+- **Rate limiting** — 60 req/min, Redis-backed; HMAC admin ingest
 
-## Privacy & Analytics
-- **Tool**: Plausible Analytics (privacy-first)
-- **Tracking**: Search density, fallback rate, outbound CTR
-- **No PII**: No personal data collection
+## Data sources
 
-## Security Considerations
-- **Rate Limiting**: 60 req/min per IP to prevent scraping
-- **CORS**: Strict binding to production domain
-- **Headers**: Helmet.js for HSTS, NoSniff, X-Frame-Options
-- **Input Validation**: All API inputs validated and sanitized
+| Source | Role |
+|--------|------|
+| OpenStreetMap / Overpass | Discovery, coordinates, contacts |
+| Google Places | Enrichment, discovery sweep, Street View |
+| Direct website crawl | Contacts, party pages, Schema.org hours |
+| Foursquare / Geoapify | Contact backfill |
+| Brave / Apify | Images, closure detection |
+| NVIDIA API | LLM extraction fallback |
+| FHRS | Food hygiene trust signals |
+| Borough CSVs / London Datastore | Council hall contacts |
 
-## Performance Targets
-- **Load Time**: < 2 seconds on mobile
-- **Search Latency**: < 500ms for cached results
-- **Cache Hit Rate**: > 70% for common searches
+## Completed phases (summary)
 
-## Completed Phases
+| Phase | Delivered |
+|-------|-----------|
+| 01–17 | Foundation, API, frontend, enrichment pipeline |
+| 18–18E | Autonomous worker, party extraction, dedup fix, PWA |
+| 20 | Security hardening, backups, Google Places layer |
+| 22 | Launch readiness — PWA, FHRS, party cards, shortlist/compare/share |
+| 23 | AI eval, OpenAPI, sitemap, analytics (DNS/HTTPS pending) |
+| 24 | Frontend redesign + booking flow (Aug 2026) |
 
-- **Phase 22 (Launch Readiness, 2026-07-08):** Data Max enrichment sweeps (Google Places discovery, postcodes.io geocoding, chain expansion, image backfill orchestrator), PWA installability (SW, manifest, icons, install prompt), FHRS trust signals (batch match, lazy API, detail page score card), mobile-first venue card redesign, and existing feature verification (shortlist, compare, share, trust, CORS, rate limiting). All 4 plans executed, 21/21 must-haves verified.
+**Active:** Phase 21 — catalogue depth (discovery sweep, borough CSVs, party coverage).
 
-## Known Constraints
-- ARM VPS requires arm64 Docker images
-- Mobile-first design required
-- No account creation for core usage
-- Free and accessible to all users
+## Success metrics
+
+- **Listable core venues** — currently 1,765 / target 2,000+
+- **Party-capable core** — currently 182 / target 500+
+- **Outbound CTR** — Enquire/Call/Book clicks on party-capable venues
+- **Shortlist usage** — create, compare, share events (Plausible)
+- **Cron reliability** — GitHub ingest pipelines ≥ 95% success rate
+
+## Privacy & security
+
+- Plausible Analytics (privacy-first, no PII)
+- CORS locked to production origins
+- HMAC-signed admin ingest (GitHub Actions)
+- Helmet security headers
+- Daily encrypted DB backups
 
 ---
-*Last updated: 2026-07-08*
+*Last updated: 2026-08-07*

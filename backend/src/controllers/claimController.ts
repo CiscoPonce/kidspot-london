@@ -11,7 +11,7 @@ export const claimController = {
   async initiateClaim(req: Request, res: Response) {
     try {
       const venueId = parseInt(String(req.params.id ?? ''), 10);
-      const { email, fullName } = req.body;
+      const { email, fullName } = req.body ?? {};
 
       if (isNaN(venueId) || !email || !fullName) {
         return res.status(400).json({

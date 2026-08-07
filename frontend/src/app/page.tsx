@@ -2,11 +2,9 @@
 
 import { useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import Image from 'next/image';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { Header } from '@/components/layout/header';
-import { Hero } from '@/components/layout/hero';
-import { QuickFilters } from '@/components/layout/quick-filters';
-import { BottomNav } from '@/components/layout/bottom-nav';
 import { VenueList } from '@/components/venues/venue-list';
 import { VenueDetailModal } from '@/components/modals/venue-detail-modal';
 import { useSearch } from '@/hooks/use-search';
@@ -42,17 +40,17 @@ function MapPanel({
 
   const venues = venuesResponse?.data.all || [];
 
-    if (lat === null || lon === null) {
+  if (lat === null || lon === null) {
     return (
-      <div className="ks-card flex h-full min-h-[320px] flex-col items-center justify-center px-6 py-16 text-center">
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-tertiary-container/70 text-on-tertiary-container">
-          <span className="material-symbols-outlined text-[28px]">map</span>
+      <div className="flex h-full min-h-[360px] flex-col items-center justify-center rounded-3xl border border-[#EBE5D3] bg-white p-8 text-center shadow-sm">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-yellow/30 text-brand-dark">
+          <span className="material-symbols-outlined text-[30px]">map</span>
         </div>
-        <h3 className="font-display text-lg font-semibold text-on-background">
-          Map view
+        <h3 className="font-display text-xl font-bold text-brand-dark">
+          Map View
         </h3>
-        <p className="mt-1 max-w-xs text-sm text-on-surface-variant">
-          Run a search and your nearby venues will plot here.
+        <p className="mt-2 max-w-xs text-sm text-[#5E5E5E]">
+          Enter your location above to plot safety-checked venues nearby.
         </p>
       </div>
     );
@@ -60,22 +58,22 @@ function MapPanel({
 
   if (isLoading) {
     return (
-      <div className="ks-card flex h-full min-h-[320px] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-outline-variant border-t-primary" />
+      <div className="flex h-full min-h-[360px] items-center justify-center rounded-3xl border border-[#EBE5D3] bg-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#EBE5D3] border-t-brand-yellow" />
       </div>
     );
   }
 
   return (
-    <div className="relative h-full min-h-[400px] overflow-hidden rounded-3xl border border-outline-variant bg-white">
+    <div className="relative h-full min-h-[400px] overflow-hidden rounded-3xl border border-[#EBE5D3] bg-white shadow-sm">
       <VenueMap venues={venues} onVenueSelect={onVenueSelect} />
       {venues.length > 0 && (
         <div className="pointer-events-none absolute left-4 top-4 z-10">
-          <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-on-surface shadow-sm backdrop-blur-sm">
-            <span className="material-symbols-outlined text-[16px] text-[#006972]">
+          <span className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-bold text-brand-dark shadow-md backdrop-blur-sm">
+            <span className="material-symbols-outlined text-[16px] text-brand-dark">
               location_on
             </span>
-            Showing {venues.length} {venues.length === 1 ? 'venue' : 'venues'} nearby
+            Showing {venues.length} {venues.length === 1 ? 'venue' : 'venues'}
           </span>
         </div>
       )}
@@ -85,7 +83,19 @@ function MapPanel({
 
 export default function HomePage() {
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
+  const [locationQuery, setLocationQuery] = useState('');
+  const [dateQuery, setDateQuery] = useState('');
   const mobileMapRef = useRef<HTMLDivElement | null>(null);
+  const { setPostcode, setSearchLocation } = useSearch();
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (locationQuery.trim()) {
+      setPostcode(locationQuery.trim());
+      // Default to London coordinates if search is triggered
+      setSearchLocation(51.5074, -0.1278);
+    }
+  };
 
   const handleVenueSelect = useCallback((venue: Venue) => {
     setSelectedVenue(venue);
@@ -95,203 +105,278 @@ export default function HomePage() {
     setSelectedVenue(null);
   }, []);
 
-  const handleViewMap = useCallback(() => {
-    mobileMapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
-
   return (
-    <div className="min-h-screen bg-background text-on-background pb-32 md:pb-12">
-      <Header />
-
-      <main>
-        <Hero />
-
-        <div className="mt-8 sm:mt-12">
-          <QuickFilters />
+    <div className="min-h-screen bg-[#FFFDF5] text-brand-dark pb-24 md:pb-12">
+      {/* Mobile Floating Hero Header Overlay */}
+      <div className="md:hidden relative w-full h-[380px] bg-brand-dark overflow-hidden">
+        <img
+          src="/hero-party.jpg"
+          alt="Kids birthday party hero"
+          className="h-full w-full object-cover opacity-60"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/80" />
+        
+        {/* Floating Logo Badge */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+          <div className="w-12 h-12 rounded-full bg-brand-yellow flex items-center justify-center shadow-lg font-bold text-brand-dark text-base">
+            KS
+          </div>
         </div>
 
-        <section
-          id="results"
-          className="mx-auto mt-6 max-w-7xl px-4 sm:px-6 sm:mt-8"
-        >
-          <div className="mb-4 flex items-end justify-between sm:mb-6">
-            <div>
-              <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl text-on-background">
-                Nearby places
-              </h2>
-              <p className="mt-1 text-sm text-on-surface-variant">
-                Hand-picked venues sorted by how close they are to you.
-              </p>
+        <div className="absolute bottom-6 left-4 right-4 z-10 text-center">
+          <h1 className="font-display text-2xl font-extrabold text-white tracking-tight leading-tight drop-shadow-md">
+            Find the Perfect Birthday Party Venue
+          </h1>
+
+          <form onSubmit={handleSearchSubmit} className="mt-4 relative">
+            <div className="flex items-center bg-white rounded-full p-1.5 shadow-xl border border-white/20">
+              <span className="material-symbols-outlined text-[#8E8B7B] ml-3 text-[20px]">
+                location_on
+              </span>
+              <input
+                type="text"
+                placeholder="Enter location..."
+                value={locationQuery}
+                onChange={(e) => setLocationQuery(e.target.value)}
+                className="w-full bg-transparent px-3 py-2 text-sm text-brand-dark placeholder-[#8E8B7B] outline-none font-medium"
+              />
+              <button
+                type="submit"
+                className="w-10 h-10 rounded-full bg-brand-yellow text-brand-dark flex items-center justify-center shrink-0 hover:brightness-95 active:scale-95 transition-all shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[20px] font-bold">
+                  search
+                </span>
+              </button>
             </div>
+          </form>
+        </div>
+      </div>
+
+      {/* Desktop Hero Section */}
+      <section className="hidden md:block mx-auto max-w-7xl px-8 pt-8 pb-12">
+        <div className="grid grid-cols-12 gap-12 items-center">
+          <div className="col-span-7">
+            <h1 className="font-display text-5xl font-extrabold text-brand-dark tracking-tight leading-[1.15]">
+              Find the Perfect Kids&apos; Birthday Party Venue
+            </h1>
+            <p className="mt-4 text-base text-[#5E5E5E] max-w-lg leading-relaxed font-normal">
+              London&apos;s #1 directory of safety-checked venues for children&apos;s birthday parties. Soft play, trampolines, adventure centres &amp; more.
+            </p>
+
+            {/* Desktop Search Bar */}
+            <form onSubmit={handleSearchSubmit} className="mt-8">
+              <div className="inline-flex items-center bg-white rounded-full p-2 shadow-lg border border-[#EBE5D3] gap-2">
+                <div className="flex items-center gap-2 px-4 border-r border-[#EBE5D3]">
+                  <span className="material-symbols-outlined text-[#8E8B7B] text-[20px]">
+                    location_on
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Location"
+                    value={locationQuery}
+                    onChange={(e) => setLocationQuery(e.target.value)}
+                    className="w-36 bg-transparent py-2 text-sm font-medium text-brand-dark placeholder-[#8E8B7B] outline-none"
+                  />
+                </div>
+                <div className="flex items-center gap-2 px-4">
+                  <span className="material-symbols-outlined text-[#8E8B7B] text-[20px]">
+                    calendar_today
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="mm/dd/yyyy"
+                    value={dateQuery}
+                    onChange={(e) => setDateQuery(e.target.value)}
+                    className="w-36 bg-transparent py-2 text-sm font-medium text-brand-dark placeholder-[#8E8B7B] outline-none"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="bg-brand-yellow text-brand-dark text-sm font-bold px-8 py-3 rounded-full hover:bg-brand-yellow-hover active:scale-95 transition-all shadow-sm"
+                >
+                  Search
+                </button>
+              </div>
+            </form>
           </div>
 
-          {/* Desktop: map LEFT, results RIGHT (50/50 split, both sticky/scrollable) */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <aside
-              id="map"
-              className="hidden lg:block lg:sticky lg:top-20 lg:self-start lg:h-[calc(100vh-7rem)]"
-            >
-              <MapPanel onVenueSelect={handleVenueSelect} />
-            </aside>
-            <div className="lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-2">
-              <VenueList
-                onVenueSelect={handleVenueSelect}
-                selectedId={selectedVenue?.id}
+          <div className="col-span-5">
+            <div className="relative h-[380px] w-full rounded-3xl overflow-hidden shadow-xl border-4 border-white">
+              <img
+                src="/hero-party.jpg"
+                alt="Kids celebrating birthday party"
+                className="h-full w-full object-cover"
               />
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Mobile / tablet map below the list */}
-          <div
-            ref={mobileMapRef}
-            id="map-mobile"
-            className="lg:hidden mt-6 h-[420px] scroll-mt-24"
+      {/* Mobile Category Quick Cards */}
+      <section className="md:hidden px-4 mt-6">
+        <div className="grid grid-cols-3 gap-3">
+          <Link
+            href="/#results"
+            className="flex flex-col items-center justify-center p-3 rounded-2xl bg-[#F5F2E3] border border-[#E8E2CD] text-center transition-all active:scale-95"
           >
-            <MapPanel onVenueSelect={handleVenueSelect} />
-          </div>
-        </section>
-
-        <section
-          id="trust"
-          className="mx-auto mt-16 max-w-6xl px-4 sm:mt-24 sm:px-6"
-        >
-          <div className="rounded-[2.5rem] border border-outline-variant bg-surface-container px-6 py-16 text-center sm:px-16">
-            <div className="relative z-10">
-              <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl text-on-background">
-                Checked for safety. Approved for fun.
-              </h2>
-              <p className="mx-auto mt-4 max-w-xl text-lg text-on-surface-variant">
-                We do the heavy lifting so you can focus on the party. Every venue on KidSpot is rigorously reviewed for safety, accessibility, and the all-important fun factor.
-              </p>
-              
-              <div className="mx-auto mt-12 grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-3">
-                {[
-                  {
-                    icon: 'verified_user',
-                    title: 'Safety-checked',
-                    body: 'We confirm child-friendly status, accessibility, and basic safety information for every listing.',
-                  },
-                  {
-                    icon: 'health_and_safety',
-                    title: 'Vetted sources',
-                    body: 'Data is cross-checked against trusted sources like Google, Yelp, and OpenStreetMap.',
-                  },
-                  {
-                    icon: 'mood',
-                    title: 'Fun-first',
-                    body: 'We surface the venues parents and kids actually love — not just the closest results.',
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.title}
-                    className="group rounded-3xl border border-outline-variant bg-surface-container-lowest p-6 text-left transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_12px_24px_rgba(29,28,16,0.08)]"
-                  >
-                    <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-container text-on-primary-container transition-transform duration-300 group-hover:scale-110 group-hover:bg-primary-fixed">
-                      <span className="material-symbols-outlined text-[28px]">
-                        {item.icon}
-                      </span>
-                    </div>
-                    <h3 className="font-display text-lg font-bold text-on-background mb-2">
-                      {item.title}
-                    </h3>
-                    <p className="text-sm leading-relaxed text-on-surface-variant">
-                      {item.body}
-                    </p>
-                  </div>
-                ))}
-              </div>
+            <div className="w-10 h-10 rounded-full bg-[#E5DFCA] flex items-center justify-center mb-2 text-brand-dark">
+              <span className="material-symbols-outlined text-[20px]">castle</span>
             </div>
-          </div>
-        </section>
-      </main>
+            <span className="text-[11px] font-bold text-brand-dark leading-tight">
+              Soft Play Parties
+            </span>
+          </Link>
 
-      <footer
-        id="footer"
-        className="mx-auto mt-24 max-w-7xl border-t border-outline-variant px-4 pb-12 pt-16 sm:px-6"
-      >
-        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Brand Column */}
-          <div className="flex flex-col items-start">
-            <div className="flex items-center gap-2 text-on-background">
-              <span className="material-symbols-outlined text-[24px] text-on-primary-container bg-primary-container rounded-full p-1">
-                child_care
-              </span>
-              <span className="font-display text-xl font-bold tracking-tight">
-                KidSpot London
-              </span>
+          <Link
+            href="/#results"
+            className="flex flex-col items-center justify-center p-3 rounded-2xl bg-[#FDF0EE] border border-[#F9E0DC] text-center transition-all active:scale-95"
+          >
+            <div className="w-10 h-10 rounded-full bg-[#F5D7D3] flex items-center justify-center mb-2 text-brand-dark">
+              <span className="material-symbols-outlined text-[20px]">celebration</span>
             </div>
-            <p className="mt-4 text-sm text-on-surface-variant leading-relaxed max-w-xs">
-              The modern directory for finding the perfect kids' party venues across London. Curated, verified, and built for happy families.
+            <span className="text-[11px] font-bold text-brand-dark leading-tight">
+              Themed Party Rooms
+            </span>
+          </Link>
+
+          <Link
+            href="/#results"
+            className="flex flex-col items-center justify-center p-3 rounded-2xl bg-[#EDEAF7] border border-[#DDD7EF] text-center transition-all active:scale-95"
+          >
+            <div className="w-10 h-10 rounded-full bg-[#D7CFEE] flex items-center justify-center mb-2 text-brand-dark">
+              <span className="material-symbols-outlined text-[20px]">sports_gymnastics</span>
+            </div>
+            <span className="text-[11px] font-bold text-brand-dark leading-tight">
+              Adventure & Trampoline
+            </span>
+          </Link>
+        </div>
+      </section>
+
+      {/* Trust Banner */}
+      <section className="w-full bg-[#F7F2E2] border-y border-[#EBE5D3] py-6 mt-8 md:mt-12 px-4 text-center">
+        <p className="text-xs font-bold uppercase tracking-wider text-[#7B785F]">
+          Trusted by 50,000+ parents & partners
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-16 mt-4 text-sm font-bold text-brand-dark">
+          <span>PartyTots</span>
+          <span className="hidden sm:inline text-[#CCC7AB]">|</span>
+          <span>SafePlay UK</span>
+          <span className="hidden sm:inline text-[#CCC7AB]">|</span>
+          <span>ActiveKids</span>
+        </div>
+      </section>
+
+      {/* Top Rated Venues & Interactive Results */}
+      <section id="results" className="mx-auto max-w-7xl px-4 sm:px-8 mt-10 md:mt-16">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="font-display text-2xl md:text-3xl font-extrabold text-brand-dark">
+              Top Birthday Party Venues
+            </h2>
+            <p className="text-xs md:text-sm text-[#5E5E5E] mt-1">
+              Every venue listed is verified for hosting kids&apos; birthday parties.
+            </p>
+          </div>
+          <Link
+            href="/#results"
+            className="text-xs font-bold text-brand-dark hover:underline flex items-center gap-1"
+          >
+            See All <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+          </Link>
+        </div>
+
+        {/* Split Grid: Results List + Interactive Map */}
+        <div className="grid gap-8 lg:grid-cols-12">
+          <div className="lg:col-span-7">
+            <VenueList
+              onVenueSelect={handleVenueSelect}
+              selectedId={selectedVenue?.id}
+            />
+          </div>
+
+          <aside
+            id="map"
+            className="lg:col-span-5 lg:sticky lg:top-24 lg:self-start lg:h-[calc(100vh-8rem)]"
+          >
+            <div ref={mobileMapRef} className="h-[380px] lg:h-full">
+              <MapPanel onVenueSelect={handleVenueSelect} />
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      {/* Feature Highlights (3 Cards) */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-8 mt-16 md:mt-24">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Card 1: Safety First */}
+          <div className="bg-white rounded-3xl border border-[#EBE5D3] p-8 shadow-sm hover:shadow-md transition-all">
+            <div className="w-12 h-12 rounded-full bg-[#ECE600] flex items-center justify-center mb-6 text-brand-dark">
+              <span className="material-symbols-outlined text-[24px]">verified_user</span>
+            </div>
+            <h3 className="font-display text-xl font-bold text-brand-dark mb-2">
+              Party-Safe Verified
+            </h3>
+            <p className="text-sm text-[#5E5E5E] leading-relaxed">
+              Every birthday venue is vetted for child safety, insurance, and hygiene standards.
             </p>
           </div>
 
-          {/* Discover Column */}
-          <div>
-            <h4 className="font-display text-sm font-bold tracking-wider uppercase text-on-background mb-4">
-              Discover
-            </h4>
-            <ul className="flex flex-col gap-3 text-sm text-on-surface-variant">
-              <li><a href="/venues-by/softplay" className="hover:text-primary transition-colors">Soft Play</a></li>
-              <li><a href="/venues-by/park" className="hover:text-primary transition-colors">Parks & Playgrounds</a></li>
-              <li><a href="/venues-by/museum" className="hover:text-primary transition-colors">Museums</a></li>
-              <li><a href="/venues-by/community_hall" className="hover:text-primary transition-colors">Party Rooms</a></li>
-            </ul>
+          {/* Card 2: Instant Booking */}
+          <div className="bg-white rounded-3xl border border-[#EBE5D3] p-8 shadow-sm hover:shadow-md transition-all">
+            <div className="w-12 h-12 rounded-full bg-[#E8D9FF] flex items-center justify-center mb-6 text-[#6B21A8]">
+              <span className="material-symbols-outlined text-[24px]">bolt</span>
+            </div>
+            <h3 className="font-display text-xl font-bold text-brand-dark mb-2">
+              Book the Party Instantly
+            </h3>
+            <p className="text-sm text-[#5E5E5E] leading-relaxed">
+              Pick a party package, choose your date, and lock in the birthday celebration in seconds.
+            </p>
           </div>
 
-          {/* Company Column */}
-          <div>
-            <h4 className="font-display text-sm font-bold tracking-wider uppercase text-on-background mb-4">
-              Company
-            </h4>
-            <ul className="flex flex-col gap-3 text-sm text-on-surface-variant">
-              <li><a href="/about" className="hover:text-primary transition-colors">About Us</a></li>
-              <li><a href="/owner" className="hover:text-primary transition-colors">For Venue Owners</a></li>
-              <li>
-                <a href="https://tally.so/r/n0XOXO" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
-                  Submit Feedback
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Legal Column */}
-          <div>
-            <h4 className="font-display text-sm font-bold tracking-wider uppercase text-on-background mb-4">
-              Legal
-            </h4>
-            <ul className="flex flex-col gap-3 text-sm text-on-surface-variant">
-              <li><a href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</a></li>
-              <li><a href="/terms" className="hover:text-primary transition-colors">Terms of Service</a></li>
-            </ul>
+          {/* Card 3: Party Experts */}
+          <div className="bg-white rounded-3xl border border-[#EBE5D3] p-8 shadow-sm hover:shadow-md transition-all">
+            <div className="w-12 h-12 rounded-full bg-[#FFD6E8] flex items-center justify-center mb-6 text-[#9F1239]">
+              <span className="material-symbols-outlined text-[24px]">celebration</span>
+            </div>
+            <h3 className="font-display text-xl font-bold text-brand-dark mb-2">
+              Birthday Party Experts
+            </h3>
+            <p className="text-sm text-[#5E5E5E] leading-relaxed">
+              From soft play to trampolines, our curated catalogue is 100% focused on kids&apos; birthday parties.
+            </p>
           </div>
         </div>
+      </section>
 
-        <div className="mt-16 border-t border-outline-variant pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-outline">
-          <p>© {new Date().getFullYear()} KidSpot. All rights reserved.</p>
-          <div className="flex items-center gap-4">
-            <span className="material-symbols-outlined hover:text-on-background transition-colors cursor-pointer text-[20px]">language</span>
-            <span>Made in London</span>
+      {/* Call-to-Action Banner */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-8 mt-16 md:mt-24">
+        <div className="bg-brand-yellow rounded-3xl p-8 md:p-16 text-center shadow-xl border border-brand-yellow">
+          <h2 className="font-display text-3xl md:text-5xl font-extrabold text-brand-dark tracking-tight">
+            Ready to plan the perfect birthday party?
+          </h2>
+          <p className="mt-4 text-sm md:text-base text-brand-dark/80 max-w-xl mx-auto font-medium">
+            Join thousands of parents who&apos;ve booked safe, verified birthday party venues for their kids through KidSpot.
+          </p>
+          <div className="mt-8">
+            <Link
+              href="/#results"
+              className="inline-flex items-center gap-2 bg-brand-olive text-white text-base font-bold px-8 py-4 rounded-full hover:bg-black active:scale-95 transition-all shadow-md"
+            >
+              Start Your Search
+              <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+            </Link>
           </div>
         </div>
-      </footer>
+      </section>
 
-      {/* Mobile floating "View Map" pill (above the bottom nav) */}
-      <button
-        type="button"
-        onClick={handleViewMap}
-        aria-label="View venues on the map"
-        className="fixed bottom-[calc(env(safe-area-inset-bottom)+72px)] left-1/2 z-30 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-on-background px-5 py-3 text-sm font-semibold text-background shadow-[0_8px_24px_rgba(29,28,16,0.25)] hover:bg-tertiary active:scale-95 transition lg:hidden"
-      >
-        <span className="material-symbols-outlined text-[18px]">map</span>
-        View Map
-      </button>
-
-      <BottomNav />
-
+      {/* Venue Detail Modal */}
       {selectedVenue && (
         <VenueDetailModal
           venue={selectedVenue}
-          isOpen={true}
+          isOpen={!!selectedVenue}
           onClose={handleModalClose}
         />
       )}

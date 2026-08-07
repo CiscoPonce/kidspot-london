@@ -29,14 +29,16 @@ const CATEGORY_KEYWORDS = [
   'library'
 ];
 
+const MAX_SEARCHES_PER_RUN = 20; // ~600 searches/month if run daily — stays within free tier
+
 /**
- * Google Places discovery pipeline
  *
  * For under-represented boroughs, search Google Places via Text Search
  * to discover new venues not yet in the database.
  */
 export async function discoverVenuesViaGooglePlaces(batchSize: number = 50): Promise<GooglePlacesDiscoveryResult> {
   const result: GooglePlacesDiscoveryResult = { discovered: 0, skipped: 0, failed: 0, totalProcessed: 0 };
+  let searchCount = 0;
 
   if (!env.GOOGLE_PLACES_API_KEY) {
     logger.warn('Google Places discovery skipped: GOOGLE_PLACES_API_KEY not configured.');
@@ -108,15 +110,18 @@ export async function discoverVenuesViaGooglePlaces(batchSize: number = 50): Pro
     };
 
     for (const borough of targetBoroughs) {
+      if (result.discovered >= batchSize || searchCount >= MAX_SEARCHES_PER_RUN) break;
       const centroid = boroughCentroids[borough] || { lat: 51.5074, lon: -0.1278 };
 
       for (const keyword of CATEGORY_KEYWORDS) {
+        if (result.discovered >= batchSize || searchCount >= MAX_SEARCHES_PER_RUN) break;
         // Rate limit between calls
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         const searchQuery = `${keyword} in ${borough}, London`;
 
         try {
+          searchCount++;
           const matches = await googlePlacesService.textSearch(searchQuery, {
             maxResults: 10,
             locationBias: { lat: centroid.lat, lon: centroid.lon },
@@ -131,6 +136,7 @@ export async function discoverVenuesViaGooglePlaces(batchSize: number = 50): Pro
           logger.info({ borough, keyword, count: matches.length }, `Found ${matches.length} results for "${searchQuery}"`);
 
           for (const match of matches) {
+            if (result.discovered >= batchSize) break;
             result.totalProcessed++;
 
             try {
@@ -174,7 +180,7 @@ export async function discoverVenuesViaGooglePlaces(batchSize: number = 50): Pro
               await db.query(
                 `INSERT INTO venues (
                   source, source_id, name, lat, lon, slug, website, phone,
-                  formatted_address, borough, type, last_scraped, is_active,
+                  address, borough, type, last_scraped, is_active,
                   google_places_enriched_at, enriched_at
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), TRUE, NOW(), NOW())
                 ON CONFLICT (source, source_id) DO UPDATE SET
@@ -183,7 +189,7 @@ export async function discoverVenuesViaGooglePlaces(batchSize: number = 50): Pro
                   lon = EXCLUDED.lon,
                   website = COALESCE(NULLIF(EXCLUDED.website, ''), venues.website),
                   phone = COALESCE(NULLIF(EXCLUDED.phone, ''), venues.phone),
-                  formatted_address = COALESCE(NULLIF(EXCLUDED.formatted_address, ''), venues.formatted_address),
+                  address = COALESCE(NULLIF(EXCLUDED.address, ''), venues.address),
                   last_scraped = NOW()
                 RETURNING id`,
                 [
@@ -219,7 +225,7 @@ export async function discoverVenuesViaGooglePlaces(batchSize: number = 50): Pro
     throw err;
   }
 
-  logger.info(result, 'Google Places discovery batch completed.');
+  logger.info({ ...result, searchCount }, 'Google Places discovery batch completed.');
   return result;
 }
 

@@ -4,41 +4,35 @@
 
 ---
 
-## Where the project stands (July 2026)
+## Where the project stands (August 2026)
 
-The platform is **launch-ready** after Phase 22:
+The platform is **launch-ready** — product complete through Phase 24; go-live infra and catalogue depth remain.
 
 | Area | Status |
 |:-----|:-------|
-| **Product** | Party-first UI: cards, shortlist, compare, share, **PWA installable**, **FHRS trust signals**. API defaults to **core catalogue**. |
-| **Data structure** | `venue_scope` (core / secondary / review / excluded) and **`london_borough`** (33 boroughs) in place. FHRS denormalized rating fields on venues. |
-| **Noise reduction** | ~2,500 junk venues deactivated; parks moved to `secondary`. |
-| **Party facts** | 18D extraction live; core venues crawled first. |
-| **PWA** | Service worker (network-first search, stale-while-revalidate detail), manifest, install prompt. |
-| **Trust signals** | FHRS food hygiene scores on detail pages — batch (daily 8am) + lazy on-demand matching. |
-| **Gaps** | ~**670 listable** core venues; Google Places API key needed for Street View images and venue discovery. |
+| **Product** | Party-first UI, shortlist, compare, share, PWA, booking flow (Phase 24). API defaults to **core catalogue**. |
+| **Data structure** | `venue_scope`, `london_borough` (33 boroughs), party fields, FHRS denormalized ratings. |
+| **Catalogue** | **2,311 core** venues · **182 party-capable** (post–Wave B, Aug 7). |
+| **Contact coverage** | Core: ~78.6% websites · ~57.5% phones · ~16.9% images. |
+| **Enrichment** | Worker with free-tier Google Places limits (12h, batch 25). |
+| **API** | v1.3.0 — FHRS + `/metrics` mounted and live. |
+| **Crons** | GitHub Actions: all green. |
+| **Go-live gaps** | DNS + HTTPS for `kidspot.london`; offsite backups; git push. |
 
-**Honest summary:** All 21 must-haves for launch readiness are verified. Frontend is mobile-first with offline caching. Remaining depth is data-side (contacts, pricing) — architecture is complete.
-
-Planning: `.planning/ROADMAP.md` — phases **18B–22** complete.
+**Planning docs:** [`.planning/STATE.md`](.planning/STATE.md) · [`.planning/ROADMAP.md`](.planning/ROADMAP.md) · [`NEXT_ACTIONS.md`](NEXT_ACTIONS.md)
 
 ---
 
-## 📊 Platform scale (production snapshot)
+## 📊 Platform scale (production snapshot — 7 Aug 2026)
 
-Figures from the curated Postgres database (run live queries for exact counts).
+| Metric | Value |
+|:-------|------:|
+| **Total venues** | 16,751 |
+| **Active venues** | 16,033 |
+| **`venue_scope = core`** (party catalogue) | 2,311 |
+| **`party_capable = true` (core)** | 182 |
 
-| Metric | Approx. value |
-|:-------|-------------:|
-| **Active venues** | ~12,200 |
-| **`venue_scope = core`** (party catalogue) | ~2,100 |
-| **`venue_scope = secondary`** (parks / outdoor) | ~7,600 |
-| **Deactivated (`excluded`)** | ~4,700 |
-| **Listable core** (type-aware: contact or confirmed party) | ~670 |
-| **`party_capable = true` (core)** | ~40+ (growing) |
-| **`london_borough` populated** | 100% of active rows |
-
-> `GET /api/admin/enrichment-stats` (HMAC) or SQL in `backend/scripts/maintenance/` for live numbers.
+> Live numbers: `GET /api/admin/enrichment-stats` (HMAC) or SQL in `backend/scripts/maintenance/`.
 
 ---
 

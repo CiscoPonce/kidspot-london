@@ -1,15 +1,41 @@
-# KidSpot London - Development Roadmap
+# KidSpot London — Development Roadmap
 
-## Project Vision
+## Project vision
 
 To become the default, zero-friction utility for parents in the UK to discover, evaluate, and share child-friendly spaces, starting with London.
 
-## Tech Stack
+## Phase status at a glance (Aug 2026)
 
-- **Frontend**: Next.js 16.2 (React 19), TailwindCSS 4, MapLibre GL JS 5
-- **Backend**: Node.js 22, Express 5, BullMQ (Autonomous Enrichment Engine), Pino Logging
-- **Data/AI**: PostgreSQL 15 + PostGIS, Redis 7, Brave Search API, Yelp Fusion API, Apify (Google Places)
-- **Infrastructure**: Docker Compose on VPS, GitHub Actions
+| Phase | Name | Status |
+|------:|------|--------|
+| 01–07 | Foundation → improvement | ✅ Complete |
+| 08.5 | UX & data quality | ✅ Complete |
+| 09–10 | Revenue & sponsors | ✅ Complete |
+| 11–16 | Scale & enrichment | ✅ Complete |
+| 17 | High-velocity enrichment | ✅ Complete |
+| 18 | Autonomous enrichment engine | ✅ Complete |
+| 18B | Contact extraction yield | ✅ Complete |
+| 18C | Party-first frontend & PWA | ✅ Complete |
+| 18D | Party data extraction | ✅ Complete |
+| 18E | Dedup & search ranking | ✅ Complete |
+| 18.5 | Chain enrichment | ✅ Complete |
+| 19 | Revenue monetisation V2 | ⏸️ Deferred |
+| 20 | Security, backups, Google Places | ✅ Complete |
+| **21** | **Party catalogue maximisation** | **🔄 Active** |
+| 25 | Pre-launch hardening & Wave B | **🔄 Active** |
+| 22 | Launch readiness | ✅ Complete |
+| 23 | Public launch infra & AI eval | ⚠️ Mostly complete |
+| 24 | Frontend redesign & booking | ✅ Complete |
+
+**Current focus:** Phase 25 (API hardening, rebuild) + Phase 21 Wave B (discovery).
+**Go-live gaps:** DNS, HTTPS, mount FHRS/metrics routes, offsite backups. See [STATE.md](./STATE.md).
+
+## Tech stack
+
+- **Frontend**: Next.js 16 (React 19), Tailwind CSS 3.4, MapLibre GL JS, TanStack Query, PWA
+- **Backend**: Node.js 22, Express 5, BullMQ, Pino, TypeScript
+- **Data/AI**: PostgreSQL 15 + PostGIS, Redis 7, NVIDIA LLM, Brave, Google Places, Foursquare, Geoapify, Apify, FHRS
+- **Infrastructure**: Docker Compose on ARM VPS, Caddy, GitHub Actions crons
 
 ---
 
@@ -249,19 +275,20 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ## Phase 18B: Contact Extraction Yield Optimization (Weeks 23-24)
 
-**Status**: **PLANNED**
-**Goal**: Increase the yield of the direct-crawl contact extraction pipeline by ~30% through browser-grade HTTP headers and LLM fallback extraction, without adding new infrastructure.
-**Requirements**:
+**Status**: **COMPLETED** (June 2026)
+**Goal**: Increase the yield of the direct-crawl contact extraction pipeline through browser-grade HTTP headers and LLM fallback extraction.
 
-- **CE-01**: Browser-grade header spoofing on all outbound venue crawls
-- **CE-02**: LLM fallback extraction via OpenRouter when cheerio+regex returns nothing
-- **CE-03**: BullMQ worker rate limiter to reduce upstream firewall blocks
+**Completed**:
+
+- ✅ Browser-grade headers on all venue crawls (`httpHeaders.ts`)
+- ✅ NVIDIA LLM fallback in `direct-crawl-enrichment.ts` when cheerio+regex returns nothing
+- ✅ BullMQ worker rate limiter
 
 ---
 
-## Phase 18D: Party Data Extraction (Weeks 25-26) — RUN FIRST (data spine for 18C)
+## Phase 18D: Party Data Extraction (Weeks 25-26)
 
-**Status**: **PLANNED**
+**Status**: **COMPLETED** (June 2026)
 **Goal**: Give KidSpot the data its PRIMARY job (birthday parties / reunions) needs. The party-capable categories currently have **0% booking links, ~0% party pricing, and no party-capability flag at all** (only 33 of 14,676 venues mention "party"). Extend the Phase 18B engine (browser-grade crawl + NVIDIA LLM fallback) with a party-focused extraction pass. Backend-only; sequenced ahead of / parallel to 18C, which renders these fields.
 
 **Addressable now** (~4,400 venues with a website): softplay (321 @ 100% web), leisure centres (~3,800 @ 92%), community halls with sites (~310 @ 20%).
@@ -279,7 +306,7 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ## Phase 18C: Party-First Frontend & Mobile-First Experience (Weeks 25-26)
 
-**Status**: **PLANNED** (depends on Phase 18D)
+**Status**: **COMPLETED** (July 2026, consolidated into Phase 22)
 **Goal**: Rebuild the frontend around KidSpot's PRIMARY job — helping a parent find and book a venue for a child's **birthday party or family reunion** — mobile-first and honest about its data. The hero flow (search → shortlist → **compare** → **share/enquire**) ships **locally with no auth**; server-backed persistence + accounts defer to Phase 19. Lean into the party-planning job general maps don't do, not the glossy 2% of softplay chains.
 
 **Data reality driving this phase** (active venues): party-capable categories have 0% booking links / ~0% party price today (filled by 18D); parks (52%) are a *secondary* free-outdoor-party option rendered map/features-first. So cards must be **category-aware and party-first** with honest empty states, degrading to contact-to-enquire until 18D coverage lands.
@@ -306,9 +333,9 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ---
 
-## Phase 19: Revenue Monetization V2 (Planned)
+## Phase 19: Revenue Monetization V2
 
-**Status**: **PLANNED**
+**Status**: **DEFERRED** — claim/billing scaffolding exists; activation deferred until post-launch traffic
 **Goal**: Enable venue owner self-service claiming and premium sponsorship tiers, leveraging the enriched contact data from Phase 18.
 
 **Requirements**:
@@ -340,9 +367,34 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ---
 
-## Phase 22: Parent-Facing Launch & Production Readiness (Planned)
+## Phase 21: Party Catalogue Maximisation
 
-**Status**: **PLANNED** (depends on Phase 21)
+**Status**: **ACTIVE** (June 2026 → ongoing)
+**Goal**: Maximise hireable venues and softplay for kids' birthdays in Greater London with usable contact and party data.
+
+**Strategy:** Discovery → Curation → Enrichment (repeat). See `.planning/phases/21-party-catalogue-maximisation/21-PLAN.md`.
+
+**Wave A** (manual batches — largely complete Aug 2026):
+
+- ✅ Google Places enrichment pass (queues empty)
+- ✅ Direct website crawl (queues empty)
+- ✅ Party extraction on core venues with websites (132 party_capable)
+- ⏳ Borough CSV hall-hire contact ingest
+
+**Wave B** (next):
+
+- Google Places discovery sweep (new venues by borough)
+- Chain expansion via Google Places
+- postcodes.io geocoding backlog
+- Wikimedia image enrichment (script written, untracked)
+
+**Success criteria:** Listable core ≥ 2,000 · party_capable ≥ 500 · core images ≥ 40%
+
+---
+
+## Phase 22: Parent-Facing Launch & Production Readiness
+
+**Status**: **COMPLETED** (July 8, 2026)
 **Goal**: Package the platform for public adoption in London by completing key data sweeps, introducing custom sharing & comparison tools, integrating trust symbols, and completing SSL/API security hardening.
 
 **Requirements**:
@@ -374,21 +426,55 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - **23-SEO-01**: **SEO & Analytics Integration** — Generate programmatic `sitemap.xml` for all 33 London Borough landing pages, `robots.txt`, and integrate privacy-friendly analytics (Plausible/PostHog).
 - **23-UX-01**: **Image Fallbacks & API Integration Tests** — Implement client-side retry logic for broken remote images and write Vitest integration test suites for spatial search endpoints.
 
-**Status**: **COMPLETED**  
+**Status**: **MOSTLY COMPLETE** (July 28, 2026)  
 **Depends on:** Phase 22  
-**Plans:** 4/4 plans completed
+**Plans:** 4/4 plans executed; 3 infra items remain
 
-**Planned Breakdown:**
-- [x] 23-01-PLAN.md — **Infrastructure & SSL**: Caddy/Nginx reverse proxy, Let's Encrypt HTTPS, domain mapping, production CORS lockdown
-- [x] 23-02-PLAN.md — **Backup Replication & Disaster Recovery**: Offsite S3/R2 backup script, automated sync cron, environment key hardening
-- [x] 23-03-PLAN.md — **AI Evaluation Framework & Tracing**: `evals.jsonl` dataset, Promptfoo benchmark harness, Langfuse tracing integration
-- [x] 23-04-PLAN.md — **SEO, Analytics & Frontend Polish**: `sitemap.xml`, `robots.txt`, Plausible analytics, client image fallback retry logic
+**Completed:**
+- [x] 23-01 — Caddy reverse proxy (port 80), production CORS config
+- [x] 23-02 — Daily VPS backup cron (local dumps); env key hardening
+- [x] 23-03 — AI eval benchmark (`npm run eval:party`), LLM tracing, OpenAPI spec
+- [x] 23-04 — `sitemap.xml`, `robots.txt`, Plausible analytics, image fallbacks
 
+**Remaining gaps:**
+- [ ] DNS for `kidspot.london` → VPS
+- [ ] Let's Encrypt HTTPS (Caddy has `auto_https disable_redirects`)
+- [ ] Offsite backup replication (S3/R2)
+- [ ] Mount `/api/fhrs/match/:id` and `/metrics` in `server.ts`
 
+---
+
+## Phase 24: High-Fidelity Frontend Redesign & Party Booking Flow
+
+**Status**: **COMPLETED** (August 4, 2026) — *deployed on VPS, uncommitted to git*
+
+**Goal**: Modern party-first UI with booking flow pages.
+
+**Delivered:**
+- ✅ Hero redesign with party imagery
+- ✅ Venue card & detail page polish
+- ✅ Booking flow pages (`/booking/packages`, `/booking/confirmation`)
+- ✅ How-it-works page, footer, bottom nav updates
+- ✅ Booking context provider
+
+**Note:** 19 commits + uncommitted changes on VPS `master` ahead of `origin/master`.
+
+---
+
+## Phase 25: Pre-Launch Hardening & Wave B Discovery
+
+**Status**: **ACTIVE** (August 7, 2026)
+**Goal**: Ship improvements that don't require a domain — mount missing API routes, fix error handling, rebuild containers, run Wave B discovery.
+
+**Plans:**
+- [x] 25-01 — Mount FHRS + `/metrics`; fix empty-body 400 errors; API v1.3.0
+- [x] 25-02 — Wave B discovery (6 runs: +90 venues, core 2,236→2,311); free-tier caps applied
+- [x] 25-03 — Docker rebuild + smoke tests (51/51 pass)
+- [x] 25-04 — Phase 24+25 commit + push; borough CSV + party extraction ops
 
 ---
 
 ## Last Updated
 
-July 28, 2026
+August 7, 2026
 

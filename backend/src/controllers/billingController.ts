@@ -19,7 +19,7 @@ export const billingController = {
    */
   async createCheckoutSession(req: Request, res: Response) {
     try {
-      const { venueId, tier, interval = 'monthly' } = req.body;
+      const { venueId, tier, interval = 'monthly' } = req.body ?? {};
 
       if (!venueId || !tier) {
         return res.status(400).json({

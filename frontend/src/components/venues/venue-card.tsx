@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import {
   Trees,
@@ -135,8 +134,6 @@ export function VenueCard({
   const plausible = usePlausible();
   const { has, toggle } = useShortlist();
 
-  const [imgFailed, setImgFailed] = useState(false);
-  const [imgRetries, setImgRetries] = useState(0);
   const isSaved = has(venue.id);
   const imageUrl = firstImage(venue);
   const trust = trustSignals(venue);
@@ -181,203 +178,89 @@ export function VenueCard({
       role="button"
       tabIndex={0}
       aria-pressed={isSelected}
-      className={`group relative cursor-pointer overflow-hidden ks-card flex flex-col sm:flex-row ${
-        isSelected ? 'ks-card-active' : ''
-      } ${isGold ? 'ring-2 ring-[#efdf00]' : ''}`}
+      className={`group relative cursor-pointer overflow-hidden rounded-3xl bg-white border border-[#EBE5D3] shadow-sm hover:shadow-md transition-all flex flex-col ${
+        isSelected ? 'ring-2 ring-brand-yellow' : ''
+      }`}
     >
-      {isGold && (
-        <div className="pointer-events-none absolute right-0 top-0 z-20 h-16 w-16 overflow-hidden">
-          <div className="absolute right-[-24px] top-2 w-24 rotate-45 bg-amber-400 py-1 text-center text-[8px] font-black uppercase tracking-tighter text-amber-900 shadow-sm">
-            Featured
+      {/* Image Container with Overlay Badge */}
+      <div className="relative w-full aspect-[16/10] overflow-hidden bg-brand-cream-dark">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={venue.name}
+            loading="lazy"
+            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-[#F3EEDA]">
+            <Icon size={56} strokeWidth={1.5} className="text-[#8E8B7B]" />
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Image / category placeholder */}
-      <div className="relative shrink-0 overflow-hidden bg-surface-variant sm:w-[40%] sm:min-w-[180px]">
-        <div className="aspect-[16/10] sm:aspect-auto sm:h-full sm:min-h-[180px]">
-          {!imgFailed && imageUrl ? (
-            <img
-              src={imgRetries > 0 ? `${imageUrl}?retry=${imgRetries}` : imageUrl}
-              alt={venue.name}
-              loading="lazy"
-              onError={() => {
-                if (imgRetries < 1) {
-                  setImgRetries((r) => r + 1);
-                } else {
-                  setImgFailed(true);
-                }
-              }}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-surface-variant">
-              <Icon size={56} strokeWidth={1.5} className="text-on-surface-variant/40" />
-            </div>
-          )}
-        </div>
-
-        {/* Save / shortlist button */}
+        {/* Save / Shortlist Heart Button */}
         <button
           type="button"
           onClick={handleSaveToggle}
           aria-pressed={isSaved}
           aria-label={isSaved ? `Remove ${venue.name} from shortlist` : `Add ${venue.name} to shortlist`}
-          className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-lowest/90 backdrop-blur-sm shadow-sm hover:bg-surface-container-lowest active:scale-90 transition"
+          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white active:scale-90 transition"
         >
           <Heart
-            size={20}
+            size={18}
             strokeWidth={2.5}
-            className={isSaved ? 'fill-primary text-primary' : 'text-on-surface-variant'}
+            className={isSaved ? 'fill-rose-500 text-rose-500' : 'text-[#5E5E5E]'}
           />
         </button>
 
-        {/* Party-capable badge */}
-        {partyCapable && (
-          <span className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full bg-primary text-on-primary px-2.5 py-1 text-[11px] font-bold shadow-sm">
-            🎉 Hosts parties
+        {/* Birthday Party Badge Overlay (Bottom Right of Image) */}
+        <div className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur-sm px-3 py-1 text-xs font-bold text-brand-dark shadow-sm border border-black/5">
+          <span className="text-[14px]">
+            🎂
           </span>
-        )}
-
-        {/* Verifiable trust signal (replaces the old fake "Safe-checked") */}
-        {trust.length > 0 && (
-          <span className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1 rounded-full bg-tertiary-container text-on-tertiary-container px-2.5 py-1 text-[11px] font-semibold shadow-sm">
-            <span className="material-symbols-outlined text-[13px]">{trust[0].icon}</span>
-            {trust[0].label}
-          </span>
-        )}
+          Birthday Party Venue
+        </div>
       </div>
 
-      {/* Content */}
-      <div className="flex flex-1 flex-col justify-between p-4 sm:p-5">
+      {/* Content Body */}
+      <div className="flex flex-1 flex-col justify-between p-5">
         <div>
-          <div className="flex items-start gap-2">
-            <span
-              className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${meta.chip}`}
-            >
-              {meta.label}
-              {venue.borough ? <span className="opacity-70">· {venue.borough}</span> : null}
-            </span>
-            {sponsorClass && (
-              <span
-                className={`inline-flex items-center rounded-full border-2 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider shadow-sm ${sponsorClass}`}
-              >
-                {venue.sponsor_tier}
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-display text-lg font-bold leading-tight text-brand-dark line-clamp-1">
+              {venue.name}
+            </h3>
+            {venue.rating && (
+              <span className="inline-flex items-center gap-1 font-bold text-sm text-brand-dark shrink-0">
+                <Star size={15} strokeWidth={2.5} className="fill-amber-400 text-amber-400" />
+                {Number(venue.rating).toFixed(1)}
               </span>
             )}
           </div>
 
-          <h3 className="mt-2 font-display text-[1.05rem] sm:text-lg font-bold leading-tight text-on-background line-clamp-2">
-            {venue.name}
-          </h3>
-
-          {/* Party data + quick action — price, capacity, Enquire/Call */}
-          {(partyPrice || capacity) && (partyCapable || isFreePark) ? (
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                {partyPrice ? (
-                  <p className="text-sm leading-tight">
-                    <span className="text-xs uppercase tracking-wide text-outline">from </span>
-                    <span className="font-bold text-on-background text-base">{partyPrice.from}</span>
-                    {partyPrice.unit ? <span className="text-xs text-outline"> {partyPrice.unit}</span> : null}
-                  </p>
-                ) : isFreePark ? (
-                  <p className="text-sm leading-tight">
-                    <span className="font-bold text-tertiary text-base">Free</span>
-                    <span className="text-xs text-outline"> · outdoor party</span>
-                  </p>
-                ) : null}
-                {capacity ? (
-                  <span className="inline-flex items-center gap-1 text-sm text-on-surface-variant">
-                    <Users size={14} strokeWidth={2.5} />
-                    Up to {capacity}
-                  </span>
-                ) : null}
-              </div>
-              {partyCapable && enquiryUrl ? (
-                <a
-                  href={enquiryUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => handleEnquiry(e, 'enquiry')}
-                  className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-2.5 text-sm font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
-                  aria-label={`Enquire about a party at ${venue.name}`}
-                >
-                  Enquire
-                </a>
-              ) : partyCapable && venue.phone ? (
-                <a
-                  href={`tel:${venue.phone}`}
-                  onClick={(e) => handleEnquiry(e, 'call')}
-                  className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-2.5 text-sm font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
-                  aria-label={`Call ${venue.name} about a party`}
-                >
-                  Call
-                </a>
-              ) : null}
-            </div>
-          ) : null}
-
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-on-surface-variant">
-            {venue.rating ? (
-              <span className="inline-flex items-center gap-1 font-semibold text-on-background">
-                <Star size={14} strokeWidth={2.5} className="fill-primary text-primary" />
-                {Number(venue.rating).toFixed(1)}
-              </span>
-            ) : null}
-
-            {openState !== 'unknown' && (
-              <span
-                className={`inline-flex items-center gap-1 font-semibold ${
-                  openState === 'open' ? 'text-tertiary' : 'text-outline'
-                }`}
-              >
-                <Clock size={13} strokeWidth={2.5} />
-                {openState === 'open' ? 'Open now' : 'Closed'}
-              </span>
-            )}
-            {distance > 0 && (
-              <span className="inline-flex items-center gap-1">
-                <MapPin size={12} strokeWidth={2.5} />
-                {formatDistance(distance)}
-              </span>
-            )}
+          <div className="mt-2 flex items-center justify-between text-xs text-[#5E5E5E] font-medium">
+            <span>
+              {partyPrice ? `From ${partyPrice.from}${partyPrice.unit}` : 'Contact for pricing'}
+            </span>
+            <span className="flex items-center gap-1">
+              <Users size={14} />
+              Up to {capacity || 30}
+            </span>
           </div>
         </div>
 
-        <div className="mt-3 flex items-end justify-between gap-3">
-          <div className="min-w-0">
-            {!partyCapable && !isFreePark ? (
-              <p className="text-xs text-outline">Tap for details</p>
-            ) : null}
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {!partyCapable && enquiryUrl ? (
-              <a
-                href={enquiryUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => handleEnquiry(e, 'enquiry')}
-                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-3 text-sm min-h-[44px] font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
-                aria-label={`Enquire about a party at ${venue.name}`}
-              >
-                Enquire
-              </a>
-            ) : null}
-            <Link
-              href={`/venue/${venue.slug}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                plausible('VenueViewed', {
-                  props: { venueId: venue.id, source: 'detail_link' },
-                });
-              }}
-              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary-container text-on-primary-container px-4 py-3 text-sm min-h-[44px] font-bold shadow-sm hover:brightness-95 active:scale-95 transition"
-              aria-label={`View full details for ${venue.name}`}
-            >
-              View
-            </Link>
-          </div>
+        {/* Full-width Yellow CTA Button */}
+        <div className="mt-4">
+          <Link
+            href={`/venue/${venue.slug}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              plausible('VenueViewed', {
+                props: { venueId: venue.id, source: 'card_button' },
+              });
+            }}
+            className="w-full inline-flex items-center justify-center gap-1 rounded-full bg-[#FFF499] text-brand-dark py-2.5 px-4 text-xs font-bold hover:bg-brand-yellow transition-colors"
+          >
+            View Details <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          </Link>
         </div>
       </div>
     </article>

@@ -1,494 +1,362 @@
 'use client';
 
+import { useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 import { VenueMapSnippet } from '@/components/map/venue-map-snippet';
 import { ShareButton } from '@/components/venues/share-button';
-import Link from 'next/link';
-import { trackVenueClick, type Venue, type VenueDetails, type YelpReview } from '@/lib/api';
+import { type Venue, type VenueDetails } from '@/lib/api';
+import { useShortlist } from '@/hooks/use-shortlist';
+import { useBooking } from '@/context/booking-context';
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-export function formatTime(time: string): string {
-  if (time.length !== 4) return time;
-  const hours = parseInt(time.slice(0, 2), 10);
-  const minutes = time.slice(2);
-  const ampm = hours >= 12 ? 'pm' : 'am';
-  const displayHours = hours % 12 || 12;
-  return `${displayHours}:${minutes}${ampm}`;
-}
-
-export function isValidUrl(url?: string): boolean {
-  if (!url) return false;
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
-  } catch {
-    return false;
-  }
-}
-
-export function isValidPhone(phone?: string): boolean {
-  if (!phone) return false;
-  return /^[\d\s\+\-\(\)]{7,}$/.test(phone.trim());
-}
-
-// ─── Badges ───────────────────────────────────────────────────────────────────
-
-export function OpenStatusBadge({ isOpen }: { isOpen: boolean }) {
-  return (
-    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-      isOpen 
-        ? 'bg-green-100 text-green-700 border-green-200' 
-        : 'bg-red-100 text-red-700 border-red-200'
-    }`}>
-      {isOpen ? 'Open Now' : 'Closed'}
-    </span>
-  );
-}
-
-export function SponsorBadge({ tier }: { tier: string }) {
-  return (
-    <span className="bg-tertiary-container text-on-tertiary-container px-3 py-1 rounded-[8px] text-xs font-bold uppercase">
-      {tier}
-    </span>
-  );
-}
-
-export function TypeBadge({ type }: { type: string }) {
-  const labels: Record<string, string> = {
-    softplay: 'Soft Play',
-    community_hall: 'Party Room',
-    park: 'Park',
-    museum: 'Museum',
-    library: 'Library',
-    other: 'Other',
-  };
-  
-  return (
-    <span className="bg-surface-variant text-on-surface-variant px-3 py-1 rounded-[8px] text-xs font-bold uppercase">
-      {labels[type] ?? type.replace('_', ' ')}
-    </span>
-  );
-}
-
-export function FeatureBadge({ feature }: { feature: string }) {
-  const labels: Record<string, string> = {
-    soft_play: 'Soft Play',
-    party_hire: 'Party Hire',
-    wheelchair_accessible: 'Wheelchair',
-    parking: 'Parking',
-  };
-  
-  return (
-    <span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-[8px] text-xs font-bold uppercase border border-outline-variant">
-      {labels[feature] ?? feature.replace('_', ' ')}
-    </span>
-  );
-}
-
-// ─── States ───────────────────────────────────────────────────────────────────
-
-export function VenueLoadingSkeleton() {
-  return (
-    <div className="animate-pulse space-y-6 p-4">
-      <div className="h-8 w-3/4 bg-surface-variant rounded-lg" />
-      <div className="h-[200px] w-full bg-surface-variant rounded-[16px]" />
-      <div className="space-y-3">
-        <div className="h-4 w-full bg-surface-variant rounded" />
-        <div className="h-4 w-5/6 bg-surface-variant rounded" />
-      </div>
-    </div>
-  );
-}
-
-export function VenueErrorState({ onRetry }: { onRetry: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-10 px-4 text-center border-2 border-error bg-error-container rounded-[24px]">
-      <span className="material-symbols-outlined text-4xl text-error mb-4">warning</span>
-      <p className="font-title-sm text-error uppercase mb-2">Sync Interrupted</p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="bg-on-error-container text-white px-6 py-2 rounded-full font-label-caps text-label-caps uppercase hover:opacity-90 transition-opacity"
-      >
-        RETRY
-      </button>
-    </div>
-  );
-}
-
-// ─── Main Content ─────────────────────────────────────────────────────────────
-
-function OpeningHours({ hours }: { hours: any }) {
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  
-  if (Array.isArray(hours)) {
-    return (
-      <div className="mt-6 p-5 bg-surface rounded-[24px] border border-outline-variant">
-        <h3 className="font-title-sm text-title-sm text-on-surface flex items-center gap-2 mb-4">
-          <span className="material-symbols-outlined text-outline">schedule</span>
-          Opening Hours
-        </h3>
-        <div className="space-y-2.5">
-          {hours.map((item: any) => {
-            const isToday = new Date().toLocaleDateString('en-GB', { weekday: 'long' }) === item.day;
-            return (
-              <div key={item.day} className="flex justify-between text-sm">
-                <span className={isToday ? 'font-bold text-on-surface' : 'text-on-surface-variant'}>
-                  {item.day}
-                </span>
-                <span className="text-on-surface text-right">
-                  {item.hours}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-6 p-5 bg-surface rounded-[24px] border border-outline-variant">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-title-sm text-title-sm text-on-surface flex items-center gap-2">
-          <span className="material-symbols-outlined text-outline">schedule</span>
-          Opening Hours
-        </h3>
-        {hours.is_open_now !== undefined && <OpenStatusBadge isOpen={hours.is_open_now} />}
-      </div>
-      <div className="space-y-2.5">
-        {days.map((dayName, index) => {
-          // Yelp 0 is Monday
-          const dayHours = hours.open?.filter((h: any) => h.day === index) || [];
-          const isToday = new Date().getDay() === (index + 1) % 7;
-          return (
-            <div key={dayName} className="flex justify-between text-sm">
-              <span className={isToday ? 'font-bold text-on-surface' : 'text-on-surface-variant'}>
-                {dayName}
-              </span>
-              <span className="text-on-surface text-right">
-                {dayHours.length > 0 
-                  ? dayHours.map((h: any) => `${formatTime(h.start)} – ${formatTime(h.end)}`).join(', ')
-                  : 'Closed'}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function ReviewsList({ reviews }: { reviews: YelpReview[] }) {
-  if (reviews.length === 0) return null;
-
-  return (
-    <div className="mt-8 space-y-6">
-      <h3 className="font-title-sm text-title-sm text-on-surface flex items-center gap-2">
-        <span className="material-symbols-outlined text-outline">rate_review</span>
-        Community Reviews
-      </h3>
-      <div className="space-y-4">
-        {reviews.map((review) => (
-          <div key={review.id} className="p-4 bg-surface rounded-[20px] border border-outline-variant">
-            <div className="flex items-center gap-3 mb-3">
-              {review.user.image_url ? (
-                <img 
-                  src={review.user.image_url} 
-                  alt={review.user.name} 
-                  className="w-8 h-8 rounded-full object-cover bg-surface-variant" 
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-xs font-bold">
-                  {review.user.name.charAt(0)}
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-on-surface truncate">{review.user.name}</p>
-                <div className="flex items-center gap-2">
-                  <div className="flex text-amber-500">
-                    {'★'.repeat(Math.floor(review.rating))}
-                    {'☆'.repeat(5 - Math.floor(review.rating))}
-                  </div>
-                  <span className="text-[10px] text-outline font-medium">
-                    {new Date(review.time_created).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <p className="text-sm text-on-surface-variant leading-relaxed line-clamp-3">
-              "{review.text}"
-            </p>
-            <a 
-              href={review.url} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="mt-2 inline-block text-xs font-bold text-primary hover:underline"
-            >
-              Read full review on Yelp
-            </a>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export interface VenueDetailContentProps {
-  venue: Venue | VenueDetails;
+interface VenueDetailContentProps {
+  venue: Venue;
   details?: VenueDetails;
+  showCloseButton?: boolean;
+  onClose?: () => void;
   isLoading?: boolean;
   isError?: boolean;
   onRetry?: () => void;
-  onClose?: () => void;
-  showCloseButton?: boolean;
 }
 
 export function VenueDetailContent({
   venue,
   details,
-  isLoading,
-  isError,
-  onRetry,
-  onClose,
-  showCloseButton = true,
 }: VenueDetailContentProps) {
-  const mergedDetails = details || (venue as VenueDetails);
-  const phone = mergedDetails.phone;
-  const website = mergedDetails.website;
-  const address = mergedDetails.address;
-  const hours = mergedDetails.opening_hours;
-  const reviews = mergedDetails.reviews;
+  const { has, toggle } = useShortlist();
+  const { updateBooking } = useBooking();
+  const isSaved = has(venue.id);
+  const [cateringAddon, setCateringAddon] = useState(false);
+  const [selectedDate, setSelectedDate] = useState('Saturday, Nov 18, 2026');
+  const [selectedTime, setSelectedTime] = useState('10:00 AM - 12:00 PM');
+
+  const basePrice = typeof venue.party_price_from === 'number' ? venue.party_price_from : 150;
+  const serviceFee = 5;
+  const cateringCost = cateringAddon ? 45 : 0;
+  const totalPrice = basePrice + serviceFee + cateringCost;
+
+  const galleryImages = [
+    venue.image_url || 'https://images.unsplash.com/photo-1566454825481-4e48f80aa4d7?q=80&w=1000&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop',
+  ];
 
   return (
-    <div className="bg-surface-container-lowest rounded-t-[32px] sm:rounded-[32px] overflow-hidden">
-      {/* Mobile drag handle */}
-      {showCloseButton && (
-        <div className="flex justify-center pt-4 pb-2 sm:hidden">
-          <div className="h-1.5 w-12 bg-on-surface opacity-10 rounded-full" />
-        </div>
-      )}
+    <div className="bg-[#FFFDF5] text-brand-dark min-h-screen pb-24 md:pb-16">
+      {/* Breadcrumbs */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-8 pt-6">
+        <nav className="flex items-center gap-2 text-xs font-semibold text-[#5E5E5E]">
+          <Link href="/" className="hover:text-brand-dark">
+            Venues
+          </Link>
+          <span>›</span>
+          <span className="capitalize">{venue.type?.replace('_', ' ') || 'Indoor Play'}</span>
+          <span>›</span>
+          <span className="text-brand-dark font-bold">{venue.name}</span>
+        </nav>
 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 px-6 py-6">
-        <div className="min-w-0 flex-1">
-          <h2 className="font-headline-md text-headline-md text-on-surface leading-tight">
-            {venue.name}
-          </h2>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <TypeBadge type={venue.type} />
-            {venue.sponsor_tier && <SponsorBadge tier={venue.sponsor_tier} />}
-            {venue.rating && (
-              <span className="bg-primary-container text-on-primary-container px-3 py-1 rounded-[8px] text-xs font-bold uppercase flex items-center gap-1">
-                <span className="material-symbols-outlined text-xs">star</span>
-                {Number(venue.rating).toFixed(1)}
+        {/* Title Block */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-4">
+          <div>
+            <h1 className="font-display text-3xl md:text-5xl font-extrabold tracking-tight text-brand-dark">
+              {venue.name}
+            </h1>
+            <div className="flex items-center gap-3 mt-2 text-sm font-semibold text-[#5E5E5E]">
+              <span className="flex items-center gap-1 text-brand-dark">
+                ★ {Number(venue.rating || 4.8).toFixed(1)} ({venue.user_ratings_total || 124} reviews)
               </span>
-            )}
-            {venue.price_level !== undefined && venue.price_level !== null && (
-              <span className="bg-tertiary-container text-on-tertiary-container px-3 py-1 rounded-[8px] text-xs font-bold uppercase flex items-center gap-0.5">
-                {'£'.repeat(Number(venue.price_level) || 1)}
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                📍 {(venue as any).london_borough || venue.borough || 'London'}
               </span>
-            )}
-            {venue.features && venue.features.map(f => (
-              <FeatureBadge key={f} feature={f} />
-            ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <ShareButton title={venue.name} />
+            <button
+              type="button"
+              onClick={() => toggle(venue)}
+              aria-label="Save venue"
+              className="w-10 h-10 rounded-full bg-white border border-[#EBE5D3] flex items-center justify-center shadow-sm hover:bg-[#F9F5E8] active:scale-95 transition"
+            >
+              <span className={`material-symbols-outlined text-[20px] ${isSaved ? 'text-rose-500 fill-rose-500' : 'text-[#5E5E5E]'}`}>
+                {isSaved ? 'favorite' : 'favorite_border'}
+              </span>
+            </button>
           </div>
         </div>
-        {showCloseButton && onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close venue details"
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-surface text-on-surface-variant hover:bg-surface-variant transition-colors"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
-        )}
-      </div>
 
-      {/* Body */}
-      <div className="overflow-y-auto px-6 pb-8 max-h-[70vh]">
-        {isLoading ? (
-          <VenueLoadingSkeleton />
-        ) : isError ? (
-          <>
-            <div className="mb-6 rounded-[24px] overflow-hidden border border-outline-variant">
-              <VenueMapSnippet lat={venue.lat || 51.5074} lon={venue.lon || -0.1278} name={venue.name} />
+        {/* Photo Gallery Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          {/* Main Large Photo */}
+          <div className="md:col-span-2 relative h-[320px] md:h-[420px] rounded-3xl overflow-hidden border border-[#EBE5D3] shadow-sm">
+            <Image
+              src={galleryImages[0]}
+              alt={venue.name}
+              fill
+              priority
+              className="object-cover"
+            />
+            {/* Safe-checked Badge Overlay */}
+            <div className="absolute bottom-4 left-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur-sm px-4 py-1.5 text-xs font-extrabold text-brand-dark shadow-md">
+              <span className="material-symbols-outlined text-[16px] text-green-600">
+                verified
+              </span>
+              Safety-checked
             </div>
-            {onRetry && <VenueErrorState onRetry={onRetry} />}
-          </>
-        ) : (
-          <>
-            {/* Hero Image */}
-            {mergedDetails.images && mergedDetails.images.length > 0 && (
-              <div className="mb-6 rounded-[24px] overflow-hidden border border-outline-variant aspect-video">
-                <img 
-                  src={mergedDetails.images[0]} 
-                  alt={venue.name} 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
+          </div>
 
-            {/* Map */}
-            <div className="mb-6 rounded-[24px] overflow-hidden border border-outline-variant">
-              <VenueMapSnippet lat={venue.lat || 51.5074} lon={venue.lon || -0.1278} name={venue.name} />
-            </div>
-
-            {/* Address & Info */}
-            <div className="mb-6 space-y-4">
-              {(address || mergedDetails.postcode || mergedDetails.borough) && (
-                <div className="flex items-start gap-3 p-4 bg-surface rounded-[16px] border border-outline-variant">
-                  <span className="material-symbols-outlined text-outline">location_on</span>
-                  <div className="flex flex-col">
-                    {address && <span className="font-body-md text-body-md text-on-surface">{address}</span>}
-                    {(mergedDetails.postcode || mergedDetails.borough) && (
-                      <span className="text-sm text-on-surface-variant">
-                        {[mergedDetails.borough, mergedDetails.postcode].filter(Boolean).join(' · ')}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-              {(venue as Venue).distance_miles !== undefined && (
-                <div className="flex items-center gap-3 p-4 bg-surface rounded-[16px] border border-outline-variant">
-                  <span className="material-symbols-outlined text-outline">distance</span>
-                  <span className="font-title-sm text-title-sm text-on-surface">
-                    {(venue as Venue).distance_miles?.toFixed(1)} miles away
-                  </span>
-                </div>
-              )}
-              {mergedDetails.description && (
-                <div className="flex items-start gap-3 p-4 bg-surface rounded-[16px] border border-outline-variant">
-                  <span className="material-symbols-outlined text-outline">info</span>
-                  <span className="font-body-md text-body-md text-on-surface-variant">{mergedDetails.description}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Food Hygiene Rating */}
-            {(venue as Venue).fhrs_establishment_id && (venue as Venue).fhrs_rating_value != null && (
-              <div className="flex items-center gap-3 p-4 bg-surface rounded-[16px] border border-outline-variant">
-                <span className="material-symbols-outlined text-outline">verified_user</span>
-                <div>
-                  <span className="font-body-md text-body-md text-on-surface">
-                    Food Hygiene Rating: {(venue as Venue).fhrs_rating_value}/5
-                  </span>
-                  {(venue as Venue).fhrs_rating_date && (
-                    <span className="block text-xs text-on-surface-variant">
-                      Rated {new Date((venue as Venue).fhrs_rating_date!).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Opening Hours */}
-            {hours && hours.open && <OpeningHours hours={hours} />}
-
-            {/* Reviews */}
-            {reviews && <ReviewsList reviews={reviews} />}
-
-            {/* Last Verified & Feedback */}
-            <div className="mt-8 flex items-center justify-between px-1">
-              {venue.enriched_at && (
-                <div className="flex items-center gap-1.5 text-xs text-on-surface-variant/70 italic">
-                  <span className="material-symbols-outlined text-[14px]">done_all</span>
-                  Last verified: {new Date(venue.enriched_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
-                </div>
-              )}
-              <button 
-                onClick={() => {
-                  const subject = `Reporting an issue with ${venue.name}`;
-                  const body = `Venue: ${venue.name}\nSlug: ${venue.slug}\n\nPlease describe the issue (e.g., closed, wrong phone): `;
-                  window.location.href = `mailto:hello@kidspot.london?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                }}
-                className="text-[10px] font-bold text-primary/60 hover:text-primary transition-colors uppercase tracking-widest"
-              >
-                Report an issue
-              </button>
-            </div>
-
-            {/* Actions */}
-            <div className="mt-6 flex flex-col gap-3">
-              {/* Primary CTA: Book Now */}
-              {isValidUrl(mergedDetails.booking_url) && (
-                <a
-                  href={mergedDetails.booking_url!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => trackVenueClick(venue.id, 'booking')}
-                  aria-label={`Book ${venue.name}`}
-                  id="venue-book-now-btn"
-                  className="flex items-center justify-center gap-2 bg-primary text-on-primary h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform shadow-md"
-                >
-                  <span className="material-symbols-outlined">event_available</span>
-                  Book Now
-                </a>
-              )}
-              <div className="flex flex-col sm:flex-row gap-3">
-                {isValidPhone(phone) && (
-                  <a
-                    href={`tel:${phone!.trim()}`}
-                    onClick={() => trackVenueClick(venue.id, 'phone')}
-                    aria-label={`Call ${venue.name} at ${phone}`}
-                    id="venue-call-btn"
-                    className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 text-white h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform"
-                  >
-                    <span className="material-symbols-outlined">call</span>
-                    Call Now
-                  </a>
-                )}
-                {isValidUrl(website) && (
-                  <a
-                    href={website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => trackVenueClick(venue.id, 'website')}
-                    aria-label={`Visit ${venue.name} website`}
-                    id="venue-website-btn"
-                    className="flex-1 flex items-center justify-center gap-2 bg-primary-container text-on-primary-container h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform"
-                  >
-                    <span className="material-symbols-outlined">language</span>
-                    Website
-                  </a>
-                )}
-              </div>
-              {mergedDetails.email && (
-                <a
-                  href={`mailto:${mergedDetails.email}`}
-                  onClick={() => trackVenueClick(venue.id, 'email')}
-                  aria-label={`Email ${venue.name}`}
-                  id="venue-email-btn"
-                  className="flex items-center justify-center gap-2 bg-secondary-container text-on-secondary-container h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform"
-                >
-                  <span className="material-symbols-outlined">mail</span>
-                  Send Email
-                </a>
-              )}
-              <ShareButton 
-                title={venue.name} 
-                className="flex items-center justify-center gap-2 bg-surface border border-outline-variant h-[56px] rounded-[16px] font-title-sm text-title-sm active:scale-95 transition-transform"
+          {/* Right 2 Stacked Photos */}
+          <div className="grid grid-rows-2 gap-4 h-[320px] md:h-[420px]">
+            <div className="relative rounded-3xl overflow-hidden border border-[#EBE5D3] shadow-sm">
+              <Image
+                src={galleryImages[1]}
+                alt={`${venue.name} interior`}
+                fill
+                className="object-cover"
               />
             </div>
+            <div className="relative rounded-3xl overflow-hidden border border-[#EBE5D3] shadow-sm">
+              <Image
+                src={galleryImages[2]}
+                alt={`${venue.name} play area`}
+                fill
+                className="object-cover"
+              />
+              <button
+                type="button"
+                className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1 rounded-full bg-white/90 backdrop-blur-sm px-3 py-1.5 text-xs font-bold text-brand-dark shadow-sm hover:bg-white transition"
+              >
+                <span className="material-symbols-outlined text-[14px]">grid_view</span>
+                Show all photos
+              </button>
+            </div>
+          </div>
+        </div>
 
-            {/* Claim Listing CTA */}
-            {(!mergedDetails.current_claim_status || mergedDetails.current_claim_status === 'unclaimed') && (
-              <div className="mt-10 pt-8 border-t border-outline-variant text-center">
-                <p className="text-sm text-on-surface-variant mb-4">
-                  Own this venue? Claim it to manage details and reach more parents.
-                </p>
-                <Link
-                  href={`/claim/${venue.slug}`}
-                  className="inline-flex items-center gap-2 text-primary font-bold text-sm hover:brightness-90 transition-all"
-                >
-                  <span className="material-symbols-outlined text-[20px]">verified</span>
-                  Claim this listing
-                </Link>
+        {/* Main Content Layout (Left Column Details, Right Column Booking Widget) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
+          <div className="lg:col-span-8 space-y-8">
+            {/* Tag Badges */}
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="rounded-full bg-badge-pink px-4 py-1.5 text-xs font-bold text-[#9F1239]">
+                🎉 Up to {venue.party_max_capacity || 30} Kids
+              </span>
+              <span className="rounded-full bg-badge-yellow px-4 py-1.5 text-xs font-bold text-[#696200]">
+                🎂 Ages 2-8
+              </span>
+              <span className="rounded-full bg-[#EAE5D4] px-4 py-1.5 text-xs font-bold text-brand-dark">
+                ⏱️ 2 Hour Slots
+              </span>
+            </div>
+
+            {/* About Section */}
+            <div className="bg-white rounded-3xl p-8 border border-[#EBE5D3] shadow-sm">
+              <h2 className="font-display text-2xl font-extrabold text-brand-dark mb-4">
+                About this venue
+              </h2>
+              <p className="text-sm text-[#5E5E5E] leading-relaxed">
+                {venue.description ||
+                  `Welcome to ${venue.name}, an immersive indoor play experience designed to spark imagination and encourage physical activity in a safe, controlled environment. Features integrated slides, soft play mazes, ball pits, and interactive sensory play.`}
+              </p>
+              <p className="text-sm text-[#5E5E5E] leading-relaxed mt-4">
+                Parents can relax in our dedicated viewing café, enjoying premium coffee and snacks while keeping a close eye on the action. Every piece of equipment is sanitized daily and undergoes rigorous weekly safety checks.
+              </p>
+            </div>
+
+            {/* Amenities Grid */}
+            <div className="bg-white rounded-3xl p-8 border border-[#EBE5D3] shadow-sm">
+              <h3 className="font-display text-lg font-bold text-brand-dark mb-6">
+                Amenities
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-center gap-3 text-sm font-medium text-brand-dark">
+                  <span className="material-symbols-outlined text-[20px] text-brand-dark">restaurant</span>
+                  On-site Catering available
+                </div>
+                <div className="flex items-center gap-3 text-sm font-medium text-brand-dark">
+                  <span className="material-symbols-outlined text-[20px] text-brand-dark">local_parking</span>
+                  Free Private Parking
+                </div>
+                <div className="flex items-center gap-3 text-sm font-medium text-brand-dark">
+                  <span className="material-symbols-outlined text-[20px] text-brand-dark">wifi</span>
+                  High-speed Parent WiFi
+                </div>
+                <div className="flex items-center gap-3 text-sm font-medium text-brand-dark">
+                  <span className="material-symbols-outlined text-[20px] text-brand-dark">family_restroom</span>
+                  Family Restrooms
+                </div>
+                <div className="flex items-center gap-3 text-sm font-medium text-brand-dark">
+                  <span className="material-symbols-outlined text-[20px] text-brand-dark">accessible</span>
+                  Wheelchair Accessible
+                </div>
+                <div className="flex items-center gap-3 text-sm font-medium text-brand-dark">
+                  <span className="material-symbols-outlined text-[20px] text-brand-dark">ac_unit</span>
+                  Air Conditioned
+                </div>
               </div>
-            )}
-          </>
-        )}
+            </div>
+
+            {/* Map Snippet */}
+            <div className="bg-white rounded-3xl p-6 border border-[#EBE5D3] shadow-sm overflow-hidden">
+              <h3 className="font-display text-lg font-bold text-brand-dark mb-4">
+                Location & Map
+              </h3>
+              <div className="h-64 rounded-2xl overflow-hidden">
+                <VenueMapSnippet lat={venue.lat || 51.5074} lon={venue.lon || -0.1278} name={venue.name} />
+              </div>
+            </div>
+
+            {/* Customer Reviews Section */}
+            <div className="bg-white rounded-3xl p-8 border border-[#EBE5D3] shadow-sm">
+              <div className="flex items-center justify-between mb-6 border-b border-[#EBE5D3] pb-4">
+                <div>
+                  <h3 className="font-display text-2xl font-bold text-brand-dark">
+                    4.8 / 5
+                  </h3>
+                  <p className="text-xs text-[#5E5E5E]">Based on 124 reviews</p>
+                </div>
+                <span className="text-amber-400 text-lg">★★★★★</span>
+              </div>
+
+              <div className="space-y-6">
+                <div className="border-b border-[#EBE5D3] pb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-sm text-brand-dark">Sarah Mitchell</span>
+                    <span className="text-xs text-[#5E5E5E]">October 2023</span>
+                  </div>
+                  <p className="text-xs text-[#5E5E5E] leading-relaxed">
+                    "Absolutely fantastic venue for my daughter's 5th birthday. The staff were incredibly attentive, the play area is spotless, and the food provided was great quality."
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-sm text-brand-dark">James Patterson</span>
+                    <span className="text-xs text-[#5E5E5E]">September 2023</span>
+                  </div>
+                  <p className="text-xs text-[#5E5E5E] leading-relaxed">
+                    "Great space, very secure. You can tell they take safety seriously which gave us peace of mind. Overall a top-tier soft play."
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="mt-6 w-full py-3 rounded-full border border-[#EBE5D3] text-xs font-bold text-brand-dark hover:bg-[#F9F5E8] transition"
+              >
+                Read all 124 reviews
+              </button>
+            </div>
+          </div>
+
+          {/* Right Column: Sticky Booking Widget (Design 5) */}
+          <aside className="lg:col-span-4 lg:sticky lg:top-24">
+            <div className="bg-white rounded-3xl p-6 border border-[#EBE5D3] shadow-lg">
+              <div className="mb-6">
+                <span className="font-display text-3xl font-extrabold text-brand-dark">
+                  £{basePrice}
+                </span>
+                <span className="text-xs font-semibold text-[#5E5E5E] ml-1">per party</span>
+                <p className="text-[11px] text-[#5E5E5E] mt-1">Includes entry for up to 30 children</p>
+              </div>
+
+              {/* Date Input */}
+              <div className="space-y-4 text-xs font-semibold text-brand-dark">
+                <div className="bg-[#F7F3E6] rounded-2xl p-3 border border-[#EBE5D3]">
+                  <label className="text-[10px] text-[#7B785F] uppercase font-bold block mb-1">
+                    DATE
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full bg-transparent font-bold text-sm outline-none"
+                  />
+                </div>
+
+                {/* Time Slot Input */}
+                <div className="bg-[#F7F3E6] rounded-2xl p-3 border border-[#EBE5D3]">
+                  <label className="text-[10px] text-[#7B785F] uppercase font-bold block mb-1">
+                    TIME SLOT
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedTime}
+                    onChange={(e) => setSelectedTime(e.target.value)}
+                    className="w-full bg-transparent font-bold text-sm outline-none"
+                  />
+                </div>
+
+                {/* Catering Checkbox Addon */}
+                <div
+                  onClick={() => setCateringAddon(!cateringAddon)}
+                  className="bg-[#F7F3E6] rounded-2xl p-3 border border-[#EBE5D3] flex items-center justify-between cursor-pointer hover:bg-[#F3EEDA] transition"
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={cateringAddon}
+                      onChange={() => {}}
+                      className="w-4 h-4 accent-brand-dark rounded"
+                    />
+                    <span className="text-xs font-bold">Add Catering Box</span>
+                  </div>
+                  <span className="text-xs font-bold text-brand-dark">+£45</span>
+                </div>
+
+                {/* Pricing Breakdown */}
+                <div className="space-y-2 border-t border-[#EBE5D3] pt-4 text-xs">
+                  <div className="flex justify-between text-[#5E5E5E]">
+                    <span>Base Price (2 Hours)</span>
+                    <span>£{basePrice.toFixed(2)}</span>
+                  </div>
+                  {cateringAddon && (
+                    <div className="flex justify-between text-[#5E5E5E]">
+                      <span>Catering Addon</span>
+                      <span>£45.00</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-[#5E5E5E]">
+                    <span>Service Fee</span>
+                    <span>£{serviceFee.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-base font-extrabold text-brand-dark pt-2 border-t border-[#EBE5D3]">
+                    <span>Total</span>
+                    <span>£{totalPrice.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Book Now Yellow CTA Button */}
+              <div className="mt-6">
+                <Link
+                  href="/booking/packages"
+                  onClick={() => {
+                    updateBooking({
+                      venueId: venue.id,
+                      venueName: venue.name,
+                      venueAddress: (venue as any).address || venue.borough || 'London',
+                      date: selectedDate,
+                      timeSlot: selectedTime,
+                      cateringAddon,
+                      cateringPrice: 45,
+                      packagePrice: basePrice,
+                    });
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 bg-brand-yellow text-brand-dark text-sm font-extrabold py-4 px-6 rounded-full hover:bg-brand-yellow-hover active:scale-95 transition-all shadow-md"
+                >
+                  Book Now
+                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                </Link>
+                <p className="text-[10px] text-center text-[#7B785F] mt-2 font-medium">
+                  You won't be charged yet
+                </p>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   );

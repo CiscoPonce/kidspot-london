@@ -14,7 +14,6 @@
 
 import * as cheerio from 'cheerio';
 import { callNvidia } from './nvidia.js';
-import { logger } from '../config/logger.js';
 
 export type PartyPriceUnit = 'per_child' | 'per_hour' | 'flat';
 
@@ -232,7 +231,6 @@ export async function extractPartyData(opts: ExtractPartyOptions): Promise<Party
 
   // Cheap path: a clear party signal plus at least one structured value.
   if (scan.hasPartySignal && (scan.priceFrom !== null || scan.maxCapacity !== null)) {
-    logger.debug({ venue: name, url: website, scan }, 'Regex found strong party signal, bypassing LLM');
     return validatePartyData({
       partyCapable: true,
       priceFrom: scan.priceFrom,
@@ -244,8 +242,6 @@ export async function extractPartyData(opts: ExtractPartyOptions): Promise<Party
     });
   }
 
-  logger.debug({ venue: name, url: website, scan }, 'Regex inconclusive, triggering LLM fallback');
-
   // LLM fallback: let the model decide capability + structured fields.
   try {
     const $ = cheerio.load(html);
@@ -255,22 +251,17 @@ export async function extractPartyData(opts: ExtractPartyOptions): Promise<Party
       .trim()
       .slice(0, 12000);
 
-    const systemPrompt = "You extract children's party booking information from UK venue web pages. " +
+    const raw = await callNvidia({
+      systemPrompt:
+        "You extract children's party booking information from UK venue web pages. " +
         'Return ONLY a JSON object with keys: hosts_parties (boolean), price_from (number|null, GBP), ' +
         'price_unit ("per_child"|"per_hour"|"flat"|null), max_capacity (number|null), packages (string[]), ' +
-        'enquiry_url (string|null). Use null when unknown. Never invent values.';
-    const userPrompt = `Venue: "${name}" (${website}). Decide if it hosts children's birthday parties and ` +
-        `extract party details from this page text:\n\n${pageText}`;
-
-    const raw = await callNvidia({
-      systemPrompt,
-      userPrompt,
+        'enquiry_url (string|null). Use null when unknown. Never invent values.',
+      userPrompt:
+        `Venue: "${name}" (${website}). Decide if it hosts children's birthday parties and ` +
+        `extract party details from this page text:\n\n${pageText}`,
       signal,
     });
-
-    const promptTokens = Math.round((systemPrompt.length + userPrompt.length) / 4);
-    const completionTokens = Math.round(raw.length / 4);
-    logger.info({ venue: name, url: website, promptTokens, completionTokens }, 'NVIDIA LLM token usage');
 
     const parsed = parsePartyJson(raw);
     const partyCapable =
@@ -280,7 +271,7 @@ export async function extractPartyData(opts: ExtractPartyOptions): Promise<Party
           ? true
           : null;
 
-    const finalData = validatePartyData({
+    return validatePartyData({
       partyCapable,
       priceFrom: parsed.priceFrom ?? scan.priceFrom,
       priceUnit: parsed.priceUnit ?? scan.priceUnit,
@@ -289,12 +280,9 @@ export async function extractPartyData(opts: ExtractPartyOptions): Promise<Party
       enquiryUrl: parsed.enquiryUrl ?? scan.enquiryUrl,
       source: 'llm',
     });
-    logger.debug({ venue: name, url: website, finalData }, 'LLM schema validation result');
-    return finalData;
   } catch {
     // LLM unavailable — fall back to a weak regex-only signal if present.
     if (scan.hasPartySignal) {
-      logger.warn({ venue: name, url: website }, 'LLM unavailable, falling back to weak regex signal');
       return validatePartyData({
         partyCapable: true,
         priceFrom: scan.priceFrom,
@@ -305,7 +293,6 @@ export async function extractPartyData(opts: ExtractPartyOptions): Promise<Party
         source: 'regex',
       });
     }
-    logger.warn({ venue: name, url: website }, 'LLM unavailable and no regex signal, returning empty');
     return { ...EMPTY };
   }
 }

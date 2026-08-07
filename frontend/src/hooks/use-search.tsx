@@ -29,10 +29,10 @@ const DEFAULT_RADIUS = 5;
 
 export function SearchProvider({ children }: { children: ReactNode }) {
   const plausible = usePlausible();
-  const [lat, setLat] = useState<number | null>(null);
-  const [lon, setLon] = useState<number | null>(null);
+  const [lat, setLat] = useState<number | null>(51.5074);
+  const [lon, setLon] = useState<number | null>(-0.1278);
   const [radius, setRadiusState] = useState(DEFAULT_RADIUS);
-  const [postcode, setPostcodeState] = useState('');
+  const [postcode, setPostcodeState] = useState('London');
   const [venueType, setVenueTypeState] = useState<string | null>(null);
   const [facets, setFacetsState] = useState<string[]>([]);
 

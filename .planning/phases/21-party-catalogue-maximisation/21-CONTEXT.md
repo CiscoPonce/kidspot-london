@@ -2,7 +2,7 @@
 
 **Goal:** Grow KidSpot’s database to cover **as many hireable and softplay venues for children’s birthdays in Greater London as practical**, with enough contact and party data that parents can actually use listings.
 
-**Status:** Active (June 2026)  
+**Status:** Active (Wave B — Aug 2026)  
 **Depends on:** Phase 19 curation (`venue_scope`), Phase 18D party extraction, Phase 20 Google Places layer  
 **Post-recovery baseline:** DB rebuilt 11 Jun 2026 after Phase 20 volume incident; catalogue structure is sound, **depth is the gap**.
 
@@ -23,19 +23,19 @@ Default API search returns **`venue_scope = core`** only. Discovery and enrichme
 
 ---
 
-## Baseline metrics (11 Jun 2026, production VPS)
+## Baseline metrics (7 Aug 2026, production VPS)
 
 | Metric | Value | Notes |
 |--------|------:|-------|
-| Total venues ingested | ~16,400 | After full rebuild |
-| Active **core** | ~2,118 | Party catalogue |
-| Core with website | ~404 (~19%) | **Bottleneck for party crawl** |
-| Core with phone | ~10 | Nearly empty |
-| Core with images | 0 | Brave / Street View / Apify not yielding yet |
-| `party_capable` (core) | ~3 | 18D barely started |
-| Core with postcode | ~43 | Nominatim 429 backlog |
+| Total venues ingested | 16,751 | |
+| Active **core** | 2,311 | Party catalogue |
+| **Listable core** | 1,765 | Contact or party-confirmed |
+| Core with website | 78.6% | Was ~19% in Jun — major progress |
+| Core with phone | 57.5% | Was ~0% in Jun |
+| Core with images | 16.9% | Still a gap |
+| `party_capable` (core) | 182 (7.9%) | Growing via 18D + Wave B |
 
-**Key insight:** Party extraction (18D) requires **websites**. Contact enrichment must run **before** party backfill at scale. Google Places is the highest-leverage existing tool (~1,900 core venues missing phone or website).
+**Key insight:** Wave A enrichment queues are **empty** (Aug 7). Next gains require **discovery** (Wave B) and borough CSV imports, not re-running existing enrichment jobs.
 
 ---
 

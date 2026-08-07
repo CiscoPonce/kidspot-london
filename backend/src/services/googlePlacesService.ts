@@ -3,23 +3,20 @@ import { logger } from '../config/logger.js';
 
 interface GooglePlaceMatch {
   placeId: string;
+  name?: string;
+  lat?: number;
+  lon?: number;
   website?: string;
   phone?: string;
+  address?: string;
   photos?: string[];
   businessStatus?: string;
 }
 
-interface GooglePlaceTextSearchResult {
-  placeId: string;
-  name: string;
-  website?: string;
-  phone?: string;
-  address?: string;
-  lat?: number;
-  lon?: number;
-  photos?: string[];
-  businessStatus?: string;
-  types?: string[];
+interface TextSearchOptions {
+  maxResults?: number;
+  locationBias?: { lat: number; lon: number };
+  radius?: number;
 }
 
 class GooglePlacesService {
@@ -44,7 +41,7 @@ class GooglePlacesService {
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': env.GOOGLE_PLACES_API_KEY,
-          'X-Goog-FieldMask': 'places.id,places.websiteUri,places.nationalPhoneNumber,places.photos,places.businessStatus'
+          'X-Goog-FieldMask': 'places.id,places.websiteUri,places.nationalPhoneNumber,places.businessStatus'
         },
         body: JSON.stringify({
           textQuery: name,
@@ -93,66 +90,67 @@ class GooglePlacesService {
   }
 
   /**
-   * Text Search for places by query string, returning multiple results.
+   * Text search returning multiple place matches (for discovery sweeps).
    */
-  async textSearch(
-    query: string,
-    opts?: { type?: string; locationBias?: { lat: number; lon: number }; radius?: number; maxResults?: number }
-  ): Promise<GooglePlaceTextSearchResult[]> {
+  async textSearch(query: string, options: TextSearchOptions = {}): Promise<GooglePlaceMatch[]> {
     if (!env.GOOGLE_PLACES_API_KEY) return [];
 
-    try {
-      const maxResults = opts?.maxResults || 10;
-      const body: Record<string, unknown> = { textQuery: query };
+    const { maxResults = 10, locationBias, radius = 15000 } = options;
 
-      if (opts?.locationBias) {
+    try {
+      const body: Record<string, unknown> = {
+        textQuery: query,
+        maxResultCount: Math.min(maxResults, 20),
+      };
+
+      if (locationBias) {
         body.locationBias = {
           circle: {
-            center: { latitude: opts.locationBias.lat, longitude: opts.locationBias.lon },
-            radius: (opts.radius || 50000.0)
-          }
+            center: { latitude: locationBias.lat, longitude: locationBias.lon },
+            radius: radius,
+          },
         };
       }
 
-      const response = await fetch(`${this.baseUrl}:searchText`, {
+      const searchResponse = await fetch(`${this.baseUrl}:searchText`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': env.GOOGLE_PLACES_API_KEY,
-          'X-Goog-FieldMask': 'places.id,places.displayName,places.websiteUri,places.nationalPhoneNumber,places.formattedAddress,places.location,places.photos,places.businessStatus,places.types'
+          'X-Goog-FieldMask':
+            'places.id,places.displayName,places.location,places.websiteUri,places.nationalPhoneNumber,places.formattedAddress,places.businessStatus',
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       });
 
-      if (!response.ok) {
-        if (response.status === 429) {
-          logger.warn('Google Places Text Search rate limit exceeded');
+      if (!searchResponse.ok) {
+        const errBody = await searchResponse.text().catch(() => '');
+        if (searchResponse.status === 429) {
           throw new Error('RateLimitError: 429 Too Many Requests');
         }
-        logger.error(`Google Places Text Search failed with status ${response.status}`);
+        logger.error({ status: searchResponse.status, errBody: errBody.slice(0, 300) }, 'Google Places textSearch failed');
         return [];
       }
 
-      const data = await response.json() as { places?: any[] };
+      const searchData = (await searchResponse.json()) as { places?: Array<Record<string, unknown>> };
+      if (!searchData.places?.length) return [];
 
-      if (!data.places || data.places.length === 0) return [];
-
-      return data.places.slice(0, maxResults).map((place: any) => ({
-        placeId: place.id,
-        name: place.displayName?.text || '',
-        website: place.websiteUri,
-        phone: place.nationalPhoneNumber,
-        address: place.formattedAddress,
-        lat: place.location?.latitude,
-        lon: place.location?.longitude,
-        photos: place.photos
-          ? place.photos.map((p: any) => p.name).slice(0, 5)
-          : [],
-        businessStatus: place.businessStatus,
-        types: place.types || []
-      }));
+      return searchData.places.map((place) => {
+        const location = place.location as { latitude?: number; longitude?: number } | undefined;
+        const displayName = place.displayName as { text?: string } | undefined;
+        return {
+          placeId: String(place.id ?? ''),
+          name: displayName?.text,
+          lat: location?.latitude,
+          lon: location?.longitude,
+          website: place.websiteUri as string | undefined,
+          phone: place.nationalPhoneNumber as string | undefined,
+          address: place.formattedAddress as string | undefined,
+          businessStatus: place.businessStatus as string | undefined,
+        };
+      }).filter((p) => p.placeId && p.name);
     } catch (err) {
-      logger.error({ err, query }, 'Error in Google Places Text Search');
+      logger.error({ err, query }, 'Error in Google Places textSearch');
       throw err;
     }
   }

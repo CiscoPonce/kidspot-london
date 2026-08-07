@@ -80,8 +80,8 @@ async function setupRepeatingJobs() {
       ...jobOpts,
     });
 
-    await discoveryQueue.add('enrich-google-places', { batchSize: 50 }, {
-      repeat: { pattern: '0 */4 * * *' },
+    await discoveryQueue.add('enrich-google-places', { batchSize: 25 }, {
+      repeat: { pattern: '0 */12 * * *' },
       jobId: 'repeat:enrich-google-places',
       ...jobOpts,
     });
@@ -107,12 +107,6 @@ async function setupRepeatingJobs() {
     await discoveryQueue.add('enrich-brave-images', { batchSize: 20 }, {
       repeat: { pattern: '0 4 * * *' },
       jobId: 'repeat:enrich-brave-images',
-      ...jobOpts,
-    });
-
-    await discoveryQueue.add('enrich-fhrs-batch', { batchSize: 50 }, {
-      repeat: { pattern: '0 8 * * *' },  // Daily at 8am
-      jobId: 'repeat:enrich-fhrs-batch',
       ...jobOpts,
     });
 
@@ -249,7 +243,7 @@ case 'enrich-foursquare': {
 case 'enrich-google-places': {
   await crawlDelay(500);
   const { enrichViaGooglePlaces } = await import('../scripts/discovery/sources/google-places-enrichment.js');
-  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 25;
   const result = await enrichViaGooglePlaces(batchSize);
           logger.info({ result }, 'Google Places enrichment complete');
           return { status: 'completed', ...result };
@@ -279,15 +273,6 @@ case 'enrich-streetview': {
   const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
   const result = await enrichViaStreetView(batchSize);
           logger.info({ result }, 'Street View enrichment complete');
-          return { status: 'completed', ...result };
-        }
-
-case 'enrich-fhrs-batch': {
-  await crawlDelay(600);
-  const { batchMatchFhrs } = await import('../scripts/discovery/sources/fhrs-batch-match.js');
-  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
-  const result = await batchMatchFhrs(batchSize);
-          logger.info({ result }, 'FHRS batch matching complete');
           return { status: 'completed', ...result };
         }
 

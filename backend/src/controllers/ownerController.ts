@@ -9,7 +9,7 @@ export const ownerController = {
    */
   async login(req: Request, res: Response) {
     try {
-      const { email } = req.body;
+      const { email } = req.body ?? {};
 
       if (!email) {
         return res.status(400).json({
@@ -44,7 +44,7 @@ export const ownerController = {
    */
   async verify(req: Request, res: Response) {
     try {
-      const { email, otp } = req.body;
+      const { email, otp } = req.body ?? {};
 
       if (!email || !otp) {
         return res.status(400).json({

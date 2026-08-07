@@ -104,41 +104,17 @@ export default async function VenuePage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-12">
+    <div className="min-h-screen bg-[#FFFDF5]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <header className="sticky top-0 z-30 flex h-14 items-center border-b border-outline-variant bg-background/85 backdrop-blur-md px-4">
-        <Link
-          href="/"
-          className="flex items-center gap-2 text-sm font-medium text-on-surface-variant hover:text-tertiary transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to search
-        </Link>
-        <div className="ml-auto">
-          <Link
-            href="/"
-            className="font-display text-lg font-bold tracking-tight"
-          >
-            Kid<span className="text-tertiary">Spot</span>
-          </Link>
-        </div>
-      </header>
-
-      <main className="mx-auto mt-6 max-w-2xl px-4">
-        <div className="overflow-hidden rounded-3xl border border-outline-variant bg-surface-container-lowest shadow-sm">
-          <VenueDetailContent
-            venue={venue}
-            details={fullDetails}
-            showCloseButton={false}
-          />
-        </div>
-
-        <p className="mt-8 text-center text-sm text-on-surface-variant">
-          Discover more family-friendly spots in {venue.borough || 'London'} on KidSpot.
-        </p>
+      <main>
+        <VenueDetailContent
+          venue={venue}
+          details={fullDetails}
+          showCloseButton={false}
+        />
       </main>
     </div>
   );
