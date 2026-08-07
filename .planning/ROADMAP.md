@@ -28,7 +28,7 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 | 24 | Frontend redesign & booking | ✅ Complete |
 
 **Current focus:** Phase 25 (API hardening, rebuild) + Phase 21 Wave B (discovery).
-**Go-live gaps:** DNS, HTTPS, mount FHRS/metrics routes, offsite backups. See [STATE.md](./STATE.md).
+**Go-live gaps:** DNS, HTTPS, offsite backups. See [STATE.md](./STATE.md).
 
 ## Tech stack
 
@@ -440,13 +440,13 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - [ ] DNS for `kidspot.london` → VPS
 - [ ] Let's Encrypt HTTPS (Caddy has `auto_https disable_redirects`)
 - [ ] Offsite backup replication (S3/R2)
-- [ ] Mount `/api/fhrs/match/:id` and `/metrics` in `server.ts`
+- [x] Mount `/api/fhrs/match/:id` and `/metrics` in `server.ts` (Phase 25-01)
 
 ---
 
 ## Phase 24: High-Fidelity Frontend Redesign & Party Booking Flow
 
-**Status**: **COMPLETED** (August 4, 2026) — *deployed on VPS, uncommitted to git*
+**Status**: **COMPLETED** (August 4, 2026) — deployed on VPS; committed and pushed (`5392638`)
 
 **Goal**: Modern party-first UI with booking flow pages.
 
@@ -457,7 +457,7 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - ✅ How-it-works page, footer, bottom nav updates
 - ✅ Booking context provider
 
-**Note:** 19 commits + uncommitted changes on VPS `master` ahead of `origin/master`.
+**Note:** VPS and `origin/master` aligned at `5392638` (7 Aug 2026).
 
 ---
 
@@ -470,11 +470,11 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - [x] 25-01 — Mount FHRS + `/metrics`; fix empty-body 400 errors; API v1.3.0
 - [x] 25-02 — Wave B discovery (6 runs: +90 venues, core 2,236→2,311); free-tier caps applied
 - [x] 25-03 — Docker rebuild + smoke tests (51/51 pass)
-- [x] 25-04 — Phase 24+25 commit (`21fd0cc`); push blocked (Apify token in history)
+- [x] 25-04 — Phase 24+25 committed; push to `origin/master` complete (`5392638`)
 
 **Deferred until domain:** DNS, HTTPS, offsite backups.
 
-**Push blocked:** GitHub push protection rejects 20 unpushed commits — Apify API token in `.env.backup.20260609_2231` (commit `055ee1e`). Requires history rewrite or secret allowlist.
+**Git:** Push to `origin/master` resolved 7 Aug 2026; tip `5392638`. Local `.env.backup.*` removed from disk (never commit secrets).
 
 ---
 

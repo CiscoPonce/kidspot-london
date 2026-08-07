@@ -12,9 +12,7 @@ These block public launch even though the product is functionally ready:
 
 1. **Point DNS** — `kidspot.london` A record → VPS public IP (`79.72.92.195` or Tailscale IP)
 2. **Enable HTTPS** — remove `auto_https disable_redirects` from Caddy; add Let's Encrypt
-3. **Mount missing API routes** — wire `/api/fhrs/match/:id` and `/metrics` in `server.ts`
-4. **Push git** — 19 commits + Phase 24 uncommitted work on VPS only
-5. **Offsite backups** — extend `scripts/backup.sh` to sync dumps to S3/R2
+3. **Offsite backups** — extend `scripts/backup.sh` to sync dumps to S3/R2
 
 ---
 

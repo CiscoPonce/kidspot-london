@@ -31,6 +31,7 @@ progress:
 | **Core catalogue** | **2,311** (+75 from Wave B) |
 | **Party-capable core** | **182** |
 | API | v1.3.0 · FHRS + `/metrics` live |
+| **Git** | `origin/master` at `5392638` (synced 7 Aug 2026) |
 
 ## Phase summary
 

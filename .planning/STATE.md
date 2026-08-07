@@ -24,7 +24,7 @@ progress:
 | **Active phases** | **21** (catalogue depth) + **25** (pre-launch hardening) |
 | **Platform status** | **Launch-ready** — product complete; catalogue depth + DNS/HTTPS remain |
 | **Last VPS audit** | 7 Aug 2026 — all containers healthy, 51/51 tests pass, crons green |
-| **Uncommitted work** | None locally — Phase 24+25 committed (`21fd0cc`); **push blocked** by GitHub secret scanning (Apify token in commit `055ee1e`) |
+| **Git** | Synced with `origin/master` at `5392638` — push resolved 7 Aug 2026 (secret removed from history) |
 
 ### What we're doing now (Phase 21)
 
@@ -89,7 +89,7 @@ Live query against VPS Postgres after 3 Wave B discovery runs + re-classify:
 | **21** | **Party catalogue maximisation** | **🔄 Active** |
 | 22 | Launch readiness (PWA, FHRS, cards) | ✅ Complete |
 | 23 | Public launch infra & AI eval | ⚠️ Mostly complete |
-| 24 | Frontend redesign & booking flow | ✅ Complete (uncommitted) |
+| 24 | Frontend redesign & booking flow | ✅ Complete |
 
 ### Phase 23 remaining gaps
 
@@ -146,7 +146,7 @@ Live query against VPS Postgres after 3 Wave B discovery runs + re-classify:
 
 | Date | Event |
 |------|-------|
-| 2026-08-07 | Ops session: party extraction, borough CSV (843 matched), Wave B ×3 (+45, core→2,311); Phase 24+25 committed |
+| 2026-08-07 | Ops session: party extraction, borough CSV (843 matched), Wave B ×3 (+45, core→2,311); Phase 24+25 committed; git push to origin resolved (`5392638`) |
 | 2026-08-07 | Wave B: 3 runs, +45 venues, core 2,236→2,310; free-tier limits applied |
 | 2026-08-04 | Phase 24 frontend redesign deployed to VPS |
 | 2026-07-28 | Phase 23 completed (4/4 plans) |

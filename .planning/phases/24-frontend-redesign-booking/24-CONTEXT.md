@@ -1,6 +1,6 @@
 # Phase 24 — High-Fidelity Frontend Redesign & Party Booking Flow
 
-**Status:** ✅ Complete (deployed VPS 4 Aug 2026, uncommitted to git)
+**Status:** ✅ Complete (deployed VPS 4 Aug 2026; on `origin/master` at `5392638`)
 **Depends on:** Phase 22 (launch readiness), Phase 18D (party data)
 
 ## Goal
@@ -19,7 +19,7 @@ Modern party-first UI with a guided booking flow, replacing the functional but d
 
 ## Deployment note
 
-Phase 24 exists as **uncommitted changes on VPS** (`master` 19 commits ahead of origin). Rebuild required:
+Phase 24 is on **`origin/master`** (`5392638`). Rebuild on VPS when pulling:
 
 ```bash
 cd /home/ubuntu/kidspot && docker compose up -d --build web
