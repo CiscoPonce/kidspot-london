@@ -213,9 +213,11 @@ export function VenueCard({
               <CategoryIcon size={12} strokeWidth={2.5} />
               {meta.label}
             </span>
-            {distance > 0 && (
+            {(distance > 0 || venue.borough) && (
               <span className="text-[10px] font-semibold text-[#7B785F]">
-                {formatDistance(distance)}
+                {distance > 0 ? `${formatDistance(distance)} away` : ''}
+                {distance > 0 && venue.borough ? ' • ' : ''}
+                {venue.borough || ''}
               </span>
             )}
           </div>
