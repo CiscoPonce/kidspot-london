@@ -48,14 +48,14 @@ export function CompareTable({ venues, onRemove, readOnly }: CompareTableProps) 
       <table className="w-full min-w-[480px] border-collapse text-sm">
         <thead>
           <tr>
-            <th className="w-28 sticky left-0 bg-background" />
+            <th className="w-28 sticky left-0 bg-[#FFFDF5]" />
             {venues.map((v) => (
               <th key={String(v.id)} className="p-2 align-top text-left">
-                <div className="rounded-2xl bg-surface-container p-3">
+                <div className="rounded-2xl bg-white border border-[#EBE5D3] p-3 shadow-sm">
                   <div className="flex items-start justify-between gap-2">
                     <Link
                       href={`/venue/${v.slug}`}
-                      className="font-display font-bold leading-tight text-on-background hover:underline line-clamp-2"
+                      className="font-display font-bold leading-tight text-brand-dark hover:underline line-clamp-2"
                     >
                       {v.name}
                     </Link>
@@ -64,7 +64,7 @@ export function CompareTable({ venues, onRemove, readOnly }: CompareTableProps) 
                         type="button"
                         onClick={() => onRemove(v.id)}
                         aria-label={`Remove ${v.name} from compare`}
-                        className="shrink-0 rounded-full p-1 text-on-surface-variant hover:bg-surface-container-high"
+                        className="shrink-0 rounded-full p-1 text-[#5E5E5E] hover:bg-[#F3EEDA]"
                       >
                         <X size={16} />
                       </button>
@@ -77,19 +77,19 @@ export function CompareTable({ venues, onRemove, readOnly }: CompareTableProps) 
         </thead>
         <tbody>
           {ROWS.map((row) => (
-            <tr key={row.label} className="border-t border-outline-variant/50">
-              <td className="sticky left-0 bg-background py-3 pr-2 text-xs font-semibold uppercase tracking-wide text-outline">
+            <tr key={row.label} className="border-t border-[#EBE5D3]">
+              <td className="sticky left-0 bg-[#FFFDF5] py-3 pr-2 text-xs font-semibold uppercase tracking-wide text-[#7B785F]">
                 {row.label}
               </td>
               {venues.map((v) => (
-                <td key={String(v.id)} className="py-3 px-2 align-top capitalize text-on-background">
+                <td key={String(v.id)} className="py-3 px-2 align-top capitalize text-brand-dark font-medium">
                   {row.render(v)}
                 </td>
               ))}
             </tr>
           ))}
-          <tr className="border-t border-outline-variant/50">
-            <td className="sticky left-0 bg-background py-3 pr-2" />
+          <tr className="border-t border-[#EBE5D3]">
+            <td className="sticky left-0 bg-[#FFFDF5] py-3 pr-2" />
             {venues.map((v) => {
               const enquiry = v.party_enquiry_url || v.booking_url;
               return (
@@ -99,21 +99,21 @@ export function CompareTable({ venues, onRemove, readOnly }: CompareTableProps) 
                       href={enquiry}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center rounded-full bg-primary text-on-primary px-4 py-2 text-xs font-bold"
+                      className="inline-flex items-center justify-center rounded-full bg-brand-yellow text-brand-dark px-4 py-2 text-xs font-bold hover:bg-brand-yellow-hover transition-colors shadow-sm"
                     >
                       Enquire
                     </a>
                   ) : v.phone ? (
                     <a
                       href={`tel:${v.phone}`}
-                      className="inline-flex items-center justify-center rounded-full bg-primary text-on-primary px-4 py-2 text-xs font-bold"
+                      className="inline-flex items-center justify-center rounded-full bg-brand-yellow text-brand-dark px-4 py-2 text-xs font-bold hover:bg-brand-yellow-hover transition-colors shadow-sm"
                     >
                       Call
                     </a>
                   ) : (
                     <Link
                       href={`/venue/${v.slug}`}
-                      className="inline-flex items-center justify-center rounded-full bg-primary-container text-on-primary-container px-4 py-2 text-xs font-bold"
+                      className="inline-flex items-center justify-center rounded-full bg-brand-dark text-white px-4 py-2 text-xs font-bold hover:bg-black transition-colors shadow-sm"
                     >
                       View
                     </Link>

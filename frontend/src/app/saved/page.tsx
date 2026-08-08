@@ -36,12 +36,12 @@ export default function SavedPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-on-background pb-24">
-      <header className="sticky top-0 z-40 w-full bg-background/85 backdrop-blur-md border-b border-outline-variant/60">
+    <div className="min-h-screen bg-[#FFFDF5] text-brand-dark pb-24">
+      <header className="sticky top-0 z-40 w-full bg-[#FFFDF5]/90 backdrop-blur-md border-b border-[#EBE5D3]">
         <div className="mx-auto max-w-6xl flex items-center gap-4 px-4 sm:px-6 py-3">
           <Link
             href="/"
-            className="p-2 rounded-full hover:bg-surface-container transition-colors"
+            className="p-2 rounded-full hover:bg-[#F3EEDA] transition-colors"
             aria-label="Go back"
           >
             <ArrowLeft size={24} />
@@ -51,33 +51,32 @@ export default function SavedPage() {
             <button
               type="button"
               onClick={handleShare}
-              className="inline-flex items-center gap-2 rounded-full bg-primary text-on-primary px-4 py-2 text-sm font-bold shadow-sm active:scale-95 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-dark text-white px-5 py-2 text-xs font-bold shadow-md hover:bg-black active:scale-95 transition-all"
             >
               {copied ? <Check size={16} /> : <Share2 size={16} />}
-              {copied ? 'Link copied' : 'Share'}
+              {copied ? 'Link copied' : 'Share Shortlist'}
             </button>
           )}
         </div>
       </header>
 
       {items.length === 0 ? (
-        <main className="mx-auto max-w-6xl px-4 sm:px-6 py-12 text-center">
+        <main className="mx-auto max-w-6xl px-4 sm:px-6 py-16 text-center">
           <div className="flex flex-col items-center justify-center space-y-6">
-            <div className="w-20 h-20 rounded-3xl bg-secondary-container text-on-secondary-container flex items-center justify-center">
-              <Heart size={40} />
+            <div className="w-20 h-20 rounded-full bg-[#F3EEDA] text-brand-dark flex items-center justify-center shadow-sm">
+              <Heart size={36} />
             </div>
             <div>
-              <h2 className="font-display text-2xl font-bold">No venues shortlisted yet</h2>
-              <p className="mt-2 text-on-surface-variant max-w-sm mx-auto">
-                Tap the heart on any venue to add it here, then compare your favourites
-                side-by-side and share them with whoever&apos;s helping plan the party.
+              <h2 className="font-display text-2xl font-extrabold text-brand-dark">No venues shortlisted yet</h2>
+              <p className="mt-2 text-sm text-[#5E5E5E] max-w-sm mx-auto">
+                Tap the heart on any venue card to save it, compare your favourites side-by-side, and share with parents planning the party.
               </p>
             </div>
             <Link
               href="/"
-              className="bg-primary-container text-on-primary-container font-semibold px-8 py-3 rounded-2xl hover:brightness-95 active:scale-95 transition-all"
+              className="bg-brand-yellow text-brand-dark font-bold text-sm px-8 py-3.5 rounded-full hover:bg-brand-yellow-hover active:scale-95 transition-all shadow-md"
             >
-              Find party venues
+              Explore Birthday Venues
             </Link>
           </div>
         </main>

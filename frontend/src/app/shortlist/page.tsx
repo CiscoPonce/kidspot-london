@@ -47,10 +47,10 @@ function SharedShortlist() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-on-background pb-24">
-      <header className="sticky top-0 z-40 w-full bg-background/85 backdrop-blur-md border-b border-outline-variant/60">
+    <div className="min-h-screen bg-[#FFFDF5] text-brand-dark pb-24">
+      <header className="sticky top-0 z-40 w-full bg-[#FFFDF5]/90 backdrop-blur-md border-b border-[#EBE5D3]">
         <div className="mx-auto max-w-6xl flex items-center gap-4 px-4 sm:px-6 py-3">
-          <Link href="/" className="p-2 rounded-full hover:bg-surface-container transition-colors" aria-label="Go home">
+          <Link href="/" className="p-2 rounded-full hover:bg-[#F3EEDA] transition-colors" aria-label="Go home">
             <ArrowLeft size={24} />
           </Link>
           <h1 className="font-display text-xl font-bold flex-1">Shared party shortlist</h1>
@@ -58,7 +58,7 @@ function SharedShortlist() {
             <button
               type="button"
               onClick={handleSaveAll}
-              className="inline-flex items-center gap-2 rounded-full bg-primary text-on-primary px-4 py-2 text-sm font-bold shadow-sm active:scale-95 transition"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-dark text-white px-5 py-2 text-xs font-bold shadow-md hover:bg-black active:scale-95 transition-all"
             >
               {saved ? <Check size={16} /> : <BookmarkPlus size={16} />}
               {saved ? 'Saved' : 'Save these'}
@@ -69,13 +69,13 @@ function SharedShortlist() {
 
       <main className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
         {loading ? (
-          <p className="text-on-surface-variant py-12 text-center">Loading shortlist…</p>
+          <p className="text-[#5E5E5E] py-12 text-center text-sm font-medium">Loading shortlist…</p>
         ) : venues.length === 0 ? (
           <div className="py-12 text-center space-y-4">
-            <p className="text-on-surface-variant">This shortlist link is empty or no longer available.</p>
+            <p className="text-[#5E5E5E] text-sm font-medium">This shortlist link is empty or no longer available.</p>
             <Link
               href="/"
-              className="inline-block bg-primary-container text-on-primary-container font-semibold px-8 py-3 rounded-2xl"
+              className="inline-block bg-brand-yellow text-brand-dark font-bold text-sm px-8 py-3.5 rounded-full hover:bg-brand-yellow-hover active:scale-95 transition-all shadow-md"
             >
               Find party venues
             </Link>
