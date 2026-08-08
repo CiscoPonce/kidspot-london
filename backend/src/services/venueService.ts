@@ -509,7 +509,7 @@ const baseVenueService = {
          AND venue_scope = ANY($4::text[])
          AND LOWER(COALESCE(london_borough, borough)) = LOWER($1)
          AND ($2::TEXT IS NULL OR type = $2::TEXT)
-         AND (party_capable = TRUE OR type = 'softplay' OR scope_reason = 'chain_party_food' OR name ILIKE '%soft play%' OR name ILIKE '%play centre%' OR name ILIKE '%trampoline%' OR name ILIKE '%party%')
+         AND (party_capable = TRUE OR type = 'softplay' OR type = 'library' OR scope_reason = 'chain_party_food' OR name ILIKE '%soft play%' OR name ILIKE '%play centre%' OR name ILIKE '%trampoline%' OR name ILIKE '%party%' OR name ILIKE '%library%')
          AND name NOT ILIKE 'OSM %'
          ORDER BY
              CASE
@@ -543,7 +543,7 @@ const baseVenueService = {
          AND v.venue_scope = ANY($6::text[])
          AND ST_DWithin(ST_MakePoint(v.lon, v.lat)::geography, ST_MakePoint($2, $1)::geography, $3)
          AND ($4::TEXT IS NULL OR v.type = $4::TEXT)
-         AND (v.party_capable = TRUE OR v.type = 'softplay' OR v.scope_reason = 'chain_party_food' OR v.name ILIKE '%soft play%' OR v.name ILIKE '%play centre%' OR v.name ILIKE '%trampoline%' OR v.name ILIKE '%party%')
+         AND (v.party_capable = TRUE OR v.type = 'softplay' OR v.type = 'library' OR v.scope_reason = 'chain_party_food' OR v.name ILIKE '%soft play%' OR v.name ILIKE '%play centre%' OR v.name ILIKE '%trampoline%' OR v.name ILIKE '%party%' OR v.name ILIKE '%library%')
          AND v.name NOT ILIKE 'OSM %'
          ORDER BY
              CASE
