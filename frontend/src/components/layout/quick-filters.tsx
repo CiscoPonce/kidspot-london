@@ -52,8 +52,8 @@ export function QuickFilters() {
 
   return (
     <section className="mx-auto max-w-6xl px-4 sm:px-6">
-      <div className="overflow-x-auto pb-1 no-scrollbar -mx-4 px-6 sm:mx-0 sm:px-0">
-        <div className="flex flex-nowrap md:flex-wrap items-center gap-2 sm:gap-2.5 min-w-max md:min-w-0 pr-6 sm:pr-0">
+      <div className="w-full">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
           {FILTERS.map((filter) => {
             const isActive =
               venueType === filter.value ||
