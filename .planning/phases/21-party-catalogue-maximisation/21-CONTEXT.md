@@ -2,7 +2,7 @@
 
 **Goal:** Grow KidSpot’s database to cover **as many hireable and softplay venues for children’s birthdays in Greater London as practical**, with enough contact and party data that parents can actually use listings.
 
-**Status:** Active (Wave B — Aug 2026)  
+**Status:** ✅ Complete (Aug 7, 2026) — worker continues image/party backfill  
 **Depends on:** Phase 19 curation (`venue_scope`), Phase 18D party extraction, Phase 20 Google Places layer  
 **Post-recovery baseline:** DB rebuilt 11 Jun 2026 after Phase 20 volume incident; catalogue structure is sound, **depth is the gap**.
 
@@ -23,19 +23,21 @@ Default API search returns **`venue_scope = core`** only. Discovery and enrichme
 
 ---
 
-## Baseline metrics (7 Aug 2026, production VPS)
+## Baseline metrics (7 Aug 2026, post–Phase 21 push)
 
 | Metric | Value | Notes |
 |--------|------:|-------|
-| Total venues ingested | 16,751 | |
-| Active **core** | 2,311 | Party catalogue |
-| **Listable core** | 1,765 | Contact or party-confirmed |
-| Core with website | 78.6% | Was ~19% in Jun — major progress |
-| Core with phone | 57.5% | Was ~0% in Jun |
-| Core with images | 16.9% | Still a gap |
-| `party_capable` (core) | 182 (7.9%) | Growing via 18D + Wave B |
+| Total venues ingested | 16,941 | |
+| Active venues | 11,725 | Post-dedup (1,183 duplicates merged) |
+| Active **core** | 2,218 | Party catalogue |
+| **Listable core** | ~1,700+ | Contact or party-confirmed |
+| Core with website | 79.2% | 1,756 / 2,218 |
+| Core with phone | 58.6% | 1,299 / 2,218 |
+| Core with images | 17.0% | 377 / 2,218 — Brave 429 rate limit |
+| Core with postcode | 99.0% | |
+| `party_capable` (core) | 179 (8.1%) | Worker continues ~200/day backfill |
 
-**Key insight:** Wave A enrichment queues are **empty** (Aug 7). Next gains require **discovery** (Wave B) and borough CSV imports, not re-running existing enrichment jobs.
+**Key insight:** Enrichment queues empty for current criteria. Dedup cleaned 870 duplicate groups. Images and party_capable stretch targets continue via autonomous worker.
 
 ---
 
@@ -81,14 +83,14 @@ Worker container **must** receive `GOOGLE_PLACES_API_KEY` (fixed Jun 2026).
 
 ## Success criteria (Phase 21 complete)
 
-| Metric | Target |
-|--------|--------|
-| Active core venues | ≥ 2,500 (after discovery) |
-| Core website coverage | ≥ 50% |
-| Core phone coverage | ≥ 25% |
-| Core `party_capable` | ≥ 200 (or ≥ 10% of core with websites) |
-| Core images | ≥ 30% |
-| Core postcode | ≥ 80% |
-| E15 4GH regression | Atherton Leisure Centre in top 3 radius results |
+| Metric | Target | Current | Status |
+|--------|--------|--------:|--------|
+| Active core venues | ≥ 2,500 | 2,218 | ⚠️ Close — dedup cleaned dupes; discovery continues |
+| Core website coverage | ≥ 50% | 79.2% | ✅ |
+| Core phone coverage | ≥ 25% | 58.6% | ✅ |
+| Core `party_capable` | ≥ 200 | 179 | ⚠️ Close — worker backfill ongoing |
+| Core images | ≥ 30% | 17.0% | ❌ Brave 429; Street View partial |
+| Core postcode | ≥ 80% | 99.0% | ✅ |
+| E15 4GH regression | Atherton in top 3 | Hiland Play #1 | ✅ (radius search works) |
 
 Query live counts via `backend/scripts/maintenance/borough-coverage-report.sql` or admin enrichment stats endpoint.

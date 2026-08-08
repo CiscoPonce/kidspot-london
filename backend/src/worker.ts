@@ -110,6 +110,12 @@ async function setupRepeatingJobs() {
       ...jobOpts,
     });
 
+    await discoveryQueue.add('enrich-website-images', { batchSize: 100 }, {
+      repeat: { pattern: '0 */2 * * *' },
+      jobId: 'repeat:enrich-website-images',
+      ...jobOpts,
+    });
+
     await enrichmentQueue.add('contact-backfill', { batchSize: 50 }, {
       repeat: { pattern: '0 7 * * *' },
       jobId: 'repeat:contact-backfill',
@@ -264,6 +270,14 @@ case 'enrich-brave-images': {
   const batchSize = (job.data as EnrichmentJobData)?.batchSize || 20;
   const result = await enrichViaBraveImages(batchSize);
           logger.info({ result }, 'Brave image enrichment complete');
+          return { status: 'completed', ...result };
+        }
+
+case 'enrich-website-images': {
+  const { enrichWebsiteImages } = await import('../scripts/discovery/sources/website-image-enrichment.js');
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 100;
+  const result = await enrichWebsiteImages(batchSize);
+          logger.info({ result }, 'Website image enrichment complete');
           return { status: 'completed', ...result };
         }
 

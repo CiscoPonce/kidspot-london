@@ -17,16 +17,14 @@ export function VenueDetailModal({ venue, isOpen, onClose }: VenueDetailModalPro
   const sheetRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef<number | null>(null);
 
-  // Fetch venue details
   const { data: details, isLoading, isError, refetch } = useQuery({
     queryKey: ['venueDetails', venue.id],
     queryFn: () => getVenueDetails(venue.id),
     enabled: isOpen,
     retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Close on Escape key
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -36,7 +34,6 @@ export function VenueDetailModal({ venue, isOpen, onClose }: VenueDetailModalPro
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Body scroll lock
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -48,7 +45,6 @@ export function VenueDetailModal({ venue, isOpen, onClose }: VenueDetailModalPro
     };
   }, [isOpen]);
 
-  // Swipe down to close (mobile)
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
   }, []);
@@ -57,9 +53,7 @@ export function VenueDetailModal({ venue, isOpen, onClose }: VenueDetailModalPro
     (e: React.TouchEvent) => {
       if (touchStartY.current === null) return;
       const delta = e.changedTouches[0].clientY - touchStartY.current;
-      if (delta > 80) {
-        onClose();
-      }
+      if (delta > 80) onClose();
       touchStartY.current = null;
     },
     [onClose]
@@ -69,61 +63,51 @@ export function VenueDetailModal({ venue, isOpen, onClose }: VenueDetailModalPro
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center md:hidden"
       role="dialog"
       aria-modal="true"
       aria-label={`Details for ${venue.name}`}
     >
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Sheet / Modal panel */}
       <div
         ref={sheetRef}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className={[
-          'relative z-10 w-full bg-white shadow-xl',
-          'rounded-t-2xl sm:rounded-2xl',
-          'sm:mx-4 sm:max-w-md',
-          'max-h-[90vh] overflow-hidden',
-          'animate-slide-up sm:animate-fade-in',
-        ].join(' ')}
-        style={{
-          // Fallback animation via inline style for sheet entrance
-          animation: 'slideUp 0.25s cubic-bezier(0.32,0.72,0,1)',
-        }}
+        className="relative z-10 flex max-h-[94vh] w-full flex-col overflow-hidden rounded-t-2xl bg-[#FFFDF5] shadow-xl"
       >
-        <style>{`
-          @keyframes slideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to   { transform: translateY(0);    opacity: 1; }
-          }
-          @media (min-width: 640px) {
-            @keyframes slideUp {
-              from { transform: scale(0.96); opacity: 0; }
-              to   { transform: scale(1);    opacity: 1; }
-            }
-          }
-        `}</style>
+        {/* Drag handle + close */}
+        <div className="flex shrink-0 items-center justify-between border-b border-[#EBE5D3] px-4 py-3">
+          <div className="mx-auto h-1 w-10 rounded-full bg-[#CCC7AB]" aria-hidden="true" />
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-4 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm"
+            aria-label="Close"
+          >
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
 
-        <VenueDetailContent
-          venue={details?.data?.basic || venue}
-          details={details?.data?.details}
-          isLoading={isLoading}
-          isError={isError}
-          onRetry={() => refetch()}
-          onClose={onClose}
-        />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <VenueDetailContent
+            venue={details?.data?.basic || venue}
+            details={details?.data?.details}
+            isLoading={isLoading}
+            isError={isError}
+            onRetry={() => refetch()}
+            onClose={onClose}
+            compact
+          />
+        </div>
       </div>
     </div>
   );
 
-  // Render into document.body via portal
   if (typeof window === 'undefined') return null;
   return createPortal(modalContent, document.body);
 }

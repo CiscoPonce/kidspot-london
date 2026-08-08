@@ -106,49 +106,85 @@ export function useCurrentPosition(): UseCurrentPositionResult {
 }
 
 /**
- * Geocode a postcode using the Photon API.
- * Returns coordinates for the first result in the London area.
+ * Geocode a UK postcode via postcodes.io (primary) or Photon (fallback).
  */
 export async function geocodePostcode(postcode: string): Promise<GeocodeResult> {
-  const cleanedPostcode = postcode.trim().toUpperCase();
-  
-  if (!cleanedPostcode) {
+  const cleaned = postcode.trim().toUpperCase();
+  if (!cleaned) {
     throw new Error('Postcode is required');
   }
 
-  // Basic UK postcode validation
-  const postcodeRegex = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i;
-  if (!postcodeRegex.test(cleanedPostcode)) {
-    throw new Error('Invalid postcode format');
+  const compact = cleaned.replace(/\s/g, '');
+  const postcodeRegex = /^[A-Z]{1,2}\d[A-Z\d]?\d[A-Z]{2}$/i;
+  if (!postcodeRegex.test(compact)) {
+    throw new Error('Invalid postcode format — try e.g. E15 1GH');
   }
 
-  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(cleanedPostcode)}&limit=1&lang=en`;
+  const formatted = compact.replace(/^([A-Z]{1,2}\d[A-Z\d]?)(\d[A-Z]{2})$/i, '$1 $2');
 
+  // postcodes.io — accurate for UK
   try {
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`Photon API error: ${response.status}`);
+    const response = await fetch(
+      `https://api.postcodes.io/postcodes/${encodeURIComponent(formatted)}`
+    );
+    if (response.ok) {
+      const data = await response.json();
+      if (data.result?.latitude != null && data.result?.longitude != null) {
+        return {
+          lat: data.result.latitude,
+          lon: data.result.longitude,
+          displayName: data.result.admin_ward || formatted,
+        };
+      }
     }
-
-    const data = await response.json();
-
-    if (!data.features || data.features.length === 0) {
-      throw new Error('No results found for this postcode');
-    }
-
-    const feature = data.features[0];
-    const [lon, lat] = feature.geometry.coordinates;
-
-    return {
-      lat,
-      lon,
-      displayName: feature.properties.display_name,
-    };
-  } catch (err) {
-    if (err instanceof Error) {
-      throw err;
-    }
-    throw new Error('Failed to geocode postcode');
+  } catch {
+    // fall through to Photon
   }
+
+  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(formatted)}&limit=1&lang=en`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Geocoding error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  if (!data.features?.length) {
+    throw new Error('No results found for this postcode');
+  }
+
+  const feature = data.features[0];
+  const [lon, lat] = feature.geometry.coordinates;
+  return { lat, lon, displayName: feature.properties.display_name };
+}
+
+/**
+ * Geocode a location query — UK postcode or place name in London.
+ */
+export async function geocodeLocation(query: string): Promise<GeocodeResult> {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    throw new Error('Enter a postcode or area');
+  }
+
+  const compact = trimmed.toUpperCase().replace(/\s/g, '');
+  const postcodeRegex = /^[A-Z]{1,2}\d[A-Z\d]?\d[A-Z]{2}$/i;
+
+  if (postcodeRegex.test(compact)) {
+    return geocodePostcode(trimmed);
+  }
+
+  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(`${trimmed}, London, UK`)}&limit=1&lang=en`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Could not look up that location');
+  }
+
+  const data = await response.json();
+  if (!data.features?.length) {
+    throw new Error('No results found — try a UK postcode like E15 1GH');
+  }
+
+  const feature = data.features[0];
+  const [lon, lat] = feature.geometry.coordinates;
+  return { lat, lon, displayName: feature.properties.name || trimmed };
 }

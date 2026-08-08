@@ -1,6 +1,8 @@
 'use client';
 
-import Link from 'next/link';
+import { VenueImagePlaceholder } from '@/components/venues/venue-image-placeholder';
+import { usePlausible } from 'next-plausible';
+import type { Venue } from '@/lib/api';
 import {
   Trees,
   Building2,
@@ -11,12 +13,8 @@ import {
   Heart,
   Star,
   Users,
-  Clock,
 } from 'lucide-react';
-import { usePlausible } from 'next-plausible';
-import type { Venue } from '@/lib/api';
-import { trustSignals } from '@/lib/trust';
-import { isOpenNow } from '@/lib/opening-hours';
+import { formatPartyPrice } from '@/lib/venue-images';
 import { useShortlist } from '@/hooks/use-shortlist';
 
 interface VenueCardProps {
@@ -38,12 +36,12 @@ const CATEGORY_META: Record<
 > = {
   softplay: {
     icon: Joystick,
-    label: 'Soft Play',
+    label: 'Soft Play & Activity',
     chip: 'bg-[#FFF7B3] text-[#3D3700] border-[#F6E614]/60',
   },
   park: {
     icon: Trees,
-    label: 'Park',
+    label: 'Outdoor Space',
     chip: 'bg-[#C8E6C9] text-[#1F4D24] border-[#A5D6A7]/70',
   },
   museum: {
@@ -53,7 +51,7 @@ const CATEGORY_META: Record<
   },
   community_hall: {
     icon: Building2,
-    label: 'Party Room',
+    label: 'Party Room Hire',
     chip: 'bg-[#FFCCBC] text-[#5C2210] border-[#FFAB91]/70',
   },
   leisure_centre: {
@@ -63,7 +61,7 @@ const CATEGORY_META: Record<
   },
   cafe: {
     icon: Building2,
-    label: 'Café',
+    label: 'Café & Food',
     chip: 'bg-[#FFE0B2] text-[#5A3A0E] border-[#FFCC80]/70',
   },
   library: {
@@ -74,7 +72,7 @@ const CATEGORY_META: Record<
   other: {
     icon: MapPin,
     label: 'Venue',
-    chip: 'ks-chip',
+    chip: 'bg-[#F5F2E3] text-brand-dark border-[#EBE5D3]',
   },
 };
 
@@ -88,8 +86,8 @@ const PARTY_TYPES = new Set(['softplay', 'community_hall']);
 const PARTY_FACETS = ['soft_play', 'party_hire', 'hall_hire'];
 
 function formatDistance(miles: number): string {
-  if (!miles && miles !== 0) return '';
-  return miles < 0.1 ? '<0.1 mi' : `${miles.toFixed(1)} mi`;
+  if (miles == null || Number.isNaN(miles)) return '';
+  return miles < 0.1 ? '<0.1 mi away' : `${miles.toFixed(1)} mi away`;
 }
 
 function isPartyCapable(venue: Venue): boolean {
@@ -99,24 +97,22 @@ function isPartyCapable(venue: Venue): boolean {
   return (venue.parent_facets || []).some((f) => PARTY_FACETS.includes(f));
 }
 
+function badgeLabel(venue: Venue, partyCapable: boolean): string | null {
+  const name = venue.name.toLowerCase();
+  if (/mcdonald|burger king|wacky warehouse/.test(name)) return 'Kids party packages';
+  if (venue.type === 'softplay' || /flip out|oxygen|trampoline|bounce/.test(name)) {
+    return 'Birthday parties';
+  }
+  if (venue.type === 'community_hall' && partyCapable) return 'Hall hire for parties';
+  if (venue.type === 'park') return 'Outdoor parties';
+  if (partyCapable) return 'Party hire available';
+  return null;
+}
+
 function firstImage(venue: Venue): string | undefined {
   if (venue.image_url) return venue.image_url;
   if (Array.isArray(venue.images) && venue.images.length > 0) return venue.images[0];
   return undefined;
-}
-
-function partyPriceLabel(venue: Venue): { from: string; unit: string } | null {
-  if (typeof venue.party_price_from !== 'number') return null;
-  const amount = Number.isInteger(venue.party_price_from)
-    ? `£${venue.party_price_from}`
-    : `£${venue.party_price_from.toFixed(2)}`;
-  const unit =
-    venue.party_price_unit === 'per_hour'
-      ? '/ hour'
-      : venue.party_price_unit === 'flat'
-        ? ''
-        : '/ child';
-  return { from: amount, unit };
 }
 
 export function VenueCard({
@@ -126,23 +122,18 @@ export function VenueCard({
   isSelected,
 }: VenueCardProps) {
   const meta = CATEGORY_META[(venue.type as CategoryKey)] ?? CATEGORY_META.other;
-  const Icon = meta.icon;
+  const CategoryIcon = meta.icon;
   const sponsorClass = venue.sponsor_tier
     ? SPONSOR_BADGE[venue.sponsor_tier as keyof typeof SPONSOR_BADGE]
     : null;
-  const isGold = venue.sponsor_tier === 'gold';
   const plausible = usePlausible();
   const { has, toggle } = useShortlist();
 
   const isSaved = has(venue.id);
   const imageUrl = firstImage(venue);
-  const trust = trustSignals(venue);
   const partyCapable = isPartyCapable(venue);
-  const partyPrice = partyPriceLabel(venue);
-  const isFreePark = venue.type === 'park' && !partyPrice;
-  const capacity = typeof venue.party_max_capacity === 'number' ? venue.party_max_capacity : null;
-  const enquiryUrl = venue.party_enquiry_url || venue.booking_url || null;
-  const openState = isOpenNow(venue.opening_hours);
+  const partyPrice = formatPartyPrice(venue);
+  const badge = badgeLabel(venue, partyCapable);
 
   const handleCardClick = () => {
     plausible('VenueSelected', {
@@ -159,13 +150,6 @@ export function VenueCard({
     });
   };
 
-  const handleEnquiry = (e: React.MouseEvent, kind: 'enquiry' | 'call') => {
-    e.stopPropagation();
-    plausible('PartyEnquiryClicked', {
-      props: { venueId: venue.id, kind, type: venue.type },
-    });
-  };
-
   return (
     <article
       onClick={handleCardClick}
@@ -178,32 +162,28 @@ export function VenueCard({
       role="button"
       tabIndex={0}
       aria-pressed={isSelected}
-      className={`group relative cursor-pointer overflow-hidden rounded-3xl bg-white border border-[#EBE5D3] shadow-sm hover:shadow-md transition-all flex flex-col ${
+      className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-3xl border border-[#EBE5D3] bg-white shadow-sm transition-all hover:shadow-md ${
         isSelected ? 'ring-2 ring-brand-yellow' : ''
       }`}
     >
-      {/* Image Container with Overlay Badge */}
-      <div className="relative w-full aspect-[16/10] overflow-hidden bg-brand-cream-dark">
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-brand-cream-dark">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={venue.name}
             loading="lazy"
-            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-[#F3EEDA]">
-            <Icon size={56} strokeWidth={1.5} className="text-[#8E8B7B]" />
-          </div>
+          <VenueImagePlaceholder type={venue.type} name={venue.name} />
         )}
 
-        {/* Save / Shortlist Heart Button */}
         <button
           type="button"
           onClick={handleSaveToggle}
           aria-pressed={isSaved}
           aria-label={isSaved ? `Remove ${venue.name} from shortlist` : `Add ${venue.name} to shortlist`}
-          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-sm hover:bg-white active:scale-90 transition"
+          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur-sm transition hover:bg-white active:scale-90"
         >
           <Heart
             size={18}
@@ -212,55 +192,62 @@ export function VenueCard({
           />
         </button>
 
-        {/* Birthday Party Badge Overlay (Bottom Right of Image) */}
-        <div className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur-sm px-3 py-1 text-xs font-bold text-brand-dark shadow-sm border border-black/5">
-          <span className="text-[14px]">
-            🎂
-          </span>
-          Birthday Party Venue
-        </div>
+        {badge && (
+          <div className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1.5 rounded-full border border-black/5 bg-white/95 px-3 py-1 text-xs font-bold text-brand-dark shadow-sm backdrop-blur-sm">
+            <span className="text-[14px]">🎂</span>
+            {badge}
+          </div>
+        )}
+
+        {sponsorClass && (
+          <div className={`absolute left-3 top-3 z-10 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${sponsorClass}`}>
+            Featured
+          </div>
+        )}
       </div>
 
-      {/* Content Body */}
       <div className="flex flex-1 flex-col justify-between p-5">
         <div>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${meta.chip}`}>
+              <CategoryIcon size={12} strokeWidth={2.5} />
+              {meta.label}
+            </span>
+            {distance > 0 && (
+              <span className="text-[10px] font-semibold text-[#7B785F]">
+                {formatDistance(distance)}
+              </span>
+            )}
+          </div>
+
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-display text-lg font-bold leading-tight text-brand-dark line-clamp-1">
+            <h3 className="line-clamp-2 font-display text-lg font-bold leading-tight text-brand-dark">
               {venue.name}
             </h3>
             {venue.rating && (
-              <span className="inline-flex items-center gap-1 font-bold text-sm text-brand-dark shrink-0">
+              <span className="inline-flex shrink-0 items-center gap-1 text-sm font-bold text-brand-dark">
                 <Star size={15} strokeWidth={2.5} className="fill-amber-400 text-amber-400" />
                 {Number(venue.rating).toFixed(1)}
               </span>
             )}
           </div>
 
-          <div className="mt-2 flex items-center justify-between text-xs text-[#5E5E5E] font-medium">
-            <span>
-              {partyPrice ? `From ${partyPrice.from}${partyPrice.unit}` : 'Contact for pricing'}
-            </span>
-            <span className="flex items-center gap-1">
-              <Users size={14} />
-              Up to {capacity || 30}
-            </span>
+          <div className="mt-2 flex items-center justify-between text-xs font-medium text-[#5E5E5E]">
+            <span>{partyPrice || 'Contact venue for pricing'}</span>
+            {venue.party_max_capacity != null && (
+              <span className="flex items-center gap-1">
+                <Users size={14} />
+                Up to {venue.party_max_capacity} kids
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Full-width Yellow CTA Button */}
         <div className="mt-4">
-          <Link
-            href={`/venue/${venue.slug}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              plausible('VenueViewed', {
-                props: { venueId: venue.id, source: 'card_button' },
-              });
-            }}
-            className="w-full inline-flex items-center justify-center gap-1 rounded-full bg-[#FFF499] text-brand-dark py-2.5 px-4 text-xs font-bold hover:bg-brand-yellow transition-colors"
-          >
-            View Details <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          </Link>
+          <span className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-[#FFF499] px-4 py-2.5 text-xs font-bold text-brand-dark transition-colors group-hover:bg-brand-yellow">
+            View details
+            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          </span>
         </div>
       </div>
     </article>

@@ -89,6 +89,14 @@ WITH classified AS (
       ---------------------------------------------- SECONDARY: parks
       WHEN type = 'park' THEN ARRAY['secondary','park_outdoor']
 
+      ------------------------------------------- CORE: chain softplay
+      WHEN name ~* '(flip out|gambado|kidspace|oxygen active|oxygen freejump|inflata nation|airhop|jump giant|jump in trampoline|gravity max|gravity active|ninja warrior|\ybabylon park\y|better extreme|clip n climb|inflata)'
+        THEN ARRAY['core','chain_softplay']
+
+      ---------------------------------------- CORE: chain party food
+      WHEN name ~* '(mcdonald|burger king|pizza hut party|wacky warehouse|brewers fayre|beefeater party)'
+        THEN ARRAY['core','chain_party_food']
+
       ---------------------------------------------- REVIEW: ambiguous
       WHEN type IN ('library','cafe')   THEN ARRAY['review', type]
       WHEN type = 'leisure_centre'      THEN ARRAY['review','leisure_unclassified']
@@ -102,3 +110,9 @@ UPDATE venues v
 SET venue_scope = c.res[1], scope_reason = c.res[2]
 FROM classified c
 WHERE v.id = c.id;
+
+UPDATE venues SET type = 'softplay'
+WHERE is_active = TRUE AND scope_reason = 'chain_softplay' AND type NOT IN ('softplay');
+
+UPDATE venues SET type = COALESCE(NULLIF(type,'unknown'), 'other')
+WHERE is_active = TRUE AND scope_reason = 'chain_party_food';

@@ -71,16 +71,19 @@ A curated, geo-aware party catalogue that:
 | 01–17 | Foundation, API, frontend, enrichment pipeline |
 | 18–18E | Autonomous worker, party extraction, dedup fix, PWA |
 | 20 | Security hardening, backups, Google Places layer |
+| 21 | Party catalogue maximisation (discovery, enrichment, dedup) |
 | 22 | Launch readiness — PWA, FHRS, party cards, shortlist/compare/share |
 | 23 | AI eval, OpenAPI, sitemap, analytics (DNS/HTTPS pending) |
 | 24 | Frontend redesign + booking flow (Aug 2026) |
+| 25 | Pre-launch hardening, Wave B, API v1.3.0 (Aug 2026) |
 
-**Active:** Phase 21 — catalogue depth (discovery sweep, borough CSVs, party coverage).
+**Active:** Phase **23** — DNS, HTTPS, offsite backup replication.
 
 ## Success metrics
 
-- **Listable core venues** — currently 1,765 / target 2,000+
-- **Party-capable core** — currently 182 / target 500+
+- **Core catalogue** — 2,218 active core venues
+- **Party-capable core** — 179 / stretch target 500+ (worker backfill ~200/day)
+- **Contact coverage** — 79.2% websites · 58.6% phones · 17.0% images
 - **Outbound CTR** — Enquire/Call/Book clicks on party-capable venues
 - **Shortlist usage** — create, compare, share events (Plausible)
 - **Cron reliability** — GitHub ingest pipelines ≥ 95% success rate

@@ -1,13 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { fetchVenues, type Venue } from '@/lib/api';
 import { useSearch } from '@/hooks/use-search';
+import { ResultsToolbar } from '@/components/search/results-toolbar';
+import { sortVenues, type SortMode } from '@/lib/venue-sort';
 import { VenueCard } from './venue-card';
 
 interface VenueListProps {
   onVenueSelect: (venue: Venue) => void;
   selectedId?: string | number;
+  onSearchComplete?: () => void;
 }
 
 function LoadingSkeleton() {
@@ -16,18 +20,14 @@ function LoadingSkeleton() {
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="ks-card animate-pulse flex flex-col sm:flex-row"
+          className="animate-pulse overflow-hidden rounded-3xl border border-[#EBE5D3] bg-white"
           aria-hidden="true"
         >
-          <div className="aspect-[16/10] sm:aspect-auto sm:w-[40%] sm:min-h-[180px] bg-surface-variant" />
-          <div className="flex-1 p-5 space-y-3">
-            <div className="h-5 w-20 rounded-full bg-surface-variant" />
-            <div className="h-5 w-2/3 bg-surface-variant rounded" />
-            <div className="h-4 w-1/3 bg-surface-variant rounded" />
-            <div className="mt-4 flex justify-between gap-3">
-              <div className="h-4 w-20 bg-surface-variant rounded" />
-              <div className="h-9 w-20 bg-surface-variant rounded-full" />
-            </div>
+          <div className="aspect-[16/10] bg-[#F5F2E3]" />
+          <div className="space-y-3 p-5">
+            <div className="h-5 w-2/3 rounded bg-[#F5F2E3]" />
+            <div className="h-4 w-1/3 rounded bg-[#F5F2E3]" />
+            <div className="h-9 w-full rounded-full bg-[#F5F2E3]" />
           </div>
         </div>
       ))}
@@ -47,21 +47,20 @@ function StateCard({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="ks-card flex flex-col items-center text-center px-6 py-12">
-      <div className="w-16 h-16 rounded-2xl bg-tertiary-container/70 text-on-tertiary-container flex items-center justify-center mb-5">
+    <div className="flex flex-col items-center rounded-3xl border border-[#EBE5D3] bg-white px-6 py-12 text-center shadow-sm">
+      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-yellow/30 text-brand-dark">
         <span className="material-symbols-outlined text-[32px]">{icon}</span>
       </div>
-      <h3 className="font-display text-xl font-semibold text-on-background">
-        {title}
-      </h3>
-      <p className="mt-2 text-sm text-on-surface-variant max-w-sm">{message}</p>
+      <h3 className="font-display text-xl font-bold text-brand-dark">{title}</h3>
+      <p className="mt-2 max-w-sm text-sm text-[#5E5E5E]">{message}</p>
       {action && <div className="mt-5">{action}</div>}
     </div>
   );
 }
 
-export function VenueList({ onVenueSelect, selectedId }: VenueListProps) {
+export function VenueList({ onVenueSelect, selectedId, onSearchComplete }: VenueListProps) {
   const { lat, lon, radius, venueType, facets, postcode } = useSearch();
+  const [sort, setSort] = useState<SortMode>('recommended');
 
   const { data: venuesResponse, isLoading, error, refetch } = useQuery({
     queryKey: ['venues', lat, lon, radius, venueType, facets, postcode],
@@ -76,13 +75,18 @@ export function VenueList({ onVenueSelect, selectedId }: VenueListProps) {
       <StateCard
         icon="search"
         title="Start your search"
-        message="Enter a postcode above or use your current location to find child-friendly venues nearby."
+        message="Enter your postcode or area above, or tap the location button to find birthday party venues near you."
       />
     );
   }
 
   if (isLoading) {
-    return <LoadingSkeleton />;
+    return (
+      <>
+        <ResultsToolbar sort={sort} onSortChange={setSort} onSearchComplete={onSearchComplete} />
+        <LoadingSkeleton />
+      </>
+    );
   }
 
   if (error) {
@@ -95,7 +99,7 @@ export function VenueList({ onVenueSelect, selectedId }: VenueListProps) {
           <button
             type="button"
             onClick={() => refetch()}
-            className="bg-primary-container text-on-primary-container font-semibold rounded-full px-5 py-2 hover:brightness-95 active:scale-95 transition"
+            className="rounded-full bg-brand-yellow px-5 py-2 text-sm font-bold text-brand-dark transition hover:bg-brand-yellow-hover active:scale-95"
           >
             Retry
           </button>
@@ -105,26 +109,25 @@ export function VenueList({ onVenueSelect, selectedId }: VenueListProps) {
   }
 
   const venues = venuesResponse?.data.all || [];
-  const sortedVenues = [...venues].sort(
-    (a, b) => (a.distance_miles || 0) - (b.distance_miles || 0)
-  );
+  const sortedVenues = sortVenues(venues, sort);
 
   if (sortedVenues.length === 0) {
     return (
-      <StateCard
-        icon="explore_off"
-        title="No venues nearby"
-        message="Try widening your search radius or picking a different category."
-      />
+      <>
+      <ResultsToolbar sort={sort} onSortChange={setSort} resultCount={0} onSearchComplete={onSearchComplete} />
+        <StateCard
+          icon="explore_off"
+          title="No venues in this area"
+          message="Try widening the distance to 10 miles, or switch to All venues to see community halls and outdoor spaces."
+        />
+      </>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-on-surface-variant">
-        Showing <span className="font-semibold text-on-background">{sortedVenues.length}</span>{' '}
-        {sortedVenues.length === 1 ? 'venue' : 'venues'}
-      </p>
+      <ResultsToolbar sort={sort} onSortChange={setSort} resultCount={sortedVenues.length} onSearchComplete={onSearchComplete} />
+
       {sortedVenues.map((venue) => (
         <VenueCard
           key={venue.id}

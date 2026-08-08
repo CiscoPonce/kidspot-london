@@ -6,18 +6,20 @@
 
 ## Where the project stands (August 2026)
 
-The platform is **launch-ready** — product complete through Phase 24; go-live infra and catalogue depth remain.
+The platform is **production-ready on IP** — Phases 21, 24, and 25 complete. Only Phase 23 go-live infra (DNS, HTTPS, backups) remains before public launch at `kidspot.london`.
 
 | Area | Status |
 |:-----|:-------|
 | **Product** | Party-first UI, shortlist, compare, share, PWA, booking flow (Phase 24). API defaults to **core catalogue**. |
 | **Data structure** | `venue_scope`, `london_borough` (33 boroughs), party fields, FHRS denormalized ratings. |
-| **Catalogue** | **2,311 core** venues · **182 party-capable** (post–Wave B, Aug 7). |
-| **Contact coverage** | Core: ~78.6% websites · ~57.5% phones · ~16.9% images. |
-| **Enrichment** | Worker with free-tier Google Places limits (12h, batch 25). |
+| **Catalogue** | **2,218 core** venues · **179 party-capable** · 11,725 active (post-dedup). |
+| **Contact coverage** | Core: **79.2%** websites · **58.6%** phones · **17.0%** images · **99.1%** postcodes. |
+| **Enrichment** | Autonomous worker (42 BullMQ jobs); free-tier Google Places limits (12h, batch 25). |
 | **API** | v1.3.0 — FHRS + `/metrics` mounted and live. |
 | **Crons** | GitHub Actions: all green. |
-| **Go-live gaps** | DNS + HTTPS for `kidspot.london`; offsite backups; git push. |
+| **Phases complete** | 01–18E, 20–22, **21**, 24, **25** |
+| **Active phase** | **23** — DNS, HTTPS, offsite backups |
+| **Go-live gaps** | DNS + HTTPS for `kidspot.london`; offsite backups (S3/R2). |
 
 **Planning docs:** [`.planning/STATE.md`](.planning/STATE.md) · [`.planning/ROADMAP.md`](.planning/ROADMAP.md) · [`NEXT_ACTIONS.md`](NEXT_ACTIONS.md)
 
@@ -27,10 +29,14 @@ The platform is **launch-ready** — product complete through Phase 24; go-live 
 
 | Metric | Value |
 |:-------|------:|
-| **Total venues** | 16,751 |
-| **Active venues** | 16,033 |
-| **`venue_scope = core`** (party catalogue) | 2,311 |
-| **`party_capable = true` (core)** | 182 |
+| **Total venues** | 16,941 |
+| **Active venues** | 11,725 (1,183 duplicates merged in Phase 21 dedup) |
+| **`venue_scope = core`** (party catalogue) | 2,218 |
+| **`party_capable = true` (core)** | 179 (8.1%) |
+| **Core with website** | 1,756 (79.2%) |
+| **Core with phone** | 1,299 (58.6%) |
+| **Core with images** | 377 (17.0%) |
+| **Core with postcode** | 2,199 (99.1%) |
 
 > Live numbers: `GET /api/admin/enrichment-stats` (HMAC) or SQL in `backend/scripts/maintenance/`.
 
@@ -143,6 +149,14 @@ Layer 4:   Smart parks                    → OSM map links where needed
 
 **Party job throughput:** ~50 venues × 4 runs/day ≈ **200 venues/day** on the core-first queue.
 
+### Full Phase 21 pipeline (VPS)
+
+```bash
+cd /home/ubuntu/kidspot
+bash scripts/run-phase-21.sh   # discovery + enrichment + dedup + classify
+bash scripts/run-wave-b-discovery.sh 15   # Wave B only
+```
+
 ### Manual party backfill
 
 ```bash
@@ -251,7 +265,7 @@ Scripts live in `backend/scripts/maintenance/` (`classify-venue-scope.sql`, `cle
 ```
 kidspot-london/
 ├── .github/workflows/          # CI + scheduled discovery/enrichment
-├── .planning/                  # ROADMAP, phase CONTEXT/PLAN (18B–22)
+├── .planning/                  # ROADMAP, STATE, phase CONTEXT/PLAN/SUMMARY
 ├── backend/
 │   ├── src/
 │   │   ├── server.ts                 # CORS, rate limiting, route mounting
@@ -275,12 +289,19 @@ kidspot-london/
 │   │   │   ├── enrichment.ts         # Nominatim → borough + london_borough
 │   │   │   ├── google-places-discovery.ts    # Borough-targeted discovery
 │   │   │   ├── postcodesio-geocoding.ts      # Forward + reverse batch geocoding
-│   │   │   └── fhrs-batch-match.ts           # Daily FHRS batch matching
+│   │   │   ├── fhrs-batch-match.ts           # Daily FHRS batch matching
+│   │   │   └── wikimedia-image-enrichment.ts # Free Commons image fallback
 │   └── db/migrations/
 │       ├── 026_add_party_data.sql
 │       ├── 027_add_venue_scope.sql
 │       ├── 028_add_london_borough.sql
 │       └── 038_add_fhrs_venue_rating_fields.sql
+├── scripts/
+│   ├── run-phase-21.sh              # Full discovery + enrichment pipeline
+│   ├── run-wave-b-discovery.sh      # Google Places discovery + classify
+│   ├── run-enrichment-pipeline.sh   # Post-rebuild enrichment pass
+│   ├── smoke-test-all.sh            # API + frontend smoke tests
+│   └── backup.sh                    # Daily Postgres dump
 ├── frontend/
 │   ├── public/
 │   │   ├── sw.js                  # Service worker (163 lines, 4 caches)

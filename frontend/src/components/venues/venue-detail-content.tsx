@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { VenueMapSnippet } from '@/components/map/venue-map-snippet';
 import { ShareButton } from '@/components/venues/share-button';
+import { VenueImagePlaceholder } from '@/components/venues/venue-image-placeholder';
 import { type Venue, type VenueDetails } from '@/lib/api';
+import { collectVenueImages, formatPartyPrice } from '@/lib/venue-images';
+import { trustSignals } from '@/lib/trust';
 import { useShortlist } from '@/hooks/use-shortlist';
 import { useBooking } from '@/context/booking-context';
 
@@ -17,58 +19,93 @@ interface VenueDetailContentProps {
   isLoading?: boolean;
   isError?: boolean;
   onRetry?: () => void;
+  /** Mobile bottom-sheet: single-column, shorter gallery */
+  compact?: boolean;
 }
 
-export function VenueDetailContent({
-  venue,
-  details,
-}: VenueDetailContentProps) {
+function todayIso(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso + 'T12:00:00');
+  return d.toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+export function VenueDetailContent({ venue, details, compact }: VenueDetailContentProps) {
   const { has, toggle } = useShortlist();
   const { updateBooking } = useBooking();
   const isSaved = has(venue.id);
-  const [cateringAddon, setCateringAddon] = useState(false);
-  const [selectedDate, setSelectedDate] = useState('Saturday, Nov 18, 2026');
-  const [selectedTime, setSelectedTime] = useState('10:00 AM - 12:00 PM');
+  const [selectedDate, setSelectedDate] = useState(todayIso());
 
-  const basePrice = typeof venue.party_price_from === 'number' ? venue.party_price_from : 150;
-  const serviceFee = 5;
-  const cateringCost = cateringAddon ? 45 : 0;
-  const totalPrice = basePrice + serviceFee + cateringCost;
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('kidspot_search_date');
+      if (saved) setSelectedDate(saved);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
-  const galleryImages = [
-    venue.image_url || 'https://images.unsplash.com/photo-1566454825481-4e48f80aa4d7?q=80&w=1000&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?q=80&w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop',
-  ];
+  const galleryImages = collectVenueImages(venue, details);
+  const priceLabel = formatPartyPrice(venue);
+  const basePrice = typeof venue.party_price_from === 'number' ? venue.party_price_from : null;
+  const capacity = venue.party_max_capacity;
+  const signals = trustSignals(venue);
+  const borough =
+    (venue as Venue & { london_borough?: string }).london_borough ||
+    venue.borough ||
+    'London';
+  const enquiryUrl =
+    venue.party_enquiry_url || venue.booking_url || venue.website || null;
+  const features = venue.features?.length
+    ? venue.features
+    : details?.features?.length
+      ? details.features
+      : [];
 
   return (
-    <div className="bg-[#FFFDF5] text-brand-dark min-h-screen pb-24 md:pb-16">
-      {/* Breadcrumbs */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-8 pt-6">
+    <div className="min-h-screen bg-[#FFFDF5] pb-24 text-brand-dark md:pb-16">
+      <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-8">
         <nav className="flex items-center gap-2 text-xs font-semibold text-[#5E5E5E]">
           <Link href="/" className="hover:text-brand-dark">
             Venues
           </Link>
           <span>›</span>
-          <span className="capitalize">{venue.type?.replace('_', ' ') || 'Indoor Play'}</span>
+          <span className="capitalize">{venue.type?.replace(/_/g, ' ') || 'Venue'}</span>
           <span>›</span>
-          <span className="text-brand-dark font-bold">{venue.name}</span>
+          <span className="font-bold text-brand-dark">{venue.name}</span>
         </nav>
 
-        {/* Title Block */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-4">
+        <div className="mt-4 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="font-display text-3xl md:text-5xl font-extrabold tracking-tight text-brand-dark">
+            <h1 className="font-display text-3xl font-extrabold tracking-tight text-brand-dark md:text-5xl">
               {venue.name}
             </h1>
-            <div className="flex items-center gap-3 mt-2 text-sm font-semibold text-[#5E5E5E]">
-              <span className="flex items-center gap-1 text-brand-dark">
-                ★ {Number(venue.rating || 4.8).toFixed(1)} ({venue.user_ratings_total || 124} reviews)
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1">
-                📍 {(venue as any).london_borough || venue.borough || 'London'}
-              </span>
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-sm font-semibold text-[#5E5E5E]">
+              {venue.rating != null && (
+                <>
+                  <span className="flex items-center gap-1 text-brand-dark">
+                    ★ {Number(venue.rating).toFixed(1)}
+                    {venue.user_ratings_total
+                      ? ` (${venue.user_ratings_total} reviews)`
+                      : ''}
+                  </span>
+                  <span>•</span>
+                </>
+              )}
+              <span className="flex items-center gap-1">📍 {borough}</span>
+              {venue.party_capable && (
+                <>
+                  <span>•</span>
+                  <span className="text-[#9F1239]">🎂 Birthday parties</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -78,280 +115,280 @@ export function VenueDetailContent({
               type="button"
               onClick={() => toggle(venue)}
               aria-label="Save venue"
-              className="w-10 h-10 rounded-full bg-white border border-[#EBE5D3] flex items-center justify-center shadow-sm hover:bg-[#F9F5E8] active:scale-95 transition"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#EBE5D3] bg-white shadow-sm transition hover:bg-[#F9F5E8] active:scale-95"
             >
-              <span className={`material-symbols-outlined text-[20px] ${isSaved ? 'text-rose-500 fill-rose-500' : 'text-[#5E5E5E]'}`}>
+              <span
+                className={`material-symbols-outlined text-[20px] ${isSaved ? 'fill-rose-500 text-rose-500' : 'text-[#5E5E5E]'}`}
+              >
                 {isSaved ? 'favorite' : 'favorite_border'}
               </span>
             </button>
           </div>
         </div>
 
-        {/* Photo Gallery Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          {/* Main Large Photo */}
-          <div className="md:col-span-2 relative h-[320px] md:h-[420px] rounded-3xl overflow-hidden border border-[#EBE5D3] shadow-sm">
-            <Image
-              src={galleryImages[0]}
-              alt={venue.name}
-              fill
-              priority
-              className="object-cover"
-            />
-            {/* Safe-checked Badge Overlay */}
-            <div className="absolute bottom-4 left-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur-sm px-4 py-1.5 text-xs font-extrabold text-brand-dark shadow-md">
-              <span className="material-symbols-outlined text-[16px] text-green-600">
-                verified
-              </span>
-              Safety-checked
-            </div>
+        {/* Photo gallery — fixed 2:1 grid ratio */}
+        <div
+          className={`mt-6 grid gap-2 ${compact ? 'grid-cols-1' : 'h-[240px] grid-cols-2 grid-rows-2 sm:h-[320px] md:h-[420px] md:gap-4'}`}
+        >
+          <div
+            className={`relative overflow-hidden rounded-2xl border border-[#EBE5D3] shadow-sm ${
+              compact ? 'aspect-[16/10]' : 'row-span-2 min-h-0'
+            }`}
+          >
+            {galleryImages[0] ? (
+              <img
+                src={galleryImages[0]}
+                alt={venue.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <VenueImagePlaceholder type={venue.type} name={venue.name} />
+            )}
+            {signals.length > 0 && (
+              <div className="absolute bottom-3 left-3 z-10 flex flex-wrap gap-2">
+                {signals.map((signal) => (
+                  <div
+                    key={signal.id}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[10px] font-extrabold text-brand-dark shadow-md backdrop-blur-sm md:px-4 md:py-1.5 md:text-xs"
+                  >
+                    <span className={`material-symbols-outlined text-[14px] md:text-[16px] ${signal.tone === 'verified' ? 'text-green-600' : 'text-brand-dark'}`}>
+                      {signal.icon}
+                    </span>
+                    {signal.label}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Right 2 Stacked Photos */}
-          <div className="grid grid-rows-2 gap-4 h-[320px] md:h-[420px]">
-            <div className="relative rounded-3xl overflow-hidden border border-[#EBE5D3] shadow-sm">
-              <Image
-                src={galleryImages[1]}
-                alt={`${venue.name} interior`}
-                fill
-                className="object-cover"
-              />
-            </div>
-            <div className="relative rounded-3xl overflow-hidden border border-[#EBE5D3] shadow-sm">
-              <Image
-                src={galleryImages[2]}
-                alt={`${venue.name} play area`}
-                fill
-                className="object-cover"
-              />
-              <button
-                type="button"
-                className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1 rounded-full bg-white/90 backdrop-blur-sm px-3 py-1.5 text-xs font-bold text-brand-dark shadow-sm hover:bg-white transition"
+          {!compact &&
+            [1, 2].map((idx) => (
+              <div
+                key={idx}
+                className="relative min-h-0 overflow-hidden rounded-2xl border border-[#EBE5D3] shadow-sm"
               >
-                <span className="material-symbols-outlined text-[14px]">grid_view</span>
-                Show all photos
-              </button>
-            </div>
-          </div>
+                {galleryImages[idx] ? (
+                  <img
+                    src={galleryImages[idx]}
+                    alt={`${venue.name} photo ${idx + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <VenueImagePlaceholder type={venue.type} name={venue.name} />
+                )}
+              </div>
+            ))}
         </div>
 
-        {/* Main Content Layout (Left Column Details, Right Column Booking Widget) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
-          <div className="lg:col-span-8 space-y-8">
-            {/* Tag Badges */}
+        <div className={`mt-8 grid grid-cols-1 gap-8 ${compact ? '' : 'lg:grid-cols-12'}`}>
+          <div className={`space-y-8 ${compact ? '' : 'lg:col-span-8'}`}>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="rounded-full bg-badge-pink px-4 py-1.5 text-xs font-bold text-[#9F1239]">
-                🎉 Up to {venue.party_max_capacity || 30} Kids
-              </span>
-              <span className="rounded-full bg-badge-yellow px-4 py-1.5 text-xs font-bold text-[#696200]">
-                🎂 Ages 2-8
-              </span>
-              <span className="rounded-full bg-[#EAE5D4] px-4 py-1.5 text-xs font-bold text-brand-dark">
-                ⏱️ 2 Hour Slots
-              </span>
+              {capacity != null && (
+                <span className="rounded-full bg-badge-pink px-4 py-1.5 text-xs font-bold text-[#9F1239]">
+                  🎉 Up to {capacity} kids
+                </span>
+              )}
+              {venue.party_capable && (
+                <span className="rounded-full bg-badge-yellow px-4 py-1.5 text-xs font-bold text-[#696200]">
+                  🎂 Party packages available
+                </span>
+              )}
+              {venue.phone && (
+                <span className="rounded-full bg-[#EAE5D4] px-4 py-1.5 text-xs font-bold text-brand-dark">
+                  📞 {venue.phone}
+                </span>
+              )}
             </div>
 
-            {/* About Section */}
-            <div className="bg-white rounded-3xl p-8 border border-[#EBE5D3] shadow-sm">
-              <h2 className="font-display text-2xl font-extrabold text-brand-dark mb-4">
+            <div className="rounded-3xl border border-[#EBE5D3] bg-white p-8 shadow-sm">
+              <h2 className="mb-4 font-display text-2xl font-extrabold text-brand-dark">
                 About this venue
               </h2>
-              <p className="text-sm text-[#5E5E5E] leading-relaxed">
+              <p className="text-sm leading-relaxed text-[#5E5E5E]">
                 {venue.description ||
-                  `Welcome to ${venue.name}, an immersive indoor play experience designed to spark imagination and encourage physical activity in a safe, controlled environment. Features integrated slides, soft play mazes, ball pits, and interactive sensory play.`}
+                  details?.description ||
+                  `${venue.name} is a child-friendly venue in ${borough}. Contact the venue directly for birthday party availability, pricing, and capacity.`}
               </p>
-              <p className="text-sm text-[#5E5E5E] leading-relaxed mt-4">
-                Parents can relax in our dedicated viewing café, enjoying premium coffee and snacks while keeping a close eye on the action. Every piece of equipment is sanitized daily and undergoes rigorous weekly safety checks.
-              </p>
+              {(venue.address || venue.postcode) && (
+                <p className="mt-3 text-sm text-[#5E5E5E]">
+                  {[venue.address, venue.postcode].filter(Boolean).join(', ')}
+                </p>
+              )}
             </div>
 
-            {/* Amenities Grid */}
-            <div className="bg-white rounded-3xl p-8 border border-[#EBE5D3] shadow-sm">
-              <h3 className="font-display text-lg font-bold text-brand-dark mb-6">
-                Amenities
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 text-sm font-medium text-brand-dark">
-                  <span className="material-symbols-outlined text-[20px] text-brand-dark">restaurant</span>
-                  On-site Catering available
-                </div>
-                <div className="flex items-center gap-3 text-sm font-medium text-brand-dark">
-                  <span className="material-symbols-outlined text-[20px] text-brand-dark">local_parking</span>
-                  Free Private Parking
-                </div>
-                <div className="flex items-center gap-3 text-sm font-medium text-brand-dark">
-                  <span className="material-symbols-outlined text-[20px] text-brand-dark">wifi</span>
-                  High-speed Parent WiFi
-                </div>
-                <div className="flex items-center gap-3 text-sm font-medium text-brand-dark">
-                  <span className="material-symbols-outlined text-[20px] text-brand-dark">family_restroom</span>
-                  Family Restrooms
-                </div>
-                <div className="flex items-center gap-3 text-sm font-medium text-brand-dark">
-                  <span className="material-symbols-outlined text-[20px] text-brand-dark">accessible</span>
-                  Wheelchair Accessible
-                </div>
-                <div className="flex items-center gap-3 text-sm font-medium text-brand-dark">
-                  <span className="material-symbols-outlined text-[20px] text-brand-dark">ac_unit</span>
-                  Air Conditioned
-                </div>
+            {features.length > 0 && (
+              <div className="rounded-3xl border border-[#EBE5D3] bg-white p-8 shadow-sm">
+                <h3 className="mb-4 font-display text-lg font-bold text-brand-dark">
+                  Amenities
+                </h3>
+                <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {features.map((f) => (
+                    <li
+                      key={f}
+                      className="flex items-center gap-2 text-sm font-medium text-brand-dark"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">
+                        check_circle
+                      </span>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
+            )}
 
-            {/* Map Snippet */}
-            <div className="bg-white rounded-3xl p-6 border border-[#EBE5D3] shadow-sm overflow-hidden">
-              <h3 className="font-display text-lg font-bold text-brand-dark mb-4">
+            <div className="overflow-hidden rounded-3xl border border-[#EBE5D3] bg-white p-6 shadow-sm">
+              <h3 className="mb-4 font-display text-lg font-bold text-brand-dark">
                 Location & Map
               </h3>
-              <div className="h-64 rounded-2xl overflow-hidden">
-                <VenueMapSnippet lat={venue.lat || 51.5074} lon={venue.lon || -0.1278} name={venue.name} />
+              <div className="h-64 overflow-hidden rounded-2xl">
+                <VenueMapSnippet
+                  lat={venue.lat || 51.5074}
+                  lon={venue.lon || -0.1278}
+                  name={venue.name}
+                />
               </div>
             </div>
 
-            {/* Customer Reviews Section */}
-            <div className="bg-white rounded-3xl p-8 border border-[#EBE5D3] shadow-sm">
-              <div className="flex items-center justify-between mb-6 border-b border-[#EBE5D3] pb-4">
-                <div>
-                  <h3 className="font-display text-2xl font-bold text-brand-dark">
-                    4.8 / 5
-                  </h3>
-                  <p className="text-xs text-[#5E5E5E]">Based on 124 reviews</p>
+            {(venue.phone || venue.website || venue.email) && (
+              <div className="rounded-3xl border border-[#EBE5D3] bg-white p-8 shadow-sm">
+                <h3 className="mb-4 font-display text-lg font-bold text-brand-dark">
+                  Contact
+                </h3>
+                <div className="space-y-2 text-sm">
+                  {venue.phone && (
+                    <a
+                      href={`tel:${venue.phone}`}
+                      className="flex items-center gap-2 font-semibold text-brand-dark hover:underline"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">call</span>
+                      {venue.phone}
+                    </a>
+                  )}
+                  {venue.website && (
+                    <a
+                      href={venue.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 font-semibold text-brand-dark hover:underline"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">language</span>
+                      Visit website
+                    </a>
+                  )}
+                  {venue.email && (
+                    <a
+                      href={`mailto:${venue.email}`}
+                      className="flex items-center gap-2 font-semibold text-brand-dark hover:underline"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">mail</span>
+                      {venue.email}
+                    </a>
+                  )}
                 </div>
-                <span className="text-amber-400 text-lg">★★★★★</span>
               </div>
-
-              <div className="space-y-6">
-                <div className="border-b border-[#EBE5D3] pb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-sm text-brand-dark">Sarah Mitchell</span>
-                    <span className="text-xs text-[#5E5E5E]">October 2023</span>
-                  </div>
-                  <p className="text-xs text-[#5E5E5E] leading-relaxed">
-                    "Absolutely fantastic venue for my daughter's 5th birthday. The staff were incredibly attentive, the play area is spotless, and the food provided was great quality."
-                  </p>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-sm text-brand-dark">James Patterson</span>
-                    <span className="text-xs text-[#5E5E5E]">September 2023</span>
-                  </div>
-                  <p className="text-xs text-[#5E5E5E] leading-relaxed">
-                    "Great space, very secure. You can tell they take safety seriously which gave us peace of mind. Overall a top-tier soft play."
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="mt-6 w-full py-3 rounded-full border border-[#EBE5D3] text-xs font-bold text-brand-dark hover:bg-[#F9F5E8] transition"
-              >
-                Read all 124 reviews
-              </button>
-            </div>
+            )}
           </div>
 
-          {/* Right Column: Sticky Booking Widget (Design 5) */}
-          <aside className="lg:col-span-4 lg:sticky lg:top-24">
-            <div className="bg-white rounded-3xl p-6 border border-[#EBE5D3] shadow-lg">
+          {/* Booking widget */}
+          <aside className={compact ? 'mt-4' : 'lg:col-span-4 lg:sticky lg:top-24'}>
+            <div className="rounded-3xl border border-[#EBE5D3] bg-white p-6 shadow-lg">
               <div className="mb-6">
-                <span className="font-display text-3xl font-extrabold text-brand-dark">
-                  £{basePrice}
-                </span>
-                <span className="text-xs font-semibold text-[#5E5E5E] ml-1">per party</span>
-                <p className="text-[11px] text-[#5E5E5E] mt-1">Includes entry for up to 30 children</p>
+                {priceLabel ? (
+                  <>
+                    <span className="font-display text-3xl font-extrabold text-brand-dark">
+                      {priceLabel.split(' ')[0]}
+                    </span>
+                    <span className="ml-1 text-xs font-semibold text-[#5E5E5E]">
+                      {priceLabel.replace(/^£[\d.]+/, '').trim() || 'per party'}
+                    </span>
+                  </>
+                ) : (
+                  <span className="font-display text-xl font-extrabold text-brand-dark">
+                    Contact for pricing
+                  </span>
+                )}
+                {capacity != null && (
+                  <p className="mt-1 text-[11px] text-[#5E5E5E]">
+                    Capacity up to {capacity} children
+                  </p>
+                )}
               </div>
 
-              {/* Date Input */}
               <div className="space-y-4 text-xs font-semibold text-brand-dark">
-                <div className="bg-[#F7F3E6] rounded-2xl p-3 border border-[#EBE5D3]">
-                  <label className="text-[10px] text-[#7B785F] uppercase font-bold block mb-1">
-                    DATE
+                <div className="rounded-2xl border border-[#EBE5D3] bg-[#F7F3E6] p-3">
+                  <label className="mb-1 block text-[10px] font-bold uppercase text-[#7B785F]">
+                    Preferred party date
                   </label>
                   <input
-                    type="text"
+                    type="date"
                     value={selectedDate}
+                    min={todayIso()}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full bg-transparent font-bold text-sm outline-none"
+                    className="hero-date-input w-full bg-transparent text-sm font-bold outline-none"
                   />
-                </div>
-
-                {/* Time Slot Input */}
-                <div className="bg-[#F7F3E6] rounded-2xl p-3 border border-[#EBE5D3]">
-                  <label className="text-[10px] text-[#7B785F] uppercase font-bold block mb-1">
-                    TIME SLOT
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedTime}
-                    onChange={(e) => setSelectedTime(e.target.value)}
-                    className="w-full bg-transparent font-bold text-sm outline-none"
-                  />
-                </div>
-
-                {/* Catering Checkbox Addon */}
-                <div
-                  onClick={() => setCateringAddon(!cateringAddon)}
-                  className="bg-[#F7F3E6] rounded-2xl p-3 border border-[#EBE5D3] flex items-center justify-between cursor-pointer hover:bg-[#F3EEDA] transition"
-                >
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={cateringAddon}
-                      onChange={() => {}}
-                      className="w-4 h-4 accent-brand-dark rounded"
-                    />
-                    <span className="text-xs font-bold">Add Catering Box</span>
-                  </div>
-                  <span className="text-xs font-bold text-brand-dark">+£45</span>
-                </div>
-
-                {/* Pricing Breakdown */}
-                <div className="space-y-2 border-t border-[#EBE5D3] pt-4 text-xs">
-                  <div className="flex justify-between text-[#5E5E5E]">
-                    <span>Base Price (2 Hours)</span>
-                    <span>£{basePrice.toFixed(2)}</span>
-                  </div>
-                  {cateringAddon && (
-                    <div className="flex justify-between text-[#5E5E5E]">
-                      <span>Catering Addon</span>
-                      <span>£45.00</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-[#5E5E5E]">
-                    <span>Service Fee</span>
-                    <span>£{serviceFee.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-base font-extrabold text-brand-dark pt-2 border-t border-[#EBE5D3]">
-                    <span>Total</span>
-                    <span>£{totalPrice.toFixed(2)}</span>
-                  </div>
+                  <p className="mt-2 text-[10px] font-medium text-[#7B785F]">
+                    We&apos;ll pass this to the venue when you enquire. Availability is confirmed directly with them.
+                  </p>
                 </div>
               </div>
 
-              {/* Book Now Yellow CTA Button */}
-              <div className="mt-6">
-                <Link
-                  href="/booking/packages"
-                  onClick={() => {
-                    updateBooking({
-                      venueId: venue.id,
-                      venueName: venue.name,
-                      venueAddress: (venue as any).address || venue.borough || 'London',
-                      date: selectedDate,
-                      timeSlot: selectedTime,
-                      cateringAddon,
-                      cateringPrice: 45,
-                      packagePrice: basePrice,
-                    });
-                  }}
-                  className="w-full inline-flex items-center justify-center gap-2 bg-brand-yellow text-brand-dark text-sm font-extrabold py-4 px-6 rounded-full hover:bg-brand-yellow-hover active:scale-95 transition-all shadow-md"
-                >
-                  Book Now
-                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                </Link>
-                <p className="text-[10px] text-center text-[#7B785F] mt-2 font-medium">
-                  You won't be charged yet
+              <div className="mt-6 space-y-3">
+                {enquiryUrl ? (
+                  <a
+                    href={enquiryUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      updateBooking({
+                        venueId: venue.id,
+                        venueName: venue.name,
+                        venueAddress: venue.address || borough,
+                        date: formatDateLabel(selectedDate),
+                        timeSlot: '',
+                        cateringAddon: false,
+                        packagePrice: basePrice ?? 0,
+                      });
+                    }}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-yellow py-4 px-6 text-sm font-extrabold text-brand-dark shadow-md transition-all hover:bg-brand-yellow-hover active:scale-95"
+                  >
+                    Enquire about a party
+                    <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                  </a>
+                ) : venue.phone ? (
+                  <a
+                    href={`tel:${venue.phone}`}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-yellow py-4 px-6 text-sm font-extrabold text-brand-dark shadow-md transition-all hover:bg-brand-yellow-hover active:scale-95"
+                  >
+                    Call to enquire
+                    <span className="material-symbols-outlined text-[18px]">call</span>
+                  </a>
+                ) : (
+                  <Link
+                    href="/booking/packages"
+                    onClick={() => {
+                      updateBooking({
+                        venueId: venue.id,
+                        venueName: venue.name,
+                        venueAddress: venue.address || borough,
+                        date: formatDateLabel(selectedDate),
+                        timeSlot: '',
+                        cateringAddon: false,
+                        packagePrice: basePrice ?? 0,
+                      });
+                    }}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-yellow py-4 px-6 text-sm font-extrabold text-brand-dark shadow-md transition-all hover:bg-brand-yellow-hover active:scale-95"
+                  >
+                    View party options
+                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                  </Link>
+                )}
+                <p className="text-center text-[10px] font-medium text-[#7B785F]">
+                  {enquiryUrl
+                    ? 'Opens the venue website — check packages, times and availability there'
+                    : venue.phone
+                      ? 'Speak to the venue about dates, capacity and pricing'
+                      : 'Browse available party packages'}
                 </p>
               </div>
             </div>

@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { VenueList } from '@/components/venues/venue-list';
 import { VenueDetailModal } from '@/components/modals/venue-detail-modal';
+import { HeroSearchForm } from '@/components/search/hero-search-form';
 import { useSearch } from '@/hooks/use-search';
 import { fetchVenues, type Venue } from '@/lib/api';
 
@@ -83,30 +85,57 @@ function MapPanel({
 
 export default function HomePage() {
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
-  const [locationQuery, setLocationQuery] = useState('');
-  const [dateQuery, setDateQuery] = useState('');
+  const [showStickySearch, setShowStickySearch] = useState(false);
+  const heroAnchorRef = useRef<HTMLDivElement | null>(null);
   const mobileMapRef = useRef<HTMLDivElement | null>(null);
-  const { setPostcode, setSearchLocation } = useSearch();
+  const router = useRouter();
+  const { postcode, setVenueType } = useSearch();
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (locationQuery.trim()) {
-      setPostcode(locationQuery.trim());
-      // Default to London coordinates if search is triggered
-      setSearchLocation(51.5074, -0.1278);
-    }
-  };
+  const scrollToResults = useCallback(() => {
+    requestAnimationFrame(() => {
+      document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, []);
+
+  const handleCategorySelect = useCallback((type: string | null) => {
+    setVenueType(type);
+    scrollToResults();
+  }, [setVenueType, scrollToResults]);
 
   const handleVenueSelect = useCallback((venue: Venue) => {
+    // Full detail page on tablet/desktop — modal is mobile-only
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches) {
+      router.push(`/venue/${venue.slug}`);
+      return;
+    }
     setSelectedVenue(venue);
-  }, []);
+  }, [router]);
 
   const handleModalClose = useCallback(() => {
     setSelectedVenue(null);
   }, []);
 
+  useEffect(() => {
+    const target = heroAnchorRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowStickySearch(!entry.isIntersecting),
+      { root: null, threshold: 0, rootMargin: '-64px 0px 0px 0px' }
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#FFFDF5] text-brand-dark pb-24 md:pb-12">
+      {showStickySearch && (
+        <div className="sticky top-[57px] z-30 border-b border-[#EBE5D3] bg-[#FFFDF5]/95 px-4 py-3 shadow-sm backdrop-blur-md sm:px-8">
+          <div className="mx-auto max-w-7xl">
+            <HeroSearchForm variant="compact" onSearchComplete={scrollToResults} />
+          </div>
+        </div>
+      )}
       {/* Mobile Floating Hero Header Overlay */}
       <div className="md:hidden relative w-full h-[380px] bg-brand-dark overflow-hidden">
         <img
@@ -128,28 +157,7 @@ export default function HomePage() {
             Find the Perfect Birthday Party Venue
           </h1>
 
-          <form onSubmit={handleSearchSubmit} className="mt-4 relative">
-            <div className="flex items-center bg-white rounded-full p-1.5 shadow-xl border border-white/20">
-              <span className="material-symbols-outlined text-[#8E8B7B] ml-3 text-[20px]">
-                location_on
-              </span>
-              <input
-                type="text"
-                placeholder="Enter location..."
-                value={locationQuery}
-                onChange={(e) => setLocationQuery(e.target.value)}
-                className="w-full bg-transparent px-3 py-2 text-sm text-brand-dark placeholder-[#8E8B7B] outline-none font-medium"
-              />
-              <button
-                type="submit"
-                className="w-10 h-10 rounded-full bg-brand-yellow text-brand-dark flex items-center justify-center shrink-0 hover:brightness-95 active:scale-95 transition-all shadow-sm"
-              >
-                <span className="material-symbols-outlined text-[20px] font-bold">
-                  search
-                </span>
-              </button>
-            </div>
-          </form>
+          <HeroSearchForm variant="mobile" onSearchComplete={scrollToResults} />
         </div>
       </div>
 
@@ -161,44 +169,10 @@ export default function HomePage() {
               Find the Perfect Kids&apos; Birthday Party Venue
             </h1>
             <p className="mt-4 text-base text-[#5E5E5E] max-w-lg leading-relaxed font-normal">
-              London&apos;s #1 directory of safety-checked venues for children&apos;s birthday parties. Soft play, trampolines, adventure centres &amp; more.
+              Find soft play, trampolines, activity centres, party rooms and family restaurants for your child&apos;s birthday — searchable by London postcode.
             </p>
 
-            {/* Desktop Search Bar */}
-            <form onSubmit={handleSearchSubmit} className="mt-8">
-              <div className="inline-flex items-center bg-white rounded-full p-2 shadow-lg border border-[#EBE5D3] gap-2">
-                <div className="flex items-center gap-2 px-4 border-r border-[#EBE5D3]">
-                  <span className="material-symbols-outlined text-[#8E8B7B] text-[20px]">
-                    location_on
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Location"
-                    value={locationQuery}
-                    onChange={(e) => setLocationQuery(e.target.value)}
-                    className="w-36 bg-transparent py-2 text-sm font-medium text-brand-dark placeholder-[#8E8B7B] outline-none"
-                  />
-                </div>
-                <div className="flex items-center gap-2 px-4">
-                  <span className="material-symbols-outlined text-[#8E8B7B] text-[20px]">
-                    calendar_today
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="mm/dd/yyyy"
-                    value={dateQuery}
-                    onChange={(e) => setDateQuery(e.target.value)}
-                    className="w-36 bg-transparent py-2 text-sm font-medium text-brand-dark placeholder-[#8E8B7B] outline-none"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="bg-brand-yellow text-brand-dark text-sm font-bold px-8 py-3 rounded-full hover:bg-brand-yellow-hover active:scale-95 transition-all shadow-sm"
-                >
-                  Search
-                </button>
-              </div>
-            </form>
+            <HeroSearchForm variant="desktop" onSearchComplete={scrollToResults} />
           </div>
 
           <div className="col-span-5">
@@ -216,8 +190,9 @@ export default function HomePage() {
       {/* Mobile Category Quick Cards */}
       <section className="md:hidden px-4 mt-6">
         <div className="grid grid-cols-3 gap-3">
-          <Link
-            href="/#results"
+          <button
+            type="button"
+            onClick={() => handleCategorySelect('softplay')}
             className="flex flex-col items-center justify-center p-3 rounded-2xl bg-[#F5F2E3] border border-[#E8E2CD] text-center transition-all active:scale-95"
           >
             <div className="w-10 h-10 rounded-full bg-[#E5DFCA] flex items-center justify-center mb-2 text-brand-dark">
@@ -226,65 +201,72 @@ export default function HomePage() {
             <span className="text-[11px] font-bold text-brand-dark leading-tight">
               Soft Play Parties
             </span>
-          </Link>
+          </button>
 
-          <Link
-            href="/#results"
+          <button
+            type="button"
+            onClick={() => handleCategorySelect('community_hall')}
             className="flex flex-col items-center justify-center p-3 rounded-2xl bg-[#FDF0EE] border border-[#F9E0DC] text-center transition-all active:scale-95"
           >
             <div className="w-10 h-10 rounded-full bg-[#F5D7D3] flex items-center justify-center mb-2 text-brand-dark">
               <span className="material-symbols-outlined text-[20px]">celebration</span>
             </div>
             <span className="text-[11px] font-bold text-brand-dark leading-tight">
-              Themed Party Rooms
+              Party Room Hire
             </span>
-          </Link>
+          </button>
 
-          <Link
-            href="/#results"
+          <button
+            type="button"
+            onClick={() => handleCategorySelect('softplay')}
             className="flex flex-col items-center justify-center p-3 rounded-2xl bg-[#EDEAF7] border border-[#DDD7EF] text-center transition-all active:scale-95"
           >
             <div className="w-10 h-10 rounded-full bg-[#D7CFEE] flex items-center justify-center mb-2 text-brand-dark">
               <span className="material-symbols-outlined text-[20px]">sports_gymnastics</span>
             </div>
             <span className="text-[11px] font-bold text-brand-dark leading-tight">
-              Adventure & Trampoline
+              Trampoline & Activity
             </span>
-          </Link>
+          </button>
         </div>
       </section>
 
       {/* Trust Banner */}
       <section className="w-full bg-[#F7F2E2] border-y border-[#EBE5D3] py-6 mt-8 md:mt-12 px-4 text-center">
         <p className="text-xs font-bold uppercase tracking-wider text-[#7B785F]">
-          Trusted by 50,000+ parents & partners
+          Built for London parents planning birthday parties
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-16 mt-4 text-sm font-bold text-brand-dark">
-          <span>PartyTots</span>
+        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-12 mt-4 text-xs font-semibold text-[#5E5E5E]">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[16px] text-green-700">verified_user</span>
+            Party-focused venues only
+          </span>
           <span className="hidden sm:inline text-[#CCC7AB]">|</span>
-          <span>SafePlay UK</span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[16px] text-brand-dark">location_on</span>
+            Search by postcode
+          </span>
           <span className="hidden sm:inline text-[#CCC7AB]">|</span>
-          <span>ActiveKids</span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[16px] text-brand-dark">call</span>
+            Enquire directly with venues
+          </span>
         </div>
       </section>
 
-      {/* Top Rated Venues & Interactive Results */}
+      <div ref={heroAnchorRef} aria-hidden="true" className="h-px w-full" />
+
+      {/* Results */}
       <section id="results" className="mx-auto max-w-7xl px-4 sm:px-8 mt-10 md:mt-16">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="font-display text-2xl md:text-3xl font-extrabold text-brand-dark">
-              Top Birthday Party Venues
-            </h2>
-            <p className="text-xs md:text-sm text-[#5E5E5E] mt-1">
-              Every venue listed is verified for hosting kids&apos; birthday parties.
-            </p>
-          </div>
-          <Link
-            href="/#results"
-            className="text-xs font-bold text-brand-dark hover:underline flex items-center gap-1"
-          >
-            See All <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-          </Link>
+        <div className="mb-2">
+          <h2 className="font-display text-2xl md:text-3xl font-extrabold text-brand-dark">
+            Birthday Party Venues Near You
+          </h2>
+          <p className="text-xs md:text-sm text-[#5E5E5E] mt-1">
+            {postcode && postcode !== 'London'
+              ? `Soft play, trampolines, party rooms and more near ${postcode}.`
+              : 'Search by postcode to see soft play, trampolines, party rooms and more.'}
+          </p>
         </div>
 
         {/* Split Grid: Results List + Interactive Map */}
@@ -293,6 +275,7 @@ export default function HomePage() {
             <VenueList
               onVenueSelect={handleVenueSelect}
               selectedId={selectedVenue?.id}
+              onSearchComplete={scrollToResults}
             />
           </div>
 
@@ -316,10 +299,10 @@ export default function HomePage() {
               <span className="material-symbols-outlined text-[24px]">verified_user</span>
             </div>
             <h3 className="font-display text-xl font-bold text-brand-dark mb-2">
-              Party-Safe Verified
+              Party-Focused Listings
             </h3>
             <p className="text-sm text-[#5E5E5E] leading-relaxed">
-              Every birthday venue is vetted for child safety, insurance, and hygiene standards.
+              Soft play, trampolines, activity centres, party rooms, and family restaurants — curated for birthday parties.
             </p>
           </div>
 
@@ -329,10 +312,10 @@ export default function HomePage() {
               <span className="material-symbols-outlined text-[24px]">bolt</span>
             </div>
             <h3 className="font-display text-xl font-bold text-brand-dark mb-2">
-              Book the Party Instantly
+              Enquire Directly
             </h3>
             <p className="text-sm text-[#5E5E5E] leading-relaxed">
-              Pick a party package, choose your date, and lock in the birthday celebration in seconds.
+              Pick your date, then contact the venue to check availability, packages, and pricing.
             </p>
           </div>
 
@@ -358,7 +341,7 @@ export default function HomePage() {
             Ready to plan the perfect birthday party?
           </h2>
           <p className="mt-4 text-sm md:text-base text-brand-dark/80 max-w-xl mx-auto font-medium">
-            Join thousands of parents who&apos;ve booked safe, verified birthday party venues for their kids through KidSpot.
+            Compare venues near you, save favourites, and enquire when you&apos;re ready.
           </p>
           <div className="mt-8">
             <Link

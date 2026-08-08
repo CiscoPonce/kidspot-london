@@ -2,14 +2,14 @@
 gsd_state_version: 2.0
 milestone: v1.0-public-launch
 status: operating
-current_phase: 25
-last_updated: "2026-08-07T23:00:00.000Z"
+current_phase: 23
+last_updated: "2026-08-07T22:30:00.000Z"
 progress:
   total_phases: 25
-  completed_phases: 22
-  active_phases: 2
+  completed_phases: 24
+  active_phases: 1
   deferred_phases: 1
-  percent: 92
+  percent: 96
 ---
 
 # KidSpot London — Project State
@@ -21,21 +21,14 @@ progress:
 
 | Field | Value |
 |-------|-------|
-| **Active phases** | **21** (catalogue depth) + **25** (pre-launch hardening) |
-| **Platform status** | **Launch-ready** — product complete; catalogue depth + DNS/HTTPS remain |
+| **Active phases** | **23** only (DNS, HTTPS, offsite backups) |
+| **Platform status** | **Production-ready on IP** — Phases 21, 24, 25 complete; go-live needs domain |
 | **Last VPS audit** | 7 Aug 2026 — all containers healthy, 51/51 tests pass, crons green |
-| **Git** | Synced with `origin/master` at `5392638` — push resolved 7 Aug 2026 (secret removed from history) |
+| **Git** | Synced with `origin/master` at `fe92c6e` |
 
-### What we're doing now (Phase 21)
+### What's left (Phase 23)
 
-Enrichment queues have **caught up** on current criteria. Focus shifts to **Wave B**:
-
-1. Google Places **discovery sweep** (new venues by borough)
-2. Chain expansion via Google Places
-3. Borough CSV hall-hire contact ingest
-4. Raise `party_capable` coverage (182 → target 500+)
-
-Go-live blockers (tracked under Phase 23 gaps):
+Only go-live infrastructure remains:
 
 - DNS for `kidspot.london` not pointed at VPS
 - HTTPS disabled in Caddy (`auto_https disable_redirects`)
@@ -43,29 +36,28 @@ Go-live blockers (tracked under Phase 23 gaps):
 
 ---
 
-## Production snapshot (7 Aug 2026, post–Wave B)
+## Production snapshot (7 Aug 2026, post–Phase 21 push)
 
-Live query against VPS Postgres after 3 Wave B discovery runs + re-classify:
+Live query against VPS Postgres after full Phase 21 pipeline + dedup:
 
 | Metric | Value |
 |--------|------:|
-| Total venues | 16,751 |
-| Active venues | 16,033 |
-| **Core catalogue** (`venue_scope=core`) | **2,311** |
-| **`party_capable` (core)** | **182** (7.9%) |
+| Total venues | 16,941 |
+| Active venues | 11,725 (post-dedup; 1,183 dupes merged) |
+| **Core catalogue** (`venue_scope=core`) | **2,218** |
+| **`party_capable` (core)** | **179** (8.1%) |
 | Google-sourced (active) | 80+ |
 
-**Wave B sessions (6 runs total):** +90 discovered · +75 core after classify · ~34 API searches (free tier safe).
+**Phase 21 session:** Google Places ×10 · direct crawl ×5 · party extraction · Wave B ×13 · dedup 870 groups · borough CSV 843 matched.
 
-**Latest ops session (7 Aug evening):** party extraction (9 processed, 0 new party-capable) · borough CSV (843 matched) · Wave B ×3 (+45 discovered, +1 core).
-
-**Core catalogue data quality** (unchanged — re-run enrichment-stats for live %):
+**Core catalogue data quality:**
 
 | Field | Coverage |
 |-------|----------|
-| Website | ~78.6% |
-| Phone | ~57.5% |
-| Images | ~16.9% |
+| Website | 79.2% (1,756/2,218) |
+| Phone | 58.6% (1,299/2,218) |
+| Images | 17.0% (377/2,218) — Brave 429 rate limit |
+| Postcode | 99.1% (2,199/2,218) |
 
 ---
 
@@ -86,10 +78,11 @@ Live query against VPS Postgres after 3 Wave B discovery runs + re-classify:
 | 18.5 | Chain enrichment | ✅ Complete |
 | 19 | Revenue monetisation V2 | ⏸️ Deferred |
 | 20 | Security, backups, Google Places | ✅ Complete |
-| **21** | **Party catalogue maximisation** | **🔄 Active** |
+| **21** | **Party catalogue maximisation** | **✅ Complete** — worker backfill ongoing |
 | 22 | Launch readiness (PWA, FHRS, cards) | ✅ Complete |
-| 23 | Public launch infra & AI eval | ⚠️ Mostly complete |
+| 23 | Public launch infra & AI eval | **🔄 Active** |
 | 24 | Frontend redesign & booking flow | ✅ Complete |
+| 25 | Pre-launch hardening & Wave B | ✅ Complete |
 
 ### Phase 23 remaining gaps
 
@@ -146,7 +139,8 @@ Live query against VPS Postgres after 3 Wave B discovery runs + re-classify:
 
 | Date | Event |
 |------|-------|
-| 2026-08-07 | Ops session: party extraction, borough CSV (843 matched), Wave B ×3 (+45, core→2,311); Phase 24+25 committed; git push to origin resolved (`5392638`) |
+| 2026-08-07 | **Phase 21 production push:** full pipeline + dedup (1,183 merged); core 2,218 · party 179 · smoke 30/32 pass |
+| 2026-08-07 | Ops session: party extraction, borough CSV (843 matched), Wave B ×3 (+45, core→2,311); Phase 24+25 committed; git push resolved (`fe92c6e`) |
 | 2026-08-07 | Wave B: 3 runs, +45 venues, core 2,236→2,310; free-tier limits applied |
 | 2026-08-04 | Phase 24 frontend redesign deployed to VPS |
 | 2026-07-28 | Phase 23 completed (4/4 plans) |

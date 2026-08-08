@@ -1,40 +1,40 @@
 # KidSpot London — Next Actions
 
-**Active phase:** [25 — Pre-Launch Hardening & Wave B](.planning/phases/25-pre-launch-hardening-wave-b/25-CONTEXT.md) (+ Phase 21 data ops)
-**State:** [.planning/STATE.md](.planning/STATE.md) · **Roadmap:** [.planning/ROADMAP.md](.planning/ROADMAP.md)
+**Active phase:** [23 — Public launch infrastructure](.planning/phases/23-public-launch-infrastructure-security-hardening-ai-eval-benc/23-CONTEXT.md)  
+**State:** [.planning/STATE.md](.planning/STATE.md) · **Roadmap:** [.planning/ROADMAP.md](.planning/ROADMAP.md)  
 **Last updated:** 7 Aug 2026
 
 ---
 
-## Priority 1 — Go live (Phase 23 gaps)
+## Priority 1 — Go live (Phase 23)
 
-These block public launch even though the product is functionally ready:
+These are the **only remaining blockers** for public launch:
 
-1. **Point DNS** — `kidspot.london` A record → VPS public IP (`79.72.92.195` or Tailscale IP)
+1. **Point DNS** — `kidspot.london` A record → VPS public IP (`79.72.92.195`)
 2. **Enable HTTPS** — remove `auto_https disable_redirects` from Caddy; add Let's Encrypt
 3. **Offsite backups** — extend `scripts/backup.sh` to sync dumps to S3/R2
 
 ---
 
-## Priority 2 — Phase 21 Wave B (catalogue depth)
+## Priority 2 — Autonomous backfill (no action needed)
 
-Enrichment queues are **empty** (Aug 7 audit). Next gains need discovery, not re-running existing jobs:
+Phases 21 and 25 are **complete**. Worker + crons continue:
 
-1. Google Places **discovery sweep** — new venues by borough/query
-2. Chain expansion via Google Places (replace Apify dependency)
-3. Borough CSV audit + import — council hall contacts
-4. Party extraction pass on newly discovered core venues
-5. Wikimedia image enrichment script (exists, untracked)
-6. Re-classify → dedup → backup after each bulk batch
+| Job | Rate | Target |
+|-----|------|--------|
+| `enrich-party-data` | ~200/day | party_capable 179 → 500+ |
+| `enrich-google-places` | 12h, batch 25 | contact coverage |
+| Discovery cron | daily 02:00 UTC | core growth |
+| Brave images | when quota resets | 17% → 30%+ images |
 
-**Targets:** party_capable ≥ 500 · core images ≥ 40% · listable core ≥ 2,000
+Manual rerun: `bash scripts/run-phase-21.sh` on VPS.
 
 ---
 
 ## Priority 3 — Housekeeping
 
-- Update GitHub `API_URL` variable if public IP changes
-- Rebuild web/api containers to match worker (rebuilt 7 Aug)
+- Update GitHub `API_URL` if public IP changes
+- Rotate Google Places API key if exposed
 - Run smoke test: `bash scripts/smoke-test-all.sh`
 
 ---
@@ -53,12 +53,11 @@ bash scripts/smoke-test-all.sh
 # Backup
 bash scripts/backup.sh
 
-# Manual enrichment (when queues have work)
-cd backend && npx tsx scripts/discovery/sources/google-places-enrichment.ts 50
-cd backend && npx tsx scripts/discovery/sources/party-data-enrichment.ts 50
+# Full Phase 21 pipeline (manual)
+bash scripts/run-phase-21.sh
 
 # Rebuild all containers
-cd /home/ubuntu/kidspot && docker compose up -d --build
+docker compose up -d --build
 ```
 
 ---
@@ -66,7 +65,7 @@ cd /home/ubuntu/kidspot && docker compose up -d --build
 ## Automated pipelines (GitHub Actions — all green)
 
 | Workflow | Schedule (UTC) | Endpoint |
-|----------|------------------|----------|
+|----------|----------------|----------|
 | Data Enrichment | Hourly | `POST /api/admin/ingest/enrichment` |
 | Discovery | Daily 02:00 | `POST /api/admin/ingest/stale` |
 | Party Discovery | Every 6h | `POST /api/admin/ingest/parties` |

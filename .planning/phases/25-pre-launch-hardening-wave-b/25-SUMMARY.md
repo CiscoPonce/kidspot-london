@@ -1,53 +1,38 @@
-# Phase 25 — Execution Summary (updated)
+# Phase 25 — Execution Summary
 
 **Date:** 7 Aug 2026  
-**Status:** 25-01 ✅ · 25-02 ✅ · 25-03 ✅
+**Status:** ✅ Complete
 
-## Wave B results (6 runs total)
+## Plans delivered
+
+| Plan | Deliverable | Status |
+|------|-------------|--------|
+| 25-01 | FHRS + `/metrics` mounted; empty-body 400 fixes; API v1.3.0 | ✅ |
+| 25-02 | Wave B discovery; free-tier caps (20 searches/run, batch 15) | ✅ |
+| 25-03 | Docker rebuild (api, web, worker); smoke tests 51/51 | ✅ |
+| 25-04 | Git commit + push to `origin/master` (`fe92c6e`) | ✅ |
+
+## Wave B results (pre–Phase 21)
 
 | Metric | Value |
 |--------|------:|
+| Discovery runs | 6 |
 | Venues discovered | 90 |
-| Core catalogue | 2,236 → **2,311** (+75) |
-| Party-capable core | 132 → **182** |
-| API searches used | ~34 (within free tier) |
-| Failures | 0 |
+| Core delta | 2,236 → 2,311 |
+| Party-capable delta | 132 → 182 |
+| API searches | ~34 (free tier) |
 
-### Latest session (7 Aug evening, 3 runs)
-
-| Metric | Value |
-|--------|------:|
-| Venues discovered | 45 |
-| Core delta | 2,310 → **2,311** (+1) |
-| Party extraction | 9 processed, 0 new party-capable |
-| Borough CSV | 843 matched, 0 new venues |
-
-## 25-01 API hardening — Complete
-
-- FHRS `/api/fhrs/match/:id` → 200
-- Prometheus `/metrics` → live
-- Empty POST bodies → 400
-- API v1.3.0
-
-## Free-tier safeguards applied
+## Free-tier safeguards
 
 - Enrichment: every 12h, batch 25
 - Discovery: max 20 searches/run, default batch 15
-- Removed `photos` from enrichment field mask (Pro tier)
+- Removed `photos` from enrichment field mask
 
-## Remaining (no domain needed)
+## Deferred to Phase 23
 
-- Continue Wave B discovery (diminishing returns — many duplicates)
-- Party extraction as new core venues gain websites
-
-## Remaining (needs domain)
-
-- DNS + HTTPS for `kidspot.london`
-- Offsite backup replication
+- DNS for `kidspot.london`
+- Let's Encrypt HTTPS in Caddy
+- Offsite backup replication (S3/R2)
 
 ---
 *Updated: 2026-08-07*
-
-## Git
-
-- Push to `origin/master` resolved 7 Aug 2026; tip **`5392638`**

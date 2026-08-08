@@ -113,6 +113,23 @@
 }
 
 @layer utilities {
+  /* Hero search date picker — native calendar on click */
+  .hero-date-input {
+    color-scheme: light;
+    min-height: 1.5rem;
+  }
+
+  .hero-date-input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.65;
+    filter: invert(0.3);
+  }
+
+  .hero-date-input:invalid,
+  .hero-date-input[value=''] {
+    color: #8e8b7b;
+  }
+
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }

@@ -509,13 +509,17 @@ const baseVenueService = {
          AND venue_scope = ANY($4::text[])
          AND LOWER(COALESCE(london_borough, borough)) = LOWER($1)
          AND ($2::TEXT IS NULL OR type = $2::TEXT)
-         AND (party_capable = TRUE OR type = 'softplay' OR name ILIKE '%soft play%' OR name ILIKE '%play centre%' OR name ILIKE '%trampoline%' OR name ILIKE '%party%')
+         AND (party_capable = TRUE OR type = 'softplay' OR scope_reason = 'chain_party_food' OR name ILIKE '%soft play%' OR name ILIKE '%play centre%' OR name ILIKE '%trampoline%' OR name ILIKE '%party%')
          AND name NOT ILIKE 'OSM %'
          ORDER BY
              CASE
-                 WHEN type = 'softplay' OR name ILIKE '%soft play%' OR name ILIKE '%party%' OR name ILIKE '%play centre%' OR name ILIKE '%trampoline%' THEN 1
-                 WHEN party_capable = TRUE THEN 2
-                 ELSE 3
+                 WHEN scope_reason = 'chain_softplay' OR name ~* '(flip out|oxygen|gambado|kidspace|gravity max|inflata nation|cookie.?s island)' THEN 1
+                 WHEN type = 'softplay' OR name ILIKE '%trampoline%' OR name ILIKE '%play centre%' OR name ILIKE '%soft play%' THEN 2
+                 WHEN party_capable = TRUE AND type = 'community_hall' THEN 3
+                 WHEN scope_reason = 'chain_party_food' THEN 4
+                 WHEN party_capable = TRUE THEN 5
+                 WHEN type = 'park' AND name ILIKE '%adventure playground%' THEN 7
+                 ELSE 6
              END ASC,
              CASE
                  WHEN sponsor_tier = 'gold' THEN 1
@@ -539,13 +543,17 @@ const baseVenueService = {
          AND v.venue_scope = ANY($6::text[])
          AND ST_DWithin(ST_MakePoint(v.lon, v.lat)::geography, ST_MakePoint($2, $1)::geography, $3)
          AND ($4::TEXT IS NULL OR v.type = $4::TEXT)
-         AND (v.party_capable = TRUE OR v.type = 'softplay' OR v.name ILIKE '%soft play%' OR v.name ILIKE '%play centre%' OR v.name ILIKE '%trampoline%' OR v.name ILIKE '%party%')
+         AND (v.party_capable = TRUE OR v.type = 'softplay' OR v.scope_reason = 'chain_party_food' OR v.name ILIKE '%soft play%' OR v.name ILIKE '%play centre%' OR v.name ILIKE '%trampoline%' OR v.name ILIKE '%party%')
          AND v.name NOT ILIKE 'OSM %'
          ORDER BY
              CASE
-                 WHEN v.type = 'softplay' OR v.name ILIKE '%soft play%' OR v.name ILIKE '%party%' OR v.name ILIKE '%play centre%' OR v.name ILIKE '%trampoline%' THEN 1
-                 WHEN v.party_capable = TRUE THEN 2
-                 ELSE 3
+                 WHEN v.scope_reason = 'chain_softplay' OR v.name ~* '(flip out|oxygen|gambado|kidspace|gravity max|inflata nation|cookie.?s island)' THEN 1
+                 WHEN v.type = 'softplay' OR v.name ILIKE '%trampoline%' OR v.name ILIKE '%play centre%' OR v.name ILIKE '%soft play%' THEN 2
+                 WHEN v.party_capable = TRUE AND v.type = 'community_hall' THEN 3
+                 WHEN v.scope_reason = 'chain_party_food' THEN 4
+                 WHEN v.party_capable = TRUE THEN 5
+                 WHEN v.type = 'park' AND v.name ILIKE '%adventure playground%' THEN 7
+                 ELSE 6
              END ASC,
              CASE
                  WHEN v.sponsor_tier = 'gold' THEN 1
@@ -568,13 +576,17 @@ const baseVenueService = {
          WHERE is_active = TRUE
          AND venue_scope = ANY($3::text[])
          AND ($1::TEXT IS NULL OR type = $1::TEXT)
-         AND (party_capable = TRUE OR type = 'softplay' OR name ILIKE '%soft play%' OR name ILIKE '%play centre%' OR name ILIKE '%trampoline%' OR name ILIKE '%party%')
+         AND (party_capable = TRUE OR type = 'softplay' OR scope_reason = 'chain_party_food' OR name ILIKE '%soft play%' OR name ILIKE '%play centre%' OR name ILIKE '%trampoline%' OR name ILIKE '%party%')
          AND name NOT ILIKE 'OSM %'
          ORDER BY
              CASE
-                 WHEN type = 'softplay' OR name ILIKE '%soft play%' OR name ILIKE '%party%' OR name ILIKE '%play centre%' OR name ILIKE '%trampoline%' THEN 1
-                 WHEN party_capable = TRUE THEN 2
-                 ELSE 3
+                 WHEN scope_reason = 'chain_softplay' OR name ~* '(flip out|oxygen|gambado|kidspace|gravity max|inflata nation|cookie.?s island)' THEN 1
+                 WHEN type = 'softplay' OR name ILIKE '%trampoline%' OR name ILIKE '%play centre%' OR name ILIKE '%soft play%' THEN 2
+                 WHEN party_capable = TRUE AND type = 'community_hall' THEN 3
+                 WHEN scope_reason = 'chain_party_food' THEN 4
+                 WHEN party_capable = TRUE THEN 5
+                 WHEN type = 'park' AND name ILIKE '%adventure playground%' THEN 7
+                 ELSE 6
              END ASC,
              CASE
                  WHEN sponsor_tier = 'gold' THEN 1

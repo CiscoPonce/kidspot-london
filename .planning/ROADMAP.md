@@ -21,14 +21,14 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 | 18.5 | Chain enrichment | ✅ Complete |
 | 19 | Revenue monetisation V2 | ⏸️ Deferred |
 | 20 | Security, backups, Google Places | ✅ Complete |
-| **21** | **Party catalogue maximisation** | **🔄 Active** |
-| 25 | Pre-launch hardening & Wave B | **🔄 Active** |
+| **21** | **Party catalogue maximisation** | **✅ Complete** (worker backfill ongoing) |
 | 22 | Launch readiness | ✅ Complete |
-| 23 | Public launch infra & AI eval | ⚠️ Mostly complete |
+| 23 | Public launch infra & AI eval | **🔄 Active** — DNS, HTTPS, offsite backups |
 | 24 | Frontend redesign & booking | ✅ Complete |
+| 25 | Pre-launch hardening & Wave B | ✅ Complete |
 
-**Current focus:** Phase 25 (API hardening, rebuild) + Phase 21 Wave B (discovery).
-**Go-live gaps:** DNS, HTTPS, offsite backups. See [STATE.md](./STATE.md).
+**Current focus:** Phase **23** only — DNS, HTTPS, offsite backups.  
+**Platform:** Production-ready on IP (`79.72.92.195:3005`). See [STATE.md](./STATE.md).
 
 ## Tech stack
 
@@ -369,26 +369,40 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ## Phase 21: Party Catalogue Maximisation
 
-**Status**: **ACTIVE** (June 2026 → ongoing)
+**Status**: **✅ COMPLETE** (August 7, 2026) — autonomous worker continues image/party backfill  
 **Goal**: Maximise hireable venues and softplay for kids' birthdays in Greater London with usable contact and party data.
 
 **Strategy:** Discovery → Curation → Enrichment (repeat). See `.planning/phases/21-party-catalogue-maximisation/21-PLAN.md`.
 
-**Wave A** (manual batches — largely complete Aug 2026):
+**Wave A** (enrichment batches — complete):
 
-- ✅ Google Places enrichment pass (queues empty)
-- ✅ Direct website crawl (queues empty)
-- ✅ Party extraction on core venues with websites (132 party_capable)
-- ⏳ Borough CSV hall-hire contact ingest
+- ✅ Google Places enrichment pass (10 batches, Aug 7)
+- ✅ Direct website crawl (5 batches)
+- ✅ Party extraction on core venues with websites (179 party_capable)
+- ✅ Borough CSV hall-hire contact ingest (843 matched)
+- ✅ Foursquare + Geoapify backfill
+- ✅ Brave + Street View image pass (Brave 429 rate limit)
+- ✅ Re-classify, dedup (870 groups, 1,183 dupes merged), Redis flush
 
-**Wave B** (next):
+**Wave B** (discovery — complete):
 
-- Google Places discovery sweep (new venues by borough)
-- Chain expansion via Google Places
-- postcodes.io geocoding backlog
-- Wikimedia image enrichment (script written, untracked)
+- ✅ Google Places discovery sweep (`google-places-discovery.ts`, 13+ runs)
+- ✅ Chain expansion via Google Places
+- ✅ postcodes.io geocoding (99.1% core postcode coverage)
+- ✅ `scripts/run-phase-21.sh` orchestrator added
 
-**Success criteria:** Listable core ≥ 2,000 · party_capable ≥ 500 · core images ≥ 40%
+**Production snapshot (7 Aug 2026):**
+
+| Metric | Value |
+|--------|------:|
+| Core catalogue | **2,218** |
+| Party-capable | **179** (8.1%) |
+| Website coverage | 79.2% |
+| Phone coverage | 58.6% |
+| Image coverage | 17.0% (worker backfill ongoing) |
+| Postcode coverage | 99.1% |
+
+**Success criteria:** 4/6 met — website, phone, postcode, search regression ✅ · core count and images stretch via worker.
 
 ---
 
@@ -446,7 +460,7 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 
 ## Phase 24: High-Fidelity Frontend Redesign & Party Booking Flow
 
-**Status**: **COMPLETED** (August 4, 2026) — deployed on VPS; committed and pushed (`5392638`)
+**Status**: **COMPLETED** (August 4, 2026) — deployed on VPS; committed and pushed (`fe92c6e`)
 
 **Goal**: Modern party-first UI with booking flow pages.
 
@@ -457,28 +471,26 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - ✅ How-it-works page, footer, bottom nav updates
 - ✅ Booking context provider
 
-**Note:** VPS and `origin/master` aligned at `5392638` (7 Aug 2026).
+**Note:** VPS and `origin/master` aligned at `fe92c6e` (7 Aug 2026).
 
 ---
 
 ## Phase 25: Pre-Launch Hardening & Wave B Discovery
 
-**Status**: **ACTIVE** (August 7, 2026)
+**Status**: **✅ COMPLETE** (August 7, 2026)  
 **Goal**: Ship improvements that don't require a domain — mount missing API routes, fix error handling, rebuild containers, run Wave B discovery.
 
 **Plans:**
 - [x] 25-01 — Mount FHRS + `/metrics`; fix empty-body 400 errors; API v1.3.0
-- [x] 25-02 — Wave B discovery (6 runs: +90 venues, core 2,236→2,311); free-tier caps applied
+- [x] 25-02 — Wave B discovery (6 runs pre–Phase 21; free-tier caps applied)
 - [x] 25-03 — Docker rebuild + smoke tests (51/51 pass)
-- [x] 25-04 — Phase 24+25 committed; push to `origin/master` complete (`5392638`)
+- [x] 25-04 — Phase 24+25 committed; push to `origin/master` complete (`fe92c6e`)
 
-**Deferred until domain:** DNS, HTTPS, offsite backups.
-
-**Git:** Push to `origin/master` resolved 7 Aug 2026; tip `5392638`. Local `.env.backup.*` removed from disk (never commit secrets).
+**Deferred to Phase 23:** DNS, HTTPS, offsite backups.
 
 ---
 
 ## Last Updated
 
-August 7, 2026
+August 7, 2026 (post–Phase 21 production push)
 
