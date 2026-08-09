@@ -19,16 +19,18 @@ export function ResultsToolbar({ sort, onSortChange, resultCount, onSearchComple
 
   const typeLabel =
     venueType === 'softplay'
-      ? 'soft play & activity'
+      ? 'soft play'
       : venueType === 'community_hall'
         ? 'party rooms'
-        : venueType === 'park'
-          ? 'parks & outdoor'
-          : venueType === 'museum'
-            ? 'museums'
-            : venueType === 'library'
-              ? 'libraries'
-              : null;
+        : venueType === 'leisure_centre'
+          ? 'trampolines & activity'
+          : venueType === 'park'
+            ? 'parks & outdoor'
+            : venueType === 'museum'
+              ? 'museums'
+              : venueType === 'library'
+                ? 'libraries'
+                : null;
 
   return (
     <div className="mb-6 space-y-4">
