@@ -2,10 +2,10 @@
 // Manual service worker with versioned caching (no Workbox, no next-pwa)
 // Cache strategies: network-first for search, stale-while-revalidate for venue detail
 
-const CACHE = 'kidspot-v1';
-const SEARCH_CACHE = 'kidspot-search-v1';
-const DETAIL_CACHE = 'kidspot-detail-v1';
-const STATIC_CACHE = 'kidspot-static-v1';
+const CACHE = 'kidspot-v2';
+const SEARCH_CACHE = 'kidspot-search-v2';
+const DETAIL_CACHE = 'kidspot-detail-v2';
+const STATIC_CACHE = 'kidspot-static-v2';
 
 const APP_SHELL = [
   '/',
