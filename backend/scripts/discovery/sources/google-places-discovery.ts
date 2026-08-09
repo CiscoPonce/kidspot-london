@@ -151,21 +151,22 @@ export async function discoverVenuesViaGooglePlaces(batchSize: number = 50): Pro
                 continue;
               }
 
+              if (!match.name || !match.lat || !match.lon) continue;
+
               // Check for duplicates by name proximity
               const { rows: nearDup } = await db.query(
                 `SELECT id FROM venues
                  WHERE is_active = TRUE
-                   AND name ILIKE $1
                    AND (
-                     (lat IS NOT NULL AND lon IS NOT NULL
-                      AND $2::numeric IS NOT NULL AND $3::numeric IS NOT NULL
-                      AND ST_DWithin(
-                        ST_SetSRID(ST_MakePoint(lon::numeric, lat::numeric), 4326),
-                        ST_SetSRID(ST_MakePoint($3, $2), 4326),
-                        100
-                      ))
-                     OR (borough = $4 AND name ILIKE $1)
-                   )
+                        (lat IS NOT NULL AND lon IS NOT NULL
+                         AND $2::numeric IS NOT NULL AND $3::numeric IS NOT NULL
+                         AND ST_DWithin(
+                           ST_SetSRID(ST_MakePoint(lon::numeric, lat::numeric), 4326),
+                           ST_SetSRID(ST_MakePoint($3, $2), 4326),
+                           100
+                         ))
+                        OR (borough = $4 AND name ILIKE $1)
+                      )
                  LIMIT 1`,
                 [`%${match.name}%`, match.lat, match.lon, borough]
               );

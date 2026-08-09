@@ -45,8 +45,8 @@ export async function cleanBadImages(): Promise<{ cleaned: number }> {
     }
 
     logger.info(`Bad image cleanup complete. Cleaned ${cleanedCount} venues.`);
-  } catch (error) {
-    logger.error('Error during bad image cleanup:', error);
+  } catch (error: any) {
+    logger.error({ err: error }, 'Error during bad image cleanup');
   }
 
   return { cleaned: cleanedCount };

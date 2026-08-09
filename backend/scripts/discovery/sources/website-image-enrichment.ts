@@ -174,8 +174,8 @@ export async function enrichWebsiteImages(batchSize: number = 250, force: boolea
     }
 
     logger.info(`Website image enrichment finished. Enriched: ${result.enriched}, Skipped: ${result.skipped}, Failed: ${result.failed}`);
-  } catch (error) {
-    logger.error('Error during website image enrichment:', error);
+  } catch (error: any) {
+    logger.error({ err: error }, 'Error during website image enrichment');
   }
 
   return result;
