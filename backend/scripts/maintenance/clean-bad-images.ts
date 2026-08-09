@@ -1,6 +1,26 @@
 import { db } from '../../src/clients/db.js';
 import { logger } from '../../src/config/logger.js';
 
+export function isBadImageUrl(imgUrl: string): boolean {
+  if (!imgUrl || typeof imgUrl !== 'string') return true;
+  const lower = imgUrl.toLowerCase();
+  
+  // Filter out bad patterns
+  if (lower.includes('wikimedia.org') ||
+      lower.includes('geograph.org.uk') ||
+      lower.includes('maps.google.com/maps/api/staticmap') ||
+      lower.includes('property-images-uk') ||
+      lower.includes('rightmove.co.uk') ||
+      lower.includes('where-e.com')) {
+    return true;
+  }
+
+  // Filter out generic file names or placeholders
+  if (lower.endsWith('.svg') || lower.endsWith('.ico')) return true;
+
+  return false;
+}
+
 export async function cleanBadImages(): Promise<{ cleaned: number }> {
   let cleanedCount = 0;
 
@@ -14,25 +34,7 @@ export async function cleanBadImages(): Promise<{ cleaned: number }> {
 
     for (const venue of rows) {
       const originalImages: string[] = venue.images || [];
-      const filteredImages = originalImages.filter((imgUrl: string) => {
-        if (!imgUrl || typeof imgUrl !== 'string') return false;
-        const lower = imgUrl.toLowerCase();
-        
-        // Filter out bad patterns
-        if (lower.includes('wikimedia.org') ||
-            lower.includes('geograph.org.uk') ||
-            lower.includes('maps.google.com/maps/api/staticmap') ||
-            lower.includes('property-images-uk') ||
-            lower.includes('rightmove.co.uk') ||
-            lower.includes('where-e.com')) {
-          return false;
-        }
-
-        // Filter out generic file names or placeholders
-        if (lower.endsWith('.svg') || lower.endsWith('.ico')) return false;
-
-        return true;
-      });
+      const filteredImages = originalImages.filter((imgUrl: string) => !isBadImageUrl(imgUrl));
 
       if (filteredImages.length !== originalImages.length) {
         await db.query(
