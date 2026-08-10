@@ -59,6 +59,99 @@ export function normalizeImageUrl(rawSrc: string, baseUrl: string): string | nul
 export async function extractImagesFromWebsite(websiteUrl: string): Promise<string[]> {
   const images: string[] = [];
 
+  const processPageHtml = (html: string, pageUrl: string) => {
+    const $ = cheerio.load(html);
+
+    // 1. Meta OG / Twitter images (highest priority)
+    const metaOg = $('meta[property="og:image"]').attr('content') ||
+                   $('meta[name="og:image"]').attr('content') ||
+                   $('meta[property="twitter:image"]').attr('content') ||
+                   $('meta[name="twitter:image"]').attr('content') ||
+                   $('link[rel="image_src"]').attr('href');
+
+    if (metaOg) {
+      const norm = normalizeImageUrl(metaOg, pageUrl);
+      if (norm && !images.includes(norm)) images.push(norm);
+    }
+
+    // 2. Schema.org JSON-LD structured data images
+    $('script[type="application/ld+json"]').each((_, el) => {
+      try {
+        const text = $(el).html();
+        if (!text) return;
+        const json = JSON.parse(text);
+        const extractJsonImages = (obj: any) => {
+          if (!obj || typeof obj !== 'object') return;
+          if (typeof obj.image === 'string') {
+            const norm = normalizeImageUrl(obj.image, pageUrl);
+            if (norm && !images.includes(norm)) images.push(norm);
+          } else if (Array.isArray(obj.image)) {
+            obj.image.forEach((imgItem: any) => {
+              const urlStr = typeof imgItem === 'string' ? imgItem : imgItem?.url;
+              if (urlStr) {
+                const norm = normalizeImageUrl(urlStr, pageUrl);
+                if (norm && !images.includes(norm)) images.push(norm);
+              }
+            });
+          } else if (obj.image?.url) {
+            const norm = normalizeImageUrl(obj.image.url, pageUrl);
+            if (norm && !images.includes(norm)) images.push(norm);
+          }
+          if (obj['@graph'] && Array.isArray(obj['@graph'])) {
+            obj['@graph'].forEach(extractJsonImages);
+          }
+        };
+        extractJsonImages(json);
+      } catch {}
+    });
+
+    // 3. High relevance <img> tags (hero, banner, gallery, main content)
+    $('header img, .hero img, .banner img, #hero img, #main img, main img, .gallery img, article img, .slider img, .carousel img').each((_, el) => {
+      if (images.length >= 8) return;
+      const src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-lazy-src') || $(el).attr('srcset')?.split(' ')[0];
+      if (src) {
+        const norm = normalizeImageUrl(src, pageUrl);
+        if (norm && !images.includes(norm)) images.push(norm);
+      }
+    });
+
+    // 4. CSS background-image inline style attributes
+    $('[style*="background"]').each((_, el) => {
+      if (images.length >= 8) return;
+      const style = $(el).attr('style') || '';
+      const match = style.match(/background(?:-image)?\s*:\s*url\((['"]?)(.*?)\1\)/i);
+      if (match && match[2]) {
+        const norm = normalizeImageUrl(match[2], pageUrl);
+        if (norm && !images.includes(norm)) images.push(norm);
+      }
+    });
+
+    // 5. HTML5 <picture> and <source srcset="...">
+    $('picture source, picture img').each((_, el) => {
+      if (images.length >= 8) return;
+      const srcset = $(el).attr('srcset') || $(el).attr('src') || $(el).attr('data-srcset');
+      if (srcset) {
+        const firstUrl = srcset.trim().split(/\s+/)[0];
+        const norm = normalizeImageUrl(firstUrl, pageUrl);
+        if (norm && !images.includes(norm)) images.push(norm);
+      }
+    });
+
+    // 6. Prominent <img> tags on page if still low on images
+    if (images.length < 3) {
+      $('img').each((_, el) => {
+        if (images.length >= 6) return;
+        const src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('data-original');
+        if (src) {
+          const norm = normalizeImageUrl(src, pageUrl);
+          if (norm && !images.includes(norm)) images.push(norm);
+        }
+      });
+    }
+
+    return $;
+  };
+
   try {
     const res = await fetch(websiteUrl, {
       headers: {
@@ -72,51 +165,43 @@ export async function extractImagesFromWebsite(websiteUrl: string): Promise<stri
     if (!res.ok) return images;
 
     const html = await res.text();
-    const $ = cheerio.load(html);
+    const $ = processPageHtml(html, websiteUrl);
 
-    // 1. Meta OG / Twitter images (highest priority)
-    const metaOg = $('meta[property="og:image"]').attr('content') ||
-                   $('meta[name="og:image"]').attr('content') ||
-                   $('meta[property="twitter:image"]').attr('content') ||
-                   $('meta[name="twitter:image"]').attr('content') ||
-                   $('link[rel="image_src"]').attr('href');
-
-    if (metaOg) {
-      const norm = normalizeImageUrl(metaOg, websiteUrl);
-      if (norm) images.push(norm);
-    }
-
-    // 2. High relevance <img> tags (hero, banner, gallery, main content)
-    $('header img, .hero img, .banner img, #hero img, #main img, main img, .gallery img, article img').each((_, el) => {
-      if (images.length >= 5) return;
-      const src = $(el).attr('src') || $(el).attr('data-src') || $(el).attr('srcset')?.split(' ')[0];
-      if (src) {
-        const norm = normalizeImageUrl(src, websiteUrl);
-        if (norm && !images.includes(norm)) {
-          images.push(norm);
-        }
-      }
-    });
-
-    // 3. Any prominent <img> tag on page if still empty
-    if (images.length === 0) {
-      $('img').each((_, el) => {
-        if (images.length >= 3) return;
-        const src = $(el).attr('src') || $(el).attr('data-src');
-        if (src) {
-          const norm = normalizeImageUrl(src, websiteUrl);
-          if (norm && !images.includes(norm)) {
-            images.push(norm);
-          }
-        }
+    // 7. If homepage produced fewer than 2 images, attempt crawling gallery/party subpages
+    if (images.length < 2 && $) {
+      const subpageLink = $('a[href]').map((_, el) => $(el).attr('href')).get().find((href: string) => {
+        if (!href) return false;
+        const lower = href.toLowerCase();
+        return (
+          lower.includes('/gallery') ||
+          lower.includes('/photos') ||
+          lower.includes('/parties') ||
+          lower.includes('/party') ||
+          lower.includes('/kids') ||
+          lower.includes('/venue-hire')
+        );
       });
-    }
 
+      if (subpageLink) {
+        try {
+          const targetUrl = new URL(subpageLink, websiteUrl).href;
+          const subRes = await fetch(targetUrl, {
+            headers: browserHeaders(),
+            signal: AbortSignal.timeout(4000),
+            redirect: 'follow',
+          });
+          if (subRes.ok) {
+            const subHtml = await subRes.text();
+            processPageHtml(subHtml, targetUrl);
+          }
+        } catch {}
+      }
+    }
   } catch (err: any) {
     // Timeout or network error
   }
 
-  return Array.from(new Set(images));
+  return Array.from(new Set(images)).slice(0, 8);
 }
 
 export async function enrichWebsiteImages(batchSize: number = 250, force: boolean = false): Promise<WebsiteImageResult> {
