@@ -11,25 +11,23 @@ export interface WebsiteImageResult {
 }
 
 const REJECT_IMAGE_PATTERNS = [
-  /\.svg/i,
-  /\.ico/i,
-  /base64/i,
-  /logo/i,
-  /icon/i,
-  /avatar/i,
-  /badge/i,
-  /tracking/i,
-  /pixel/i,
-  /facebook/i,
-  /twitter/i,
-  /instagram/i,
-  /linkedin/i,
-  /youtube/i,
-  /tripadvisor/i,
+  /\.svg(?:\?.*)?$/i,
+  /\.ico(?:\?.*)?$/i,
+  /base64,/i,
+  /(?:^|\/|_|-)(?:logo|icon|avatar|favicon|badge|tracking|pixel|spinner|placeholder|transparent|blank|spacer)(?:s)?(?:-|_|\.|$)/i,
+  /(?:1x1|16x16|32x32|48x48)\.(?:png|jpg|gif|webp)/i,
+  /facebook\.com/i,
+  /twitter\.com/i,
+  /instagram\.com/i,
+  /linkedin\.com/i,
+  /youtube\.com/i,
+  /tripadvisor\.com/i,
   /google-map/i,
   /wikimedia\.org/i,
   /geograph\.org/i,
   /staticmap/i,
+  /property-images-uk/i,
+  /rightmove\.co\.uk/i,
 ];
 
 export function normalizeImageUrl(rawSrc: string, baseUrl: string): string | null {
