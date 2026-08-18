@@ -90,7 +90,7 @@ if [ -n "$VENUE_SLUG" ]; then
 fi
 if [ -n "$VENUE_ID" ]; then
   check GET "${BASE}/api/search/venues/${VENUE_ID}/details" "GET /api/search/venues/:id/details" 200
-  check POST "${BASE}/api/search/venues/${VENUE_ID}/click" "POST /api/search/venues/:id/click" 200
+  check POST "${BASE}/api/search/venues/${VENUE_ID}/click" "POST /api/search/venues/:id/click" 200 -H "Content-Type: application/json" -d '{"type":"website"}'
 fi
 
 echo ""
@@ -149,7 +149,7 @@ fi
 
 echo ""
 echo "── Frontend pages ──"
-for path in "/" "/saved" "/shortlist" "/how-it-works" "/owner/login" "/venues-in/hackney" "/venues-by/softplay"; do
+for path in "/" "/saved" "/shortlist" "/how-it-works" "/owner/login" "/venues-in/hackney" "/venues-by/soft-play"; do
   check GET "${WEB}${path}" "GET ${path}" 200
 done
 if [ -n "$VENUE_SLUG" ]; then
