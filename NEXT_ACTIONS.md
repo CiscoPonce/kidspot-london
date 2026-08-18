@@ -1,14 +1,14 @@
 # KidSpot London — Next Actions
 
-**Active phase:** [23 — Public launch infrastructure](.planning/phases/23-public-launch-infrastructure-security-hardening-ai-eval-benc/23-CONTEXT.md)  
+**Active phases:** [23 — Public launch infrastructure](.planning/phases/23-public-launch-infrastructure-security-hardening-ai-eval-benc/23-CONTEXT.md) · [26 — Party Catering & Cake Policy Experience](.planning/phases/26-party-catering-cake-experience/26-CONTEXT.md)  
 **State:** [.planning/STATE.md](.planning/STATE.md) · **Roadmap:** [.planning/ROADMAP.md](.planning/ROADMAP.md)  
-**Last updated:** 7 Aug 2026
+**Last updated:** 18 Aug 2026
 
 ---
 
 ## Priority 1 — Go live (Phase 23)
 
-These are the **only remaining blockers** for public launch:
+These are the **infra tasks** for public domain launch:
 
 1. **Point DNS** — `kidspot.london` A record → VPS public IP (`79.72.92.195`)
 2. **Enable HTTPS** — remove `auto_https disable_redirects` from Caddy; add Let's Encrypt
@@ -16,7 +16,16 @@ These are the **only remaining blockers** for public launch:
 
 ---
 
-## Priority 2 — Autonomous backfill (no action needed)
+## Priority 2 — Phase 26: Catering, Cake Policy & Checklist
+
+1. **Migration & Backend**: Add catering & kitchen columns (`039_add_party_catering_fields.sql`).
+2. **Catering Extraction**: Add BYO food, cake policy, and kitchen detection to `partyExtraction.ts`.
+3. **UI Badges**: Add "BYO Cake & Candles Welcome" & "BYO Food" badges to venue cards & detail pages.
+4. **Party Checklist**: Interactive party planner widget on Shortlist and Saved pages.
+
+---
+
+## Priority 3 — Autonomous backfill (no action needed)
 
 Phases 21 and 25 are **complete**. Worker + crons continue:
 

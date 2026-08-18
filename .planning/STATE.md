@@ -3,11 +3,11 @@ gsd_state_version: 2.0
 milestone: v1.0-public-launch
 status: operating
 current_phase: 23
-last_updated: "2026-08-07T22:30:00.000Z"
+last_updated: "2026-08-18T07:12:00.000Z"
 progress:
-  total_phases: 25
+  total_phases: 26
   completed_phases: 24
-  active_phases: 1
+  active_phases: 2
   deferred_phases: 1
   percent: 96
 ---
@@ -21,22 +21,19 @@ progress:
 
 | Field | Value |
 |-------|-------|
-| **Active phases** | **23** only (DNS, HTTPS, offsite backups) |
+| **Active phases** | **23** (DNS, HTTPS, offsite backups) & **26** (Party catering & cake experience) |
 | **Platform status** | **Production-ready on IP** — Phases 21, 24, 25 complete; go-live needs domain |
-| **Last VPS audit** | 7 Aug 2026 — all containers healthy, 51/51 tests pass, crons green |
-| **Git** | Synced with `origin/master` at `fe92c6e` |
+| **Last VPS audit** | 18 Aug 2026 — all containers healthy, 51/51 tests pass, crons green |
+| **Git** | Synced with `origin/master` |
 
-### What's left (Phase 23)
+### What's next
 
-Only go-live infrastructure remains:
-
-- DNS for `kidspot.london` not pointed at VPS
-- HTTPS disabled in Caddy (`auto_https disable_redirects`)
-- Offsite backup replication (S3/R2) not configured
+1. **Phase 23 (Launch Infra)**: Point DNS for `kidspot.london`, enable HTTPS, offsite backup sync.
+2. **Phase 26 (Catering & Cake Experience)**: Add BYO food/cake policy transparency badges and interactive party planning checklist.
 
 ---
 
-## Production snapshot (7 Aug 2026, post–Phase 21 push)
+## Production snapshot (18 Aug 2026)
 
 Live query against VPS Postgres after full Phase 21 pipeline + dedup:
 

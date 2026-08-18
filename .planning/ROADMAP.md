@@ -26,8 +26,9 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 | 23 | Public launch infra & AI eval | **🔄 Active** — DNS, HTTPS, offsite backups |
 | 24 | Frontend redesign & booking | ✅ Complete |
 | 25 | Pre-launch hardening & Wave B | ✅ Complete |
+| **26** | **Party catering, cake & parent planning** | **📋 Active Planning** |
 
-**Current focus:** Phase **23** only — DNS, HTTPS, offsite backups.  
+**Current focus:** Phase **23** (DNS/HTTPS launch) & Phase **26** (Party catering & cake experience).  
 **Platform:** Production-ready on IP (`79.72.92.195:3005`). See [STATE.md](./STATE.md).
 
 ## Tech stack
@@ -486,11 +487,29 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 - [x] 25-03 — Docker rebuild + smoke tests (51/51 pass)
 - [x] 25-04 — Phase 24+25 committed; push to `origin/master` complete (`fe92c6e`)
 
-**Deferred to Phase 23:** DNS, HTTPS, offsite backups.
+---
+
+## Phase 26: Party Catering, Cake Policies & Parent Planning Essentials
+
+**Status**: **📋 ACTIVE PLANNING** (August 18, 2026)  
+**Goal**: Provide parents with total clarity on venue food policies, bring-your-own (BYO) cake rules, kitchen facilities, and an interactive party planning checklist.
+
+**Requirements**:
+- **26-01**: **Database Schema & Data Model** — Add `byo_food_allowed`, `food_provided`, `kitchen_facilities`, and `catering_notes` to venues table.
+- **26-02**: **Catering & Kitchen Extraction** — Extend `partyExtraction.ts` with regex and LLM detection for BYO food, in-house packages, kitchen access, and default cake policy.
+- **26-03**: **Frontend UI Badges & Transparency** — Display visual badges on venue cards and detail pages for Birthday Cake ("BYO Cake & Candles Welcome"), Food Policy, and Kitchen Amenities.
+- **26-04**: **Interactive Party Planning Checklist** — Add a persistent party planning checklist widget on Shortlist, Saved, and Booking confirmation pages.
+- **26-05**: **Local Supplier Hook** — Contextual supplier banner ("Need a custom cake or entertainer in Hackney?") preparing affiliate/sponsor monetisation.
+
+**Plans**:
+- [ ] 26-01-PLAN.md — DB migration, backend schema, and extraction heuristics
+- [ ] 26-02-PLAN.md — Frontend catering badges & policy display in venue cards/modals
+- [ ] 26-03-PLAN.md — Interactive parent party checklist widget with localStorage persistence
 
 ---
 
 ## Last Updated
 
-August 7, 2026 (post–Phase 21 production push)
+August 18, 2026 (Phase 26 Roadmap established)
+
 
