@@ -40,7 +40,8 @@ async function hydrateVenueCardFields(rows: Venue[]): Promise<Venue[]> {
       `SELECT id, website, phone, email, booking_url, borough, london_borough, venue_scope, images, opening_hours,
               fhrs_establishment_id, claimed_at,
               party_capable, party_price_from, party_price_unit,
-              party_max_capacity, party_enquiry_url
+              party_max_capacity, party_enquiry_url,
+              byo_food_allowed, food_provided, kitchen_facilities, catering_notes
        FROM venues WHERE id = ANY($1)`,
       [ids],
     );
@@ -730,9 +731,12 @@ const baseVenueService = {
 
     const venueResult = await db.query(
       `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug,
-              website, phone, email, booking_url, address, postcode, borough,
+              website, phone, email, booking_url, address, postcode, borough, london_borough,
               description, opening_hours, rating, price_level, features,
-              parent_facets, kid_score, images, enriched_at
+              parent_facets, kid_score, images, enriched_at,
+              party_capable, party_price_from, party_price_unit, party_max_capacity, party_enquiry_url,
+              byo_food_allowed, food_provided, kitchen_facilities, catering_notes,
+              fhrs_establishment_id, claimed_at
        FROM venues
        WHERE slug = $1 AND is_active = TRUE`,
       [slug]
@@ -810,9 +814,12 @@ const baseVenueService = {
 
     const venueResult = await db.query(
       `SELECT id, name, type, lat, lon, source, source_id, sponsor_tier, slug,
-              website, phone, email, booking_url, address, postcode, borough,
+              website, phone, email, booking_url, address, postcode, borough, london_borough,
               description, opening_hours, rating, price_level, features,
-              parent_facets, kid_score, images, enriched_at
+              parent_facets, kid_score, images, enriched_at,
+              party_capable, party_price_from, party_price_unit, party_max_capacity, party_enquiry_url,
+              byo_food_allowed, food_provided, kitchen_facilities, catering_notes,
+              fhrs_establishment_id, claimed_at
        FROM venues
        WHERE id = $1 AND is_active = TRUE`,
       [idVal]

@@ -2,6 +2,7 @@
 
 import { VenueImagePlaceholder } from '@/components/venues/venue-image-placeholder';
 import { usePlausible } from 'next-plausible';
+import { PartyCateringBadge } from '@/components/venues/party-catering-badge';
 import type { Venue } from '@/lib/api';
 import {
   Trees,
@@ -243,6 +244,8 @@ export function VenueCard({
               </span>
             )}
           </div>
+
+          <PartyCateringBadge venue={venue} compact />
         </div>
 
         <div className="mt-4">

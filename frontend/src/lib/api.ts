@@ -31,12 +31,16 @@ export interface Venue {
   // Trust (verifiable, Phase 18C FE-11)
   fhrs_establishment_id?: number | null;
   claimed_at?: string | null;
-  // Party data (Phase 18D)
+  // Party & Catering data (Phase 18D & Phase 26)
   party_capable?: boolean | null;
   party_price_from?: number | null;
   party_price_unit?: 'per_child' | 'per_hour' | 'flat' | null;
   party_max_capacity?: number | null;
   party_enquiry_url?: string | null;
+  byo_food_allowed?: boolean | null;
+  food_provided?: boolean | null;
+  kitchen_facilities?: boolean | null;
+  catering_notes?: string | null;
 }
 
 export interface YelpReview {
@@ -62,6 +66,7 @@ export interface VenueDetails {
   slug: string;
   source: string;
   borough?: string;
+  london_borough?: string;
   address?: string;
   postcode?: string;
   phone?: string;
@@ -81,6 +86,18 @@ export interface VenueDetails {
   images?: string[];
   features?: string[];
   enriched_at?: string;
+  // Trust & Party (Phase 26)
+  fhrs_establishment_id?: number | null;
+  claimed_at?: string | null;
+  party_capable?: boolean | null;
+  party_price_from?: number | null;
+  party_price_unit?: 'per_child' | 'per_hour' | 'flat' | null;
+  party_max_capacity?: number | null;
+  party_enquiry_url?: string | null;
+  byo_food_allowed?: boolean | null;
+  food_provided?: boolean | null;
+  kitchen_facilities?: boolean | null;
+  catering_notes?: string | null;
 }
 
 export interface VenueSearchParams {

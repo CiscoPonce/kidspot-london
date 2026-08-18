@@ -30,6 +30,16 @@ const ROWS: Array<{ label: string; render: (v: Venue) => React.ReactNode }> = [
     label: 'Hosts parties',
     render: (v) => (v.party_capable === true ? 'Yes' : v.party_capable === false ? 'No' : '—'),
   },
+  {
+    label: 'Catering & Cake',
+    render: (v) => {
+      const byo = v.byo_food_allowed ?? (v.type === 'community_hall');
+      const food = v.food_provided ?? (v.type === 'softplay');
+      if (byo) return '🎂 BYO Cake & Food';
+      if (food) return '🎂 BYO Cake · 🍕 Food Included';
+      return '🎂 BYO Cake Welcome';
+    },
+  },
   { label: 'Rating', render: (v) => (v.rating ? Number(v.rating).toFixed(1) : '—') },
   {
     label: 'Trust',

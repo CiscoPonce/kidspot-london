@@ -8,6 +8,7 @@ import type { Venue } from '@/lib/api';
 import { getVenueBySlug } from '@/lib/api';
 import { decodeShortlist } from '@/lib/shortlist-link';
 import { CompareTable } from '@/components/venues/compare-table';
+import { PartyChecklist } from '@/components/venues/party-checklist';
 import { useShortlist } from '@/hooks/use-shortlist';
 
 function SharedShortlist() {
@@ -86,6 +87,9 @@ function SharedShortlist() {
               Someone shared {venues.length} venue{venues.length === 1 ? '' : 's'} they&apos;re considering for a party.
             </p>
             <CompareTable venues={venues} readOnly />
+            <section aria-label="Party planning checklist" className="pt-6">
+              <PartyChecklist />
+            </section>
           </>
         )}
       </main>

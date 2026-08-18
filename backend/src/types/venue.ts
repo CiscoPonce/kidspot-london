@@ -68,6 +68,17 @@ export interface Venue {
   borough?: string | null;
   london_borough?: string | null;
   venue_scope?: 'core' | 'secondary' | 'review' | 'excluded' | null;
+
+  // Party data (Phase 18D & Phase 26)
+  party_capable?: boolean | null;
+  party_price_from?: number | null;
+  party_price_unit?: 'per_child' | 'per_hour' | 'flat' | null;
+  party_max_capacity?: number | null;
+  party_enquiry_url?: string | null;
+  byo_food_allowed?: boolean | null;
+  food_provided?: boolean | null;
+  kitchen_facilities?: boolean | null;
+  catering_notes?: string | null;
 }
 
 export interface FhrsEstablishment {

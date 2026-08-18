@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Heart, Share2, Trash2, Check } from 'lucide-react';
 import { useShortlist } from '@/hooks/use-shortlist';
 import { CompareTable } from '@/components/venues/compare-table';
+import { PartyChecklist } from '@/components/venues/party-checklist';
 import { buildShortlistUrl } from '@/lib/shortlist-link';
 
 export default function SavedPage() {
@@ -79,6 +80,10 @@ export default function SavedPage() {
               Explore Birthday Venues
             </Link>
           </div>
+
+          <div className="mt-12 text-left">
+            <PartyChecklist />
+          </div>
         </main>
       ) : (
         <main className="mx-auto max-w-6xl px-4 sm:px-6 py-6 space-y-6">
@@ -98,6 +103,10 @@ export default function SavedPage() {
           <section aria-label="Compare shortlisted venues">
             <h2 className="font-display text-lg font-bold mb-3">Compare</h2>
             <CompareTable venues={items} onRemove={remove} />
+          </section>
+
+          <section aria-label="Party planning checklist" className="pt-4">
+            <PartyChecklist />
           </section>
         </main>
       )}

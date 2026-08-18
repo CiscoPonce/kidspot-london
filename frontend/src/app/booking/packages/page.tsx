@@ -26,7 +26,8 @@ const PACKAGES: PackageOption[] = [
     features: [
       { text: 'Up to 10 children', included: true },
       { text: 'Reserved party table', included: true },
-      { text: 'No food included', included: false },
+      { text: 'Bring your own birthday cake & candles', included: true },
+      { text: 'No hot food included (bring your own snacks)', included: false },
     ],
   },
   {
@@ -41,6 +42,7 @@ const PACKAGES: PackageOption[] = [
       { text: 'Up to 15 children', included: true },
       { text: 'Private party room', included: true },
       { text: 'Hot food & unlimited squash', included: true },
+      { text: 'Bring your own birthday cake & candles', included: true },
     ],
   },
   {
@@ -54,6 +56,7 @@ const PACKAGES: PackageOption[] = [
       { text: 'Up to 30 children', included: true },
       { text: 'Full venue exclusivity', included: true },
       { text: 'Dedicated party host & food', included: true },
+      { text: 'Bring your own birthday cake & candles', included: true },
     ],
   },
 ];

@@ -26,9 +26,9 @@ To become the default, zero-friction utility for parents in the UK to discover, 
 | 23 | Public launch infra & AI eval | **🔄 Active** — DNS, HTTPS, offsite backups |
 | 24 | Frontend redesign & booking | ✅ Complete |
 | 25 | Pre-launch hardening & Wave B | ✅ Complete |
-| **26** | **Party catering, cake & parent planning** | **📋 Active Planning** |
+| **26** | **Party catering, cake & parent planning** | **✅ Complete** |
 
-**Current focus:** Phase **23** (DNS/HTTPS launch) & Phase **26** (Party catering & cake experience).  
+**Current focus:** Phase **23** (DNS/HTTPS public launch).  
 **Platform:** Production-ready on IP (`79.72.92.195:3005`). See [STATE.md](./STATE.md).
 
 ## Tech stack

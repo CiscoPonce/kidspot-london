@@ -3,13 +3,13 @@ gsd_state_version: 2.0
 milestone: v1.0-public-launch
 status: operating
 current_phase: 23
-last_updated: "2026-08-18T07:12:00.000Z"
+last_updated: "2026-08-18T07:36:00.000Z"
 progress:
   total_phases: 26
-  completed_phases: 24
-  active_phases: 2
+  completed_phases: 25
+  active_phases: 1
   deferred_phases: 1
-  percent: 96
+  percent: 98
 ---
 
 # KidSpot London — Project State
@@ -21,9 +21,10 @@ progress:
 
 | Field | Value |
 |-------|-------|
-| **Active phases** | **23** (DNS, HTTPS, offsite backups) & **26** (Party catering & cake experience) |
-| **Platform status** | **Production-ready on IP** — Phases 21, 24, 25 complete; go-live needs domain |
-| **Last VPS audit** | 18 Aug 2026 — all containers healthy, 51/51 tests pass, crons green |
+| **Active phases** | **23** only (DNS, HTTPS, offsite backups) |
+| **Completed phases** | 01–18E, 20–22, 24, 25, **26 (Party Catering & Cake Experience)** |
+| **Platform status** | **Production-ready on IP** — All product features complete; go-live needs domain |
+| **Last VPS audit** | 18 Aug 2026 — all containers healthy, 65/65 tests pass, crons green |
 | **Git** | Synced with `origin/master` |
 
 ### What's next

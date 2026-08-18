@@ -10,6 +10,7 @@ import { collectVenueImages, formatPartyPrice } from '@/lib/venue-images';
 import { trustSignals } from '@/lib/trust';
 import { useShortlist } from '@/hooks/use-shortlist';
 import { useBooking } from '@/context/booking-context';
+import { PartyCateringBadge } from '@/components/venues/party-catering-badge';
 
 interface VenueDetailContentProps {
   venue: Venue;
@@ -199,6 +200,8 @@ export function VenueDetailContent({ venue, details, compact }: VenueDetailConte
                 </span>
               )}
             </div>
+
+            <PartyCateringBadge venue={venue} />
 
             <div className="rounded-3xl border border-[#EBE5D3] bg-white p-8 shadow-sm">
               <h2 className="mb-4 font-display text-2xl font-extrabold text-brand-dark">

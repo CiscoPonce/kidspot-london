@@ -24,6 +24,10 @@ export interface PartyData {
   maxCapacity: number | null;
   packages: string[];
   enquiryUrl: string | null;
+  byoFoodAllowed?: boolean | null;
+  foodProvided?: boolean | null;
+  kitchenFacilities?: boolean | null;
+  cateringNotes?: string | null;
   source: 'regex' | 'llm' | null;
 }
 
@@ -34,6 +38,9 @@ export interface PartyScan {
   maxCapacity: number | null;
   packages: string[];
   enquiryUrl: string | null;
+  byoFoodAllowed?: boolean | null;
+  foodProvided?: boolean | null;
+  kitchenFacilities?: boolean | null;
 }
 
 const EMPTY: PartyData = {
@@ -43,6 +50,10 @@ const EMPTY: PartyData = {
   maxCapacity: null,
   packages: [],
   enquiryUrl: null,
+  byoFoodAllowed: null,
+  foodProvided: null,
+  kitchenFacilities: null,
+  cateringNotes: null,
   source: null,
 };
 
@@ -50,6 +61,15 @@ const PARTY_KEYWORDS =
   /\b(birthday\s+part(?:y|ies)|party\s+package|kids?'?\s+part(?:y|ies)|children'?s?\s+part(?:y|ies)|party\s+room|party\s+hire|book\s+a\s+party|party\s+booking)/i;
 
 const PARTY_LINK_KEYWORDS = /part(?:y|ies)|birthday|celebrat/i;
+
+const BYO_FOOD_KEYWORDS =
+  /\b(bring your own food|byo food|self[- ]cater(?:ing|ed)?|external cater(?:ing|ers)|bring your own catering|own food permitted|bring your own snacks|external food allowed)\b/i;
+
+const FOOD_PROVIDED_KEYWORDS =
+  /\b(hot food included|cold buffet|pizza and nuggets|party meal boxes?|unlimited squash|party food included|food and drink included|party menu|catered party)\b/i;
+
+const KITCHEN_KEYWORDS =
+  /\b(kitchen access|fully equipped kitchen|microwave|fridge|freezer|tea and coffee|hot water urn|kettle|servery|kitchen hire)\b/i;
 
 const PRICE_PER_CHILD =
   /(?:from\s*)?£\s*(\d{1,4}(?:\.\d{1,2})?)\s*(?:\+?\s*vat\s*)?(?:per\s*|\/\s*|pp\b|p\.?p\.?\b)?\s*(?:child|kid|children|head|guest|person)/i;
@@ -130,6 +150,10 @@ export function scanPartyHtml(html: string, baseUrl?: string): PartyScan {
   const cap = text.match(CAPACITY);
   if (cap) scan.maxCapacity = parseInt(cap[1], 10);
 
+  if (BYO_FOOD_KEYWORDS.test(text)) scan.byoFoodAllowed = true;
+  if (FOOD_PROVIDED_KEYWORDS.test(text)) scan.foodProvided = true;
+  if (KITCHEN_KEYWORDS.test(text)) scan.kitchenFacilities = true;
+
   return scan;
 }
 
@@ -156,6 +180,10 @@ export function parsePartyJson(raw: string): Partial<PartyData> {
       maxCapacity: num(j.max_capacity),
       packages: Array.isArray(j.packages) ? (j.packages as unknown[]).map(String) : [],
       enquiryUrl: typeof j.enquiry_url === 'string' ? j.enquiry_url : null,
+      byoFoodAllowed: typeof j.byo_food_allowed === 'boolean' ? j.byo_food_allowed : undefined,
+      foodProvided: typeof j.food_provided === 'boolean' ? j.food_provided : undefined,
+      kitchenFacilities: typeof j.kitchen_facilities === 'boolean' ? j.kitchen_facilities : undefined,
+      cateringNotes: typeof j.catering_notes === 'string' ? j.catering_notes : null,
     };
   } catch {
     return {};
@@ -209,6 +237,13 @@ export function validatePartyData(d: Partial<PartyData>): PartyData {
     out.enquiryUrl = toAbsoluteUrl(d.enquiryUrl);
   }
 
+  out.byoFoodAllowed = typeof d.byoFoodAllowed === 'boolean' ? d.byoFoodAllowed : null;
+  out.foodProvided = typeof d.foodProvided === 'boolean' ? d.foodProvided : null;
+  out.kitchenFacilities = typeof d.kitchenFacilities === 'boolean' ? d.kitchenFacilities : null;
+  if (typeof d.cateringNotes === 'string' && d.cateringNotes.trim().length > 0) {
+    out.cateringNotes = d.cateringNotes.trim().slice(0, 300);
+  }
+
   return out;
 }
 
@@ -238,6 +273,9 @@ export async function extractPartyData(opts: ExtractPartyOptions): Promise<Party
       maxCapacity: scan.maxCapacity,
       packages: scan.packages,
       enquiryUrl: scan.enquiryUrl,
+      byoFoodAllowed: scan.byoFoodAllowed,
+      foodProvided: scan.foodProvided,
+      kitchenFacilities: scan.kitchenFacilities,
       source: 'regex',
     });
   }
@@ -256,7 +294,7 @@ export async function extractPartyData(opts: ExtractPartyOptions): Promise<Party
         "You extract children's party booking information from UK venue web pages. " +
         'Return ONLY a JSON object with keys: hosts_parties (boolean), price_from (number|null, GBP), ' +
         'price_unit ("per_child"|"per_hour"|"flat"|null), max_capacity (number|null), packages (string[]), ' +
-        'enquiry_url (string|null). Use null when unknown. Never invent values.',
+        'enquiry_url (string|null), byo_food_allowed (boolean|null), food_provided (boolean|null), kitchen_facilities (boolean|null). Use null when unknown. Never invent values.',
       userPrompt:
         `Venue: "${name}" (${website}). Decide if it hosts children's birthday parties and ` +
         `extract party details from this page text:\n\n${pageText}`,
@@ -278,6 +316,10 @@ export async function extractPartyData(opts: ExtractPartyOptions): Promise<Party
       maxCapacity: parsed.maxCapacity ?? scan.maxCapacity,
       packages: parsed.packages && parsed.packages.length ? parsed.packages : scan.packages,
       enquiryUrl: parsed.enquiryUrl ?? scan.enquiryUrl,
+      byoFoodAllowed: parsed.byoFoodAllowed ?? scan.byoFoodAllowed,
+      foodProvided: parsed.foodProvided ?? scan.foodProvided,
+      kitchenFacilities: parsed.kitchenFacilities ?? scan.kitchenFacilities,
+      cateringNotes: parsed.cateringNotes ?? null,
       source: 'llm',
     });
   } catch {
@@ -290,6 +332,9 @@ export async function extractPartyData(opts: ExtractPartyOptions): Promise<Party
         maxCapacity: scan.maxCapacity,
         packages: scan.packages,
         enquiryUrl: scan.enquiryUrl,
+        byoFoodAllowed: scan.byoFoodAllowed,
+        foodProvided: scan.foodProvided,
+        kitchenFacilities: scan.kitchenFacilities,
         source: 'regex',
       });
     }

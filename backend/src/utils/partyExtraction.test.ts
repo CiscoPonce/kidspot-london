@@ -53,6 +53,25 @@ describe('validatePartyData', () => {
     expect(validatePartyData({ enquiryUrl: 'https://x.com/parties' }).enquiryUrl).toBe('https://x.com/parties');
   });
 
+  it('detects BYO food, in-house food, and kitchen facilities in scanPartyHtml', () => {
+    const hallHtml = `<body>
+      <h1>Community Hall Birthday Parties</h1>
+      <p>Self-catering welcome. Full kitchen access with fridge and microwave for party food. Bring your own food and birthday cake.</p>
+    </body>`;
+    const hallScan = scanPartyHtml(hallHtml);
+    expect(hallScan.hasPartySignal).toBe(true);
+    expect(hallScan.byoFoodAllowed).toBe(true);
+    expect(hallScan.kitchenFacilities).toBe(true);
+
+    const softplayHtml = `<body>
+      <h1>Soft Play Party Packages</h1>
+      <p>Hot food included with pizza and nuggets, plus unlimited squash. Party meal boxes for all kids.</p>
+    </body>`;
+    const softplayScan = scanPartyHtml(softplayHtml);
+    expect(softplayScan.hasPartySignal).toBe(true);
+    expect(softplayScan.foodProvided).toBe(true);
+  });
+
   it('dedupes and caps package names', () => {
     const v = validatePartyData({ packages: ['Gold', 'Gold', ' Silver ', ''] });
     expect(v.packages).toEqual(['Gold', 'Silver']);
@@ -69,6 +88,16 @@ describe('parsePartyJson', () => {
     expect(p.priceUnit).toBe('per_child');
     expect(p.maxCapacity).toBe(25);
     expect(p.enquiryUrl).toBe('https://x.com/p');
+  });
+
+  it('parses raw and wrapped JSON with catering fields', () => {
+    const raw = '{"hosts_parties": true, "price_from": 18.5, "price_unit": "per_child", "byo_food_allowed": false, "food_provided": true, "kitchen_facilities": false}';
+    const parsed = parsePartyJson(raw);
+    expect(parsed.partyCapable).toBe(true);
+    expect(parsed.priceFrom).toBe(18.5);
+    expect(parsed.byoFoodAllowed).toBe(false);
+    expect(parsed.foodProvided).toBe(true);
+    expect(parsed.kitchenFacilities).toBe(false);
   });
 
   it('returns an empty object for non-JSON', () => {
