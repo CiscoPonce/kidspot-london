@@ -76,10 +76,12 @@ flowchart TD
 ## 🌟 Key Features
 
 * **Party-First Search Filtering:** Defaults to curated `core` party venues (soft plays, leisure centres, halls), hiding raw park listings unless explicitly requested via `include_parks=true`.
+* **Food & Birthday Cake Policy Transparency:** Instant clarity on venue catering rules (BYO self-catering vs in-house food packages), kitchen/fridge amenities for halls, and explicit *"Bring your own cake & candles welcome"* reassurance.
+* **Interactive Parent Party Checklist:** Persistent, interactive planning checklist widget on Shortlist and Saved pages to help parents track deposits, cakes, catering, party bags, and tea/coffee for attending adults.
 * **Multi-Tiered Image Enrichment:** Automated pipeline combining Google Places CDN photos, direct Cheerio OpenGraph/hero scraping, Brave Search, Google Street View, and Wikimedia Commons.
 * **Category Gradient Fallbacks:** Venues without imagery render category-themed pastel gradient badges in the UI.
 * **Autonomous Enrichment Engine:** Background BullMQ worker running geocoding, contact backfill, opening hours parsing, and party field extraction (pricing, capacity, booking URL).
-* **Side-by-Side Venue Comparison:** Compare pricing, capacity, contact options, and trust signals in a clean comparative table.
+* **Side-by-Side Venue Comparison:** Compare pricing, capacity, contact options, catering rules, and trust signals in a clean comparative table.
 * **Shareable Shortlist:** Share saved venues via lightweight URL parameters (`/shortlist?v=slug1,slug2`) server-validated against API data.
 * **PWA & Offline Capability:** Progressive Web App with service worker caching for offline search and venue detail viewing.
 * **FHRS Food Hygiene Ratings:** Official UK FSA hygiene scores integrated directly into venue detail cards.
