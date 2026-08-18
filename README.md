@@ -21,8 +21,9 @@ The platform is **98% complete and production-ready** on IP (`79.72.92.195:3005`
 | Component | Status | Details |
 |:---|:---:|:---|
 | **Product & UX** | ✅ Complete | Mobile-first party UI, dynamic shortlist, side-by-side comparison, PWA support, interactive map. |
-| **Core Catalogue** | ✅ Complete | **2,218 core venues**, 214 party-capable core venues (11,725 active post-deduplication). |
-| **Image Extraction** | ✅ Complete | Phase 25.5 high-velocity website image extraction pipeline (direct photo galleries for **188 core venues**). |
+| **Core Catalogue** | ✅ Complete | **2,383 core venues**, 196 party-capable core venues (16,304 active venues). |
+| **Image Coverage** | ✅ Complete | High-intent coverage: **97.6%** soft plays · **88.2%** party-capable venues · **31.3%** all core venues (746 venues). |
+| **Contact Coverage** | ✅ Complete | Core: **82.5%** websites (1,965) · **67.1%** phones (1,599) · **99.96%** postcodes (2,382). |
 | **Trust Signals** | ✅ Complete | Mounted FHRS food hygiene rating API (`GET /api/fhrs/match/:id`). |
 | **Enrichment Engine** | ✅ Complete | 42 BullMQ repeatable background jobs running continuously. |
 | **Automated Workflows** | ✅ Complete | GitHub Actions crons for hourly enrichment, daily discovery, and automated backups. |
@@ -75,7 +76,8 @@ flowchart TD
 ## 🌟 Key Features
 
 * **Party-First Search Filtering:** Defaults to curated `core` party venues (soft plays, leisure centres, halls), hiding raw park listings unless explicitly requested via `include_parks=true`.
-* **Direct Website Photo Scraping (Phase 25.5):** Custom scraping pipeline (`website-image-enrichment.ts`) extracting high-res venue photos directly from venue websites.
+* **Multi-Tiered Image Enrichment:** Automated pipeline combining Google Places CDN photos, direct Cheerio OpenGraph/hero scraping, Brave Search, Google Street View, and Wikimedia Commons.
+* **Category Gradient Fallbacks:** Venues without imagery render category-themed pastel gradient badges in the UI.
 * **Autonomous Enrichment Engine:** Background BullMQ worker running geocoding, contact backfill, opening hours parsing, and party field extraction (pricing, capacity, booking URL).
 * **Side-by-Side Venue Comparison:** Compare pricing, capacity, contact options, and trust signals in a clean comparative table.
 * **Shareable Shortlist:** Share saved venues via lightweight URL parameters (`/shortlist?v=slug1,slug2`) server-validated against API data.
@@ -89,14 +91,28 @@ flowchart TD
 
 | Metric | Value |
 |:-------|------:|
-| **Total Venues in Database** | 16,941 |
-| **Active Venues (Post-Deduplication)** | 11,725 |
-| **Core Party Catalogue (`venue_scope=core`)** | 2,218 |
-| **Party-Capable Core Venues** | 214 |
-| **Direct Scraped Website Photos** | **188 venues** |
-| **Core Website Coverage** | 79.2% (1,756 venues) |
-| **Core Phone Coverage** | 58.6% (1,299 venues) |
-| **Core Postcode Coverage** | 99.1% (2,199 venues) |
+| **Total Venues in Database** | 17,045 |
+| **Active Venues** | 16,304 |
+| **Core Party Catalogue (`venue_scope=core`)** | 2,383 |
+| **Party-Capable Core Venues** | 196 (8.2%) |
+| **Core Venues with Photos** | **746 (31.3%)** |
+| **Core Website Coverage** | 82.5% (1,965 venues) |
+| **Core Phone Coverage** | 67.1% (1,599 venues) |
+| **Core Postcode Coverage** | 99.96% (2,382 venues) |
+
+### 🖼️ Image Coverage by Category
+
+| Category | Active Count | Venues with Images | Completion % |
+|:---|:---|:---|:---|
+| **Soft Play** | 84 | 82 | **97.6%** 🟢 |
+| **Party-Capable (All)** | 238 | 210 | **88.2%** 🟢 |
+| **Libraries** | 47 | 22 | **46.8%** 🟡 |
+| **Community Halls** | 1,872 | 423 | **22.6%** 🟠 |
+| **Activity Centres / Other** | 494 | 151 | **30.6%** 🟠 |
+| **Leisure Centres** | 5,097 | 39 | **0.8%** 🔴 |
+| **Parks** | 8,464 | 49 | **0.6%** 🔴 |
+
+> **Note on images:** High-intent party venues (soft plays and party-capable halls) are **88–98%** covered. Bulk geo records (OSM park polygons and leisure facilities) fall back to category-themed pastel gradient badges in the UI. Live numbers: `GET /api/admin/enrichment-stats` (HMAC) or SQL in `backend/scripts/maintenance/`.
 
 ---
 
