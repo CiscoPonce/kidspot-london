@@ -2,18 +2,18 @@ import Link from 'next/link';
 
 export function Footer() {
   return (
-    <footer className="w-full bg-[#FFFDF5] border-t border-[#EBE5D3] py-8 pb-24 md:pb-12 px-4 sm:px-8">
+    <footer className="w-full border-t border-brand-border bg-brand-paper px-4 py-8 pb-24 sm:px-8 md:pb-12">
       <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between gap-6">
         <div>
-          <Link href="/" className="font-display text-xl font-bold tracking-tight text-brand-dark">
+          <Link href="/" className="text-base font-semibold tracking-tight text-brand-dark">
             KidSpot
           </Link>
-          <p className="text-xs text-[#5E5E5E] mt-1">
-            © 2024 KidSpot. Safety-checked adventures for every child.
+          <p className="mt-1 text-xs text-brand-muted">
+            Birthday party venues in Greater London. Enquire directly with venues.
           </p>
         </div>
 
-        <nav className="flex flex-wrap items-center justify-center gap-6 text-xs font-semibold text-[#5E5E5E]">
+        <nav className="flex flex-wrap items-center justify-center gap-6 text-xs font-medium text-brand-muted">
           <Link href="/about" className="hover:text-brand-dark transition-colors">
             About Us
           </Link>

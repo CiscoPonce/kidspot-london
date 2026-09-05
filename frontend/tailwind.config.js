@@ -4,11 +4,14 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        "brand-yellow": "#ECE600",
-        "brand-yellow-hover": "#D8D300",
-        "brand-cream": "#FFFDF5",
-        "brand-cream-dark": "#F9F5E8",
-        "brand-dark": "#1D1C10",
+        "brand-yellow": "#E8D400",
+        "brand-yellow-hover": "#D1BE00",
+        "brand-cream": "#F6F4EE",
+        "brand-cream-dark": "#EDEAE2",
+        "brand-dark": "#1A1914",
+        "brand-ink": "#1A1914",
+        "brand-paper": "#F6F4EE",
+        "brand-muted": "#5C5A52",
         "brand-olive": "#4A5200",
         "brand-border": "#EBE5D3",
         "badge-pink": "#FFD6E8",

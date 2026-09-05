@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { usePlausible } from 'next-plausible';
+import type { CateringFilter } from '@/lib/parent-filters';
 
 export interface SearchState {
   lat: number | null;
@@ -10,6 +11,8 @@ export interface SearchState {
   postcode: string;
   venueType: string | null;
   facets: string[];
+  kidsCount: number | null;
+  catering: CateringFilter;
 }
 
 interface SearchContextValue extends SearchState {
@@ -20,6 +23,8 @@ interface SearchContextValue extends SearchState {
   setFacets: (facets: string[]) => void;
   toggleFacet: (facet: string) => void;
   clearFacets: () => void;
+  setKidsCount: (count: number | null) => void;
+  setCatering: (value: CateringFilter) => void;
   clearSearch: () => void;
 }
 
@@ -35,6 +40,8 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   const [postcode, setPostcodeState] = useState('London');
   const [venueType, setVenueTypeState] = useState<string | null>(null);
   const [facets, setFacetsState] = useState<string[]>([]);
+  const [kidsCount, setKidsCountState] = useState<number | null>(null);
+  const [catering, setCateringState] = useState<CateringFilter>('any');
 
   const setSearchLocation = useCallback((newLat: number, newLon: number) => {
     setLat(newLat);
@@ -75,6 +82,14 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     setFacetsState([]);
   }, []);
 
+  const setKidsCount = useCallback((count: number | null) => {
+    setKidsCountState(count);
+  }, []);
+
+  const setCatering = useCallback((value: CateringFilter) => {
+    setCateringState(value);
+  }, []);
+
   const clearSearch = useCallback(() => {
     setLat(null);
     setLon(null);
@@ -82,6 +97,8 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     setRadiusState(DEFAULT_RADIUS);
     setVenueTypeState(null);
     setFacetsState([]);
+    setKidsCountState(null);
+    setCateringState('any');
   }, []);
 
   return (
@@ -93,6 +110,8 @@ export function SearchProvider({ children }: { children: ReactNode }) {
         postcode,
         venueType,
         facets,
+        kidsCount,
+        catering,
         setSearchLocation,
         setPostcode,
         setRadius,
@@ -100,6 +119,8 @@ export function SearchProvider({ children }: { children: ReactNode }) {
         setFacets,
         toggleFacet,
         clearFacets,
+        setKidsCount,
+        setCatering,
         clearSearch,
       }}
     >

@@ -104,7 +104,7 @@ export default async function VenuePage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFDF5]">
+    <div className="min-h-screen bg-brand-paper">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

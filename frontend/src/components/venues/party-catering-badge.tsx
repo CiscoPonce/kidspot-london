@@ -9,83 +9,88 @@ interface PartyCateringBadgeProps {
 }
 
 export function PartyCateringBadge({ venue, compact = false }: PartyCateringBadgeProps) {
-  const isPartyCapable = venue.party_capable === true || venue.type === 'softplay' || venue.type === 'community_hall';
-  if (!isPartyCapable) return null;
-
-  const isHall = venue.type === 'community_hall';
-  const isSoftplay = venue.type === 'softplay';
-
-  const byoAllowed = venue.byo_food_allowed ?? isHall;
-  const foodProvided = venue.food_provided ?? isSoftplay;
-  const hasKitchen = venue.kitchen_facilities ?? isHall;
+  const byoAllowed = venue.byo_food_allowed === true;
+  const foodProvided = venue.food_provided === true;
+  const hasKitchen = venue.kitchen_facilities === true;
+  const notes = venue.catering_notes?.trim();
 
   if (compact) {
+    if (!byoAllowed && !foodProvided) return null;
     return (
       <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] font-semibold">
-        <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-rose-700 border border-rose-200">
-          🎂 BYO Cake Welcome
-        </span>
         {byoAllowed && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700 border border-emerald-200">
-            🥪 BYO Food OK
+          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-800">
+            BYO food
           </span>
         )}
         {foodProvided && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-amber-800 border border-amber-200">
-            🍕 Food Included
+          <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-amber-900">
+            Food included
           </span>
         )}
       </div>
     );
   }
 
+  if (!byoAllowed && !foodProvided && !hasKitchen && !notes) {
+    return (
+      <div className="rounded-xl border border-brand-border bg-white p-4">
+        <h4 className="mb-2 text-xs font-extrabold uppercase tracking-wide text-brand-dark">
+          Food & birthday cake
+        </h4>
+        <p className="text-sm text-brand-muted">
+          Ask the venue when you call. We only show cake or catering rules here when we have
+          confirmed them.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-2xl border border-[#EBE5D3] bg-[#FCFBF7] p-4 shadow-sm">
-      <h4 className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-brand-dark mb-3">
+    <div className="rounded-xl border border-brand-border bg-white p-4">
+      <h4 className="mb-3 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-brand-dark">
         <span className="material-symbols-outlined text-[18px] text-amber-600">restaurant</span>
-        Food & Birthday Cake Policy
+        Food & birthday cake
       </h4>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-        {/* Cake Policy */}
-        <div className="flex items-start gap-2.5 rounded-xl bg-white p-3 border border-[#EBE5D3]">
-          <span className="text-lg">🎂</span>
-          <div>
-            <div className="font-bold text-brand-dark">Bring Your Own Cake</div>
-            <div className="text-[11px] text-[#5E5E5E] mt-0.5">
-              Parents bring their own birthday cake, candles & napkins (standard for all venues).
+      <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
+        {byoAllowed && (
+          <div className="flex items-start gap-2.5 rounded-xl border border-brand-border bg-white p-3">
+            <span className="text-lg">🥪</span>
+            <div>
+              <div className="font-bold text-brand-dark">BYO food allowed</div>
+              <div className="mt-0.5 text-[11px] text-[#5E5E5E]">
+                Confirmed: you can bring your own party food.
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Catering Policy */}
-        <div className="flex items-start gap-2.5 rounded-xl bg-white p-3 border border-[#EBE5D3]">
-          <span className="text-lg">{byoAllowed ? '🥪' : '🍕'}</span>
-          <div>
-            <div className="font-bold text-brand-dark">
-              {byoAllowed ? 'Self-Catering / BYO Allowed' : 'Food Package Included'}
-            </div>
-            <div className="text-[11px] text-[#5E5E5E] mt-0.5">
-              {byoAllowed
-                ? 'You can bring your own party snacks, drinks & external catering.'
-                : 'In-house party food & drinks provided with package.'}
+        {foodProvided && (
+          <div className="flex items-start gap-2.5 rounded-xl border border-brand-border bg-white p-3">
+            <span className="text-lg">🍕</span>
+            <div>
+              <div className="font-bold text-brand-dark">Food package included</div>
+              <div className="mt-0.5 text-[11px] text-[#5E5E5E]">
+                Confirmed: in-house party food is part of the booking.
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Kitchen Access (if available or hall) */}
         {hasKitchen && (
-          <div className="flex items-start gap-2.5 rounded-xl bg-white p-3 border border-[#EBE5D3] sm:col-span-2">
+          <div className="flex items-start gap-2.5 rounded-xl border border-brand-border bg-white p-3 sm:col-span-2">
             <span className="text-lg">☕</span>
             <div>
-              <div className="font-bold text-brand-dark">Kitchen & Amenities Available</div>
-              <div className="text-[11px] text-[#5E5E5E] mt-0.5">
-                Access to kitchen, fridge or hot water urn for parent tea & coffee.
+              <div className="font-bold text-brand-dark">Kitchen access</div>
+              <div className="mt-0.5 text-[11px] text-[#5E5E5E]">
+                Confirmed: kitchen or hot-water facilities on site.
               </div>
             </div>
           </div>
         )}
       </div>
+      {notes && <p className="mt-3 text-xs text-brand-muted">{notes}</p>}
     </div>
   );
 }

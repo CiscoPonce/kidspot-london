@@ -16,7 +16,7 @@ export function partyScore(venue: Venue): number {
   if (venue.party_price_from != null) score += 15;
   if (venue.rating) score += venue.rating * 8;
   if (venue.sponsor_tier) score += 30;
-  if (/mcdonald|burger king|wacky warehouse/.test(name)) score += 25;
+  if (/mcdonald|burger king|wacky warehouse/.test(name)) score -= 80;
   if (venue.type === 'park' && /adventure playground/.test(name)) score -= 60;
   if (venue.type === 'community_hall' && !venue.party_capable) score -= 15;
   if (venue.distance_miles != null) score -= venue.distance_miles * 2;

@@ -2,78 +2,44 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useShortlist } from '@/hooks/use-shortlist';
 
 export function Header() {
   const pathname = usePathname();
+  const { count } = useShortlist();
+
+  const linkClass = (active: boolean) =>
+    `text-sm transition-colors hover:text-brand-dark ${
+      active ? 'font-semibold text-brand-dark' : 'font-medium text-brand-muted'
+    }`;
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#FFFDF5]/90 backdrop-blur-md border-b border-[#EBE5D3]">
-      <div className="mx-auto max-w-7xl flex items-center justify-between px-4 sm:px-8 py-3.5">
+    <header className="sticky top-0 z-40 w-full border-b border-brand-border bg-brand-paper/95 backdrop-blur-md">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-8">
         <Link
           href="/"
-          className="flex items-center gap-2 text-brand-dark hover:opacity-90 transition-opacity"
+          className="flex items-center gap-2 text-brand-dark hover:opacity-90"
           aria-label="KidSpot home"
         >
-          <div className="w-8 h-8 rounded-full bg-brand-yellow flex items-center justify-center font-bold text-brand-dark text-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-yellow text-sm font-bold text-brand-dark">
             KS
           </div>
-          <span className="font-display text-2xl font-bold tracking-tight text-brand-dark">
+          <span className="font-display text-lg font-semibold tracking-tight text-brand-dark">
             KidSpot
           </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-[#4A4732]">
-          <Link
-            href="/"
-            className={`transition-colors hover:text-brand-dark relative py-1 ${
-              pathname === '/' ? 'text-brand-dark font-bold' : ''
-            }`}
-          >
-            Venues
-            {pathname === '/' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-dark rounded-full" />
-            )}
+        <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">
+          <Link href="/" className={linkClass(pathname === '/')}>
+            Search
           </Link>
-          <Link
-            href="/how-it-works"
-            className={`transition-colors hover:text-brand-dark relative py-1 ${
-              pathname === '/how-it-works' ? 'text-brand-dark font-bold' : ''
-            }`}
-          >
-            How it Works
-            {pathname === '/how-it-works' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-dark rounded-full" />
-            )}
+          <Link href="/saved" className={linkClass(pathname === '/saved')}>
+            Saved{count > 0 ? ` (${count})` : ''}
           </Link>
-          <Link
-            href="/booking/packages"
-            className={`transition-colors hover:text-brand-dark relative py-1 ${
-              pathname.startsWith('/booking') ? 'text-brand-dark font-bold' : ''
-            }`}
-          >
-            Packages
-            {pathname.startsWith('/booking') && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-dark rounded-full" />
-            )}
-          </Link>
-          <Link
-            href="/saved"
-            className={`transition-colors hover:text-brand-dark relative py-1 ${
-              pathname === '/saved' ? 'text-brand-dark font-bold' : ''
-            }`}
-          >
-            Saved
+          <Link href="/compare" className={linkClass(pathname === '/compare')}>
+            Compare
           </Link>
         </nav>
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/booking/packages"
-            className="inline-flex items-center justify-center bg-brand-yellow text-brand-dark text-sm font-bold px-5 py-2.5 rounded-full hover:bg-brand-yellow-hover active:scale-95 transition-all shadow-sm"
-          >
-            Sign Up
-          </Link>
-        </div>
       </div>
     </header>
   );

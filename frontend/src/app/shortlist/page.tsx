@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, BookmarkPlus, Check } from 'lucide-react';
 import type { Venue } from '@/lib/api';
 import { getVenueBySlug } from '@/lib/api';
@@ -13,6 +13,7 @@ import { useShortlist } from '@/hooks/use-shortlist';
 
 function SharedShortlist() {
   const params = useSearchParams();
+  const router = useRouter();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
@@ -21,7 +22,7 @@ function SharedShortlist() {
   useEffect(() => {
     const slugs = decodeShortlist(params.get('v'));
     if (slugs.length === 0) {
-      setLoading(false);
+      router.replace('/saved');
       return;
     }
     let cancelled = false;
@@ -48,8 +49,8 @@ function SharedShortlist() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFDF5] text-brand-dark pb-24">
-      <header className="sticky top-0 z-40 w-full bg-[#FFFDF5]/90 backdrop-blur-md border-b border-[#EBE5D3]">
+    <div className="min-h-screen bg-brand-paper text-brand-dark pb-24">
+      <header className="sticky top-0 z-40 w-full bg-brand-paper/90 backdrop-blur-md border-b border-brand-border">
         <div className="mx-auto max-w-6xl flex items-center gap-4 px-4 sm:px-6 py-3">
           <Link href="/" className="p-2 rounded-full hover:bg-[#F3EEDA] transition-colors" aria-label="Go home">
             <ArrowLeft size={24} />

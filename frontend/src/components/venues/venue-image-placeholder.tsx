@@ -1,14 +1,15 @@
 'use client';
 
-import { Building2, Joystick, Landmark, MapPin, Trees } from 'lucide-react';
 import { venueTypeGradient } from '@/lib/venue-images';
 
-const TYPE_ICONS: Record<string, typeof MapPin> = {
-  softplay: Joystick,
-  leisure_centre: Building2,
-  community_hall: Building2,
-  museum: Landmark,
-  park: Trees,
+const TYPE_LABEL: Record<string, string> = {
+  softplay: 'Soft play',
+  community_hall: 'Hall',
+  leisure_centre: 'Activity',
+  park: 'Outdoor',
+  museum: 'Museum',
+  library: 'Library',
+  cafe: 'Café',
 };
 
 interface VenueImagePlaceholderProps {
@@ -22,17 +23,17 @@ export function VenueImagePlaceholder({
   name,
   className = '',
 }: VenueImagePlaceholderProps) {
-  const Icon = TYPE_ICONS[type || ''] || MapPin;
   const gradient = venueTypeGradient(type);
+  const initial = (name || '?').replace(/^the\s+/i, '').charAt(0).toUpperCase();
 
   return (
     <div
       className={`flex h-full w-full flex-col items-center justify-center bg-gradient-to-br ${gradient} ${className}`}
-      aria-label={`No photo available for ${name}`}
+      aria-hidden="true"
     >
-      <Icon size={48} strokeWidth={1.25} className="text-[#8E8B7B]/80" />
-      <span className="mt-2 px-4 text-center text-xs font-semibold text-[#5E5E5E]">
-        Photo coming soon
+      <span className="font-display text-4xl font-semibold text-brand-dark/70">{initial}</span>
+      <span className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-brand-dark/50">
+        {TYPE_LABEL[type || ''] || 'Venue'}
       </span>
     </div>
   );

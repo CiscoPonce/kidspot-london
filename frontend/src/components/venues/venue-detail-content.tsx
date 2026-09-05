@@ -11,6 +11,7 @@ import { trustSignals } from '@/lib/trust';
 import { useShortlist } from '@/hooks/use-shortlist';
 import { useBooking } from '@/context/booking-context';
 import { PartyCateringBadge } from '@/components/venues/party-catering-badge';
+import { displayPhone, displayWebsite } from '@/lib/display-phone';
 
 interface VenueDetailContentProps {
   venue: Venue;
@@ -62,8 +63,10 @@ export function VenueDetailContent({ venue, details, compact }: VenueDetailConte
     (venue as Venue & { london_borough?: string }).london_borough ||
     venue.borough ||
     'London';
+  const phone = displayPhone(venue.phone);
+  const website = displayWebsite(venue.website);
   const enquiryUrl =
-    venue.party_enquiry_url || venue.booking_url || venue.website || null;
+    venue.party_enquiry_url || venue.booking_url || website || null;
   const features = venue.features?.length
     ? venue.features
     : details?.features?.length
@@ -71,9 +74,9 @@ export function VenueDetailContent({ venue, details, compact }: VenueDetailConte
       : [];
 
   return (
-    <div className="min-h-screen bg-[#FFFDF5] pb-24 text-brand-dark md:pb-16">
+    <div className="min-h-screen bg-brand-paper pb-24 text-brand-dark md:pb-16">
       <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-8">
-        <nav className="flex items-center gap-2 text-xs font-semibold text-[#5E5E5E]">
+        <nav className="flex items-center gap-2 text-xs font-semibold text-brand-muted">
           <Link href="/" className="hover:text-brand-dark">
             Venues
           </Link>
@@ -85,10 +88,10 @@ export function VenueDetailContent({ venue, details, compact }: VenueDetailConte
 
         <div className="mt-4 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="font-display text-3xl font-extrabold tracking-tight text-brand-dark md:text-5xl">
+            <h1 className="font-display text-2xl font-semibold tracking-tight text-brand-dark sm:text-4xl">
               {venue.name}
             </h1>
-            <div className="mt-2 flex flex-wrap items-center gap-3 text-sm font-semibold text-[#5E5E5E]">
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-sm font-medium text-brand-muted">
               {venue.rating != null && (
                 <>
                   <span className="flex items-center gap-1 text-brand-dark">
@@ -116,10 +119,10 @@ export function VenueDetailContent({ venue, details, compact }: VenueDetailConte
               type="button"
               onClick={() => toggle(venue)}
               aria-label="Save venue"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#EBE5D3] bg-white shadow-sm transition hover:bg-[#F9F5E8] active:scale-95"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-brand-border bg-white shadow-sm transition hover:bg-[#F9F5E8] active:scale-95"
             >
               <span
-                className={`material-symbols-outlined text-[20px] ${isSaved ? 'fill-rose-500 text-rose-500' : 'text-[#5E5E5E]'}`}
+                className={`material-symbols-outlined text-[20px] ${isSaved ? 'fill-rose-500 text-rose-500' : 'text-brand-muted'}`}
               >
                 {isSaved ? 'favorite' : 'favorite_border'}
               </span>
@@ -127,12 +130,47 @@ export function VenueDetailContent({ venue, details, compact }: VenueDetailConte
           </div>
         </div>
 
+        <dl className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="rounded-xl border border-brand-border bg-white px-3 py-2.5">
+            <dt className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Price</dt>
+            <dd className="mt-0.5 text-sm font-semibold text-brand-dark">{priceLabel || 'Call for price'}</dd>
+          </div>
+          <div className="rounded-xl border border-brand-border bg-white px-3 py-2.5">
+            <dt className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Kids</dt>
+            <dd className="mt-0.5 text-sm font-semibold text-brand-dark">
+              {capacity != null ? `Up to ${capacity}` : 'Ask the venue'}
+            </dd>
+          </div>
+          <div className="rounded-xl border border-brand-border bg-white px-3 py-2.5">
+            <dt className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Food</dt>
+            <dd className="mt-0.5 text-sm font-semibold text-brand-dark">
+              {venue.food_provided === true
+                ? 'Food included'
+                : venue.byo_food_allowed === true
+                  ? 'BYO OK'
+                  : 'Ask the venue'}
+            </dd>
+          </div>
+          <div className="rounded-xl border border-brand-border bg-white px-3 py-2.5">
+            <dt className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted">Call</dt>
+            <dd className="mt-0.5 text-sm font-semibold text-brand-dark">
+              {phone ? (
+                <a href={`tel:${phone.replace(/\s/g, '')}`} className="hover:underline">
+                  {phone}
+                </a>
+              ) : (
+                'No number yet'
+              )}
+            </dd>
+          </div>
+        </dl>
+
         {/* Photo gallery — fixed 2:1 grid ratio */}
         <div
           className={`mt-6 grid gap-2 ${compact ? 'grid-cols-1' : 'h-[240px] grid-cols-2 grid-rows-2 sm:h-[320px] md:h-[420px] md:gap-4'}`}
         >
           <div
-            className={`relative overflow-hidden rounded-2xl border border-[#EBE5D3] shadow-sm ${
+            className={`relative overflow-hidden rounded-2xl border border-brand-border shadow-sm ${
               compact ? 'aspect-[16/10]' : 'row-span-2 min-h-0'
             }`}
           >
@@ -166,7 +204,7 @@ export function VenueDetailContent({ venue, details, compact }: VenueDetailConte
             [1, 2].map((idx) => (
               <div
                 key={idx}
-                className="relative min-h-0 overflow-hidden rounded-2xl border border-[#EBE5D3] shadow-sm"
+                className="relative min-h-0 overflow-hidden rounded-2xl border border-brand-border shadow-sm"
               >
                 {galleryImages[idx] ? (
                   <img
@@ -194,33 +232,33 @@ export function VenueDetailContent({ venue, details, compact }: VenueDetailConte
                   🎂 Party packages available
                 </span>
               )}
-              {venue.phone && (
+              {phone && (
                 <span className="rounded-full bg-[#EAE5D4] px-4 py-1.5 text-xs font-bold text-brand-dark">
-                  📞 {venue.phone}
+                  📞 {phone}
                 </span>
               )}
             </div>
 
             <PartyCateringBadge venue={venue} />
 
-            <div className="rounded-3xl border border-[#EBE5D3] bg-white p-8 shadow-sm">
+            <div className="rounded-3xl border border-brand-border bg-white p-8 shadow-sm">
               <h2 className="mb-4 font-display text-2xl font-extrabold text-brand-dark">
                 About this venue
               </h2>
-              <p className="text-sm leading-relaxed text-[#5E5E5E]">
+              <p className="text-sm leading-relaxed text-brand-muted">
                 {venue.description ||
                   details?.description ||
                   `${venue.name} is a child-friendly venue in ${borough}. Contact the venue directly for birthday party availability, pricing, and capacity.`}
               </p>
               {(venue.address || venue.postcode) && (
-                <p className="mt-3 text-sm text-[#5E5E5E]">
+                <p className="mt-3 text-sm text-brand-muted">
                   {[venue.address, venue.postcode].filter(Boolean).join(', ')}
                 </p>
               )}
             </div>
 
             {features.length > 0 && (
-              <div className="rounded-3xl border border-[#EBE5D3] bg-white p-8 shadow-sm">
+              <div className="rounded-3xl border border-brand-border bg-white p-8 shadow-sm">
                 <h3 className="mb-4 font-display text-lg font-bold text-brand-dark">
                   Amenities
                 </h3>
@@ -240,7 +278,7 @@ export function VenueDetailContent({ venue, details, compact }: VenueDetailConte
               </div>
             )}
 
-            <div className="overflow-hidden rounded-3xl border border-[#EBE5D3] bg-white p-6 shadow-sm">
+            <div className="overflow-hidden rounded-3xl border border-brand-border bg-white p-6 shadow-sm">
               <h3 className="mb-4 font-display text-lg font-bold text-brand-dark">
                 Location & Map
               </h3>
@@ -253,24 +291,24 @@ export function VenueDetailContent({ venue, details, compact }: VenueDetailConte
               </div>
             </div>
 
-            {(venue.phone || venue.website || venue.email) && (
-              <div className="rounded-3xl border border-[#EBE5D3] bg-white p-8 shadow-sm">
+            {(phone || website || venue.email) && (
+              <div className="rounded-3xl border border-brand-border bg-white p-8 shadow-sm">
                 <h3 className="mb-4 font-display text-lg font-bold text-brand-dark">
                   Contact
                 </h3>
                 <div className="space-y-2 text-sm">
-                  {venue.phone && (
+                  {phone && (
                     <a
-                      href={`tel:${venue.phone}`}
+                      href={`tel:${phone.replace(/\s/g, '')}`}
                       className="flex items-center gap-2 font-semibold text-brand-dark hover:underline"
                     >
                       <span className="material-symbols-outlined text-[18px]">call</span>
-                      {venue.phone}
+                      {phone}
                     </a>
                   )}
-                  {venue.website && (
+                  {website && (
                     <a
-                      href={venue.website}
+                      href={website}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 font-semibold text-brand-dark hover:underline"
@@ -295,14 +333,14 @@ export function VenueDetailContent({ venue, details, compact }: VenueDetailConte
 
           {/* Booking widget */}
           <aside className={compact ? 'mt-4' : 'lg:col-span-4 lg:sticky lg:top-24'}>
-            <div className="rounded-3xl border border-[#EBE5D3] bg-white p-6 shadow-lg">
+            <div className="rounded-3xl border border-brand-border bg-white p-6 shadow-lg">
               <div className="mb-6">
                 {priceLabel ? (
                   <>
                     <span className="font-display text-3xl font-extrabold text-brand-dark">
                       {priceLabel.split(' ')[0]}
                     </span>
-                    <span className="ml-1 text-xs font-semibold text-[#5E5E5E]">
+                    <span className="ml-1 text-xs font-semibold text-brand-muted">
                       {priceLabel.replace(/^£[\d.]+/, '').trim() || 'per party'}
                     </span>
                   </>
@@ -312,14 +350,14 @@ export function VenueDetailContent({ venue, details, compact }: VenueDetailConte
                   </span>
                 )}
                 {capacity != null && (
-                  <p className="mt-1 text-[11px] text-[#5E5E5E]">
+                  <p className="mt-1 text-[11px] text-brand-muted">
                     Capacity up to {capacity} children
                   </p>
                 )}
               </div>
 
               <div className="space-y-4 text-xs font-semibold text-brand-dark">
-                <div className="rounded-2xl border border-[#EBE5D3] bg-[#F7F3E6] p-3">
+                <div className="rounded-2xl border border-brand-border bg-[#F7F3E6] p-3">
                   <label className="mb-1 block text-[10px] font-bold uppercase text-[#7B785F]">
                     Preferred party date
                   </label>

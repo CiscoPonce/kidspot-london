@@ -29,3 +29,6 @@ coverage/
 # Env backups (never commit)
 .env.backup*
 
+# Local database dumps
+.backups/
+

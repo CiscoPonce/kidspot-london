@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { X } from 'lucide-react';
 import type { Venue } from '@/lib/api';
+import { displayPhone } from '@/lib/display-phone';
 import { trustSignals } from '@/lib/trust';
 
 interface CompareTableProps {
@@ -25,6 +26,7 @@ const ROWS: Array<{ label: string; render: (v: Venue) => React.ReactNode }> = [
   { label: 'Type', render: (v) => v.type.replace('_', ' ') },
   { label: 'Area', render: (v) => v.borough || '—' },
   { label: 'Price', render: (v) => priceText(v) },
+  { label: 'Phone', render: (v) => displayPhone(v.phone) || '—' },
   { label: 'Max capacity', render: (v) => (v.party_max_capacity ? `${v.party_max_capacity}` : '—') },
   {
     label: 'Hosts parties',
@@ -33,11 +35,10 @@ const ROWS: Array<{ label: string; render: (v: Venue) => React.ReactNode }> = [
   {
     label: 'Catering & Cake',
     render: (v) => {
-      const byo = v.byo_food_allowed ?? (v.type === 'community_hall');
-      const food = v.food_provided ?? (v.type === 'softplay');
-      if (byo) return '🎂 BYO Cake & Food';
-      if (food) return '🎂 BYO Cake · 🍕 Food Included';
-      return '🎂 BYO Cake Welcome';
+      const parts: string[] = [];
+      if (v.byo_food_allowed === true) parts.push('BYO food');
+      if (v.food_provided === true) parts.push('Food included');
+      return parts.length ? parts.join(' · ') : 'Ask the venue';
     },
   },
   { label: 'Rating', render: (v) => (v.rating ? Number(v.rating).toFixed(1) : '—') },
@@ -58,7 +59,7 @@ export function CompareTable({ venues, onRemove, readOnly }: CompareTableProps) 
       <table className="w-full min-w-[480px] border-collapse text-sm">
         <thead>
           <tr>
-            <th className="w-28 sticky left-0 bg-[#FFFDF5]" />
+            <th className="w-28 sticky left-0 bg-brand-paper" />
             {venues.map((v) => (
               <th key={String(v.id)} className="p-2 align-top text-left">
                 <div className="rounded-2xl bg-white border border-[#EBE5D3] p-3 shadow-sm">
@@ -87,8 +88,8 @@ export function CompareTable({ venues, onRemove, readOnly }: CompareTableProps) 
         </thead>
         <tbody>
           {ROWS.map((row) => (
-            <tr key={row.label} className="border-t border-[#EBE5D3]">
-              <td className="sticky left-0 bg-[#FFFDF5] py-3 pr-2 text-xs font-semibold uppercase tracking-wide text-[#7B785F]">
+            <tr key={row.label} className="border-t border-brand-border">
+              <td className="sticky left-0 bg-brand-paper py-3 pr-2 text-xs font-semibold uppercase tracking-wide text-brand-muted">
                 {row.label}
               </td>
               {venues.map((v) => (
@@ -98,8 +99,8 @@ export function CompareTable({ venues, onRemove, readOnly }: CompareTableProps) 
               ))}
             </tr>
           ))}
-          <tr className="border-t border-[#EBE5D3]">
-            <td className="sticky left-0 bg-[#FFFDF5] py-3 pr-2" />
+          <tr className="border-t border-brand-border">
+            <td className="sticky left-0 bg-brand-paper py-3 pr-2" />
             {venues.map((v) => {
               const enquiry = v.party_enquiry_url || v.booking_url;
               return (

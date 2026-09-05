@@ -14,15 +14,15 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "KidSpot — Find the Perfect Place for Their Big Day",
+  title: 'KidSpot — Birthday party venues in London',
   description:
-    "The UK's most trusted directory of safety-checked kids' party venues. Discover soft play, trampoline parks, craft studios and party halls.",
+    'Find soft play, halls and activity centres near your London postcode. Shortlist and compare — then enquire directly with the venue.',
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#FFFDF5',
+  themeColor: '#F6F4EE',
 };
 
 export default function RootLayout({
@@ -48,7 +48,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${plusJakartaSans.variable} bg-[#FFFDF5] text-brand-dark font-sans antialiased flex flex-col min-h-screen`}
+        className={`${plusJakartaSans.variable} bg-brand-paper text-brand-dark font-sans antialiased flex flex-col min-h-screen`}
       >
         <AppProviders>
           <Header />

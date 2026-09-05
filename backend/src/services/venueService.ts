@@ -30,6 +30,13 @@ import { openactiveService } from './openactiveService.js';
 import env from '../config/env.js';
 import { calculateDistanceMiles } from '../utils/distance.js';
 import { geocodeBoroughCentroid, normalizeLondonBorough } from '../utils/londonBoroughs.js';
+import {
+  SEARCH_CACHE_VERSION,
+  dedupeSearchVenues,
+  partyEligibilitySql,
+  searchFetchLimit,
+  searchSuppressSql,
+} from './searchVisibility.js';
 
 /** Merge card-relevant fields (contact, party data, london_borough) into search rows. */
 async function hydrateVenueCardFields(rows: Venue[]): Promise<Venue[]> {
@@ -141,9 +148,9 @@ const getSearchCacheKey = (
   scopeTag = 'core',
 ) => {
   if (borough) {
-    return `search:borough:${borough.toLowerCase().replace(/\s+/g, '_')}:${type || 'all'}:${scopeTag}`;
+    return `search:${SEARCH_CACHE_VERSION}:borough:${borough.toLowerCase().replace(/\s+/g, '_')}:${type || 'all'}:${scopeTag}`;
   }
-  return `search:${lat?.toFixed(4)}:${lon?.toFixed(4)}:${radiusMiles}:${type || 'all'}:${scopeTag}`;
+  return `search:${SEARCH_CACHE_VERSION}:${lat?.toFixed(4)}:${lon?.toFixed(4)}:${radiusMiles}:${type || 'all'}:${scopeTag}`;
 };
 
 const getVenueDetailsCacheKey = (id: string | number) => {
@@ -500,6 +507,7 @@ const baseVenueService = {
       logger.warn({ err: cacheError }, 'Cache read error');
     }
 
+    const fetchLimit = searchFetchLimit(limit);
     let rows: Venue[] = [];
     if (borough) {
       const result = await db.query(
@@ -510,14 +518,14 @@ const baseVenueService = {
          AND venue_scope = ANY($4::text[])
          AND LOWER(COALESCE(london_borough, borough)) = LOWER($1)
          AND ($2::TEXT IS NULL OR type = $2::TEXT)
-         AND (party_capable = TRUE OR type = 'softplay' OR type = 'library' OR scope_reason = 'chain_party_food' OR name ILIKE '%soft play%' OR name ILIKE '%play centre%' OR name ILIKE '%trampoline%' OR name ILIKE '%party%' OR name ILIKE '%library%')
+         AND ${partyEligibilitySql()}
+         AND ${searchSuppressSql()}
          AND name NOT ILIKE 'OSM %'
          ORDER BY
              CASE
                  WHEN scope_reason = 'chain_softplay' OR name ~* '(flip out|oxygen|gambado|kidspace|gravity max|inflata nation|cookie.?s island)' THEN 1
                  WHEN type = 'softplay' OR name ILIKE '%trampoline%' OR name ILIKE '%play centre%' OR name ILIKE '%soft play%' THEN 2
                  WHEN party_capable = TRUE AND type = 'community_hall' THEN 3
-                 WHEN scope_reason = 'chain_party_food' THEN 4
                  WHEN party_capable = TRUE THEN 5
                  WHEN type = 'park' AND name ILIKE '%adventure playground%' THEN 7
                  ELSE 6
@@ -531,7 +539,7 @@ const baseVenueService = {
              sponsor_priority DESC NULLS LAST,
              name ASC
          LIMIT $3`,
-        [borough, type, limit, scopes]
+        [borough, type, fetchLimit, scopes]
       );
       rows = result.rows;
     } else if (lat !== undefined && lon !== undefined) {
@@ -544,14 +552,14 @@ const baseVenueService = {
          AND v.venue_scope = ANY($6::text[])
          AND ST_DWithin(ST_MakePoint(v.lon, v.lat)::geography, ST_MakePoint($2, $1)::geography, $3)
          AND ($4::TEXT IS NULL OR v.type = $4::TEXT)
-         AND (v.party_capable = TRUE OR v.type = 'softplay' OR v.type = 'library' OR v.scope_reason = 'chain_party_food' OR v.name ILIKE '%soft play%' OR v.name ILIKE '%play centre%' OR v.name ILIKE '%trampoline%' OR v.name ILIKE '%party%' OR v.name ILIKE '%library%')
+         AND ${partyEligibilitySql('v')}
+         AND ${searchSuppressSql('v')}
          AND v.name NOT ILIKE 'OSM %'
          ORDER BY
              CASE
                  WHEN v.scope_reason = 'chain_softplay' OR v.name ~* '(flip out|oxygen|gambado|kidspace|gravity max|inflata nation|cookie.?s island)' THEN 1
                  WHEN v.type = 'softplay' OR v.name ILIKE '%trampoline%' OR v.name ILIKE '%play centre%' OR v.name ILIKE '%soft play%' THEN 2
                  WHEN v.party_capable = TRUE AND v.type = 'community_hall' THEN 3
-                 WHEN v.scope_reason = 'chain_party_food' THEN 4
                  WHEN v.party_capable = TRUE THEN 5
                  WHEN v.type = 'park' AND v.name ILIKE '%adventure playground%' THEN 7
                  ELSE 6
@@ -566,7 +574,7 @@ const baseVenueService = {
              ST_Distance(ST_MakePoint(v.lon, v.lat)::geography, ST_MakePoint($2, $1)::geography) ASC,
              v.kid_score DESC NULLS LAST
          LIMIT $5`,
-        [lat, lon, radiusMeters, type, limit, scopes]
+        [lat, lon, radiusMeters, type, fetchLimit, scopes]
       );
       rows = result.rows;
     } else {
@@ -577,14 +585,14 @@ const baseVenueService = {
          WHERE is_active = TRUE
          AND venue_scope = ANY($3::text[])
          AND ($1::TEXT IS NULL OR type = $1::TEXT)
-         AND (party_capable = TRUE OR type = 'softplay' OR scope_reason = 'chain_party_food' OR name ILIKE '%soft play%' OR name ILIKE '%play centre%' OR name ILIKE '%trampoline%' OR name ILIKE '%party%')
+         AND ${partyEligibilitySql()}
+         AND ${searchSuppressSql()}
          AND name NOT ILIKE 'OSM %'
          ORDER BY
              CASE
                  WHEN scope_reason = 'chain_softplay' OR name ~* '(flip out|oxygen|gambado|kidspace|gravity max|inflata nation|cookie.?s island)' THEN 1
                  WHEN type = 'softplay' OR name ILIKE '%trampoline%' OR name ILIKE '%play centre%' OR name ILIKE '%soft play%' THEN 2
                  WHEN party_capable = TRUE AND type = 'community_hall' THEN 3
-                 WHEN scope_reason = 'chain_party_food' THEN 4
                  WHEN party_capable = TRUE THEN 5
                  WHEN type = 'park' AND name ILIKE '%adventure playground%' THEN 7
                  ELSE 6
@@ -598,7 +606,7 @@ const baseVenueService = {
              sponsor_priority DESC NULLS LAST,
              name ASC
          LIMIT $2`,
-        [type, limit, scopes]
+        [type, fetchLimit, scopes]
       );
       rows = result.rows;
     }
@@ -607,6 +615,7 @@ const baseVenueService = {
     if (lat !== undefined && lon !== undefined) {
       rows = filterRowsByScope(rows, scopes);
     }
+    rows = dedupeSearchVenues(rows, limit);
 
     const sponsored = rows.filter(v => v.sponsor_tier);
     let regular = rows.filter(v => !v.sponsor_tier);
@@ -1004,7 +1013,7 @@ const baseVenueService = {
     }
 
     const radiusMeters = radius_miles * 1609.34;
-    const cacheKey = `search:facets:${facets.sort().join(',')}:${searchLat?.toFixed(4)}:${searchLon?.toFixed(4)}:${radius_miles}:${borough || 'noboro'}:${postcode || 'nopc'}:${scopes.join('_')}`;
+    const cacheKey = `search:${SEARCH_CACHE_VERSION}:facets:${facets.sort().join(',')}:${searchLat?.toFixed(4)}:${searchLon?.toFixed(4)}:${radius_miles}:${borough || 'noboro'}:${postcode || 'nopc'}:${scopes.join('_')}`;
 
     try {
       const cached = await redis.get(cacheKey);
@@ -1055,6 +1064,7 @@ const baseVenueService = {
     if (searchLat !== undefined && searchLon !== undefined) {
       rows = filterRowsByScope(rows, scopes);
     }
+    rows = dedupeSearchVenues(rows, limit);
 
     const sponsored = rows.filter(v => v.sponsor_tier);
     const regular = rows.filter(v => !v.sponsor_tier);

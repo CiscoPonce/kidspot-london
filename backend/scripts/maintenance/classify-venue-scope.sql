@@ -93,9 +93,9 @@ WITH classified AS (
       WHEN name ~* '(flip out|gambado|kidspace|oxygen active|oxygen freejump|inflata nation|airhop|jump giant|jump in trampoline|gravity max|gravity active|ninja warrior|\ybabylon park\y|better extreme|clip n climb|inflata)'
         THEN ARRAY['core','chain_softplay']
 
-      ---------------------------------------- CORE: chain party food
+      -------------------------- REVIEW: fast food (keep rows, hide from search)
       WHEN name ~* '(mcdonald|burger king|pizza hut party|wacky warehouse|brewers fayre|beefeater party)'
-        THEN ARRAY['core','chain_party_food']
+        THEN ARRAY['review','chain_party_food']
 
       ---------------------------------------------- REVIEW: ambiguous
       WHEN type IN ('library','cafe')   THEN ARRAY['review', type]
