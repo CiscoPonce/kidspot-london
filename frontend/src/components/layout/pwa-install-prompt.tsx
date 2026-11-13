@@ -46,20 +46,20 @@ export function PwaInstallPrompt() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 animate-slide-up">
-      <div className="mx-auto max-w-lg rounded-t-[16px] bg-surface border-t border-outline-variant px-5 py-4 shadow-lg">
+    <div className="fixed bottom-16 left-0 right-0 z-50 px-3 animate-slide-up md:bottom-4">
+      <div className="mx-auto max-w-lg rounded-2xl border border-brand-border bg-white px-5 py-4 shadow-lg">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h3 className="font-title-sm text-title-sm text-on-surface">
+            <h3 className="font-display text-base font-semibold text-brand-dark">
               Install KidSpot
             </h3>
-            <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">
+            <p className="mt-1 text-xs text-brand-muted">
               Add to your home screen for quick access
             </p>
           </div>
           <button
             onClick={handleDismiss}
-            className="ml-2 flex h-8 w-8 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-highest active:scale-95 transition"
+            className="ml-2 flex h-8 w-8 items-center justify-center rounded-full text-brand-muted hover:bg-brand-paper active:scale-95 transition"
             aria-label="Dismiss install prompt"
           >
             <span className="material-symbols-outlined text-lg">close</span>
@@ -68,13 +68,13 @@ export function PwaInstallPrompt() {
         <div className="mt-3 flex gap-3">
           <button
             onClick={handleDismiss}
-            className="flex-1 rounded-full border border-outline bg-surface px-4 py-2.5 font-button-label text-button-label text-on-surface-variant min-h-[44px] active:scale-95 transition"
+            className="flex-1 min-h-[44px] rounded-full border border-brand-border bg-white px-4 py-2.5 text-xs font-semibold text-brand-dark hover:border-brand-dark/40 active:scale-95 transition"
           >
             Not now
           </button>
           <button
             onClick={handleInstall}
-            className="flex-1 rounded-full bg-primary text-on-primary px-4 py-2.5 font-button-label text-button-label min-h-[44px] shadow-sm hover:brightness-95 active:scale-95 transition"
+            className="flex-1 min-h-[44px] rounded-full bg-brand-yellow px-4 py-2.5 text-xs font-semibold text-brand-dark shadow-sm hover:bg-brand-yellow-hover active:scale-95 transition"
           >
             Install
           </button>
