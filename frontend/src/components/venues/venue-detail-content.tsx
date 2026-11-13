@@ -433,6 +433,40 @@ export function VenueDetailContent({ venue, details, compact }: VenueDetailConte
                 </p>
               </div>
             </div>
+
+            <div className="mt-4 rounded-2xl border border-brand-border bg-white p-5 shadow-sm">
+              <p className="text-xs font-semibold text-brand-dark">
+                Own or manage {venue.name}?
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-brand-muted">
+                {venue.claimed_at
+                  ? 'Update your party details, view enquiries, or upgrade to a sponsored listing.'
+                  : 'Claim this listing to update party prices, photos, and boost visibility with sponsorship.'}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {!venue.claimed_at ? (
+                  <Link
+                    href={`/claim/${venue.slug}`}
+                    className="rounded-full border border-brand-dark bg-brand-dark px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-dark/90"
+                  >
+                    Claim this venue
+                  </Link>
+                ) : (
+                  <Link
+                    href="/owner/login"
+                    className="rounded-full border border-brand-dark bg-brand-dark px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-dark/90"
+                  >
+                    Owner portal
+                  </Link>
+                )}
+                <Link
+                  href={`/venue/${venue.slug}/pricing`}
+                  className="rounded-full border border-brand-border bg-brand-paper px-3.5 py-1.5 text-xs font-semibold text-brand-dark transition hover:border-brand-dark/40"
+                >
+                  Sponsor listing
+                </Link>
+              </div>
+            </div>
           </aside>
         </div>
       </div>

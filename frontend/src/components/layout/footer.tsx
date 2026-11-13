@@ -30,6 +30,9 @@ export function Footer() {
           <Link href="/about" className="hover:text-brand-dark">
             About
           </Link>
+          <Link href="/owner/login" className="hover:text-brand-dark">
+            Owner portal
+          </Link>
         </nav>
       </div>
     </footer>

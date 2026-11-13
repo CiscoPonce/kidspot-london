@@ -100,7 +100,9 @@ export function VenueCard({
       } ${
         isSelected
           ? 'border-brand-dark ring-2 ring-brand-dark'
-          : 'border-brand-border hover:-translate-y-0.5 hover:border-brand-dark/30 hover:shadow-md'
+          : venue.sponsor_tier
+            ? 'border-brand-yellow ring-1 ring-brand-yellow/70 hover:-translate-y-0.5 hover:shadow-md'
+            : 'border-brand-border hover:-translate-y-0.5 hover:border-brand-dark/30 hover:shadow-md'
       }`}
     >
       <div
@@ -150,11 +152,18 @@ export function VenueCard({
             ) : (
               <span />
             )}
-            {featured && (
-              <span className="rounded-full bg-brand-yellow/40 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-dark">
-                Top match
-              </span>
-            )}
+            <div className="flex items-center gap-1.5">
+              {venue.sponsor_tier && (
+                <span className="rounded-full bg-brand-yellow px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-dark">
+                  Sponsored
+                </span>
+              )}
+              {featured && !venue.sponsor_tier && (
+                <span className="rounded-full bg-brand-yellow/40 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-dark">
+                  Top match
+                </span>
+              )}
+            </div>
           </div>
 
           <h3
