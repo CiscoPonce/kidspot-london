@@ -17,13 +17,13 @@ export async function enrichViaBraveImages(limit: number = 20): Promise<BraveIma
   const result: BraveImageEnrichmentResult = { enriched: 0, skipped: 0, failed: 0, totalProcessed: 0 };
 
   try {
-    // Find active venues missing images, prioritized by kid_score
+    // Find active venues missing images, prioritizing party_capable and core venues first
     const { rows: venues } = await db.query(
       `SELECT id, name, borough, postcode 
        FROM venues 
        WHERE is_active = TRUE 
        AND (images IS NULL OR array_length(images, 1) IS NULL OR array_length(images, 1) = 0)
-       ORDER BY kid_score DESC NULLS LAST, id ASC
+       ORDER BY (CASE WHEN party_capable = TRUE THEN 0 WHEN venue_scope = 'core' THEN 1 ELSE 2 END), kid_score DESC NULLS LAST, id ASC
        LIMIT $1`,
       [limit]
     );
