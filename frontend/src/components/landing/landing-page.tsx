@@ -1,8 +1,20 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { HeroSearchForm } from '@/components/search/hero-search-form';
+import { VenueImagePlaceholder } from '@/components/venues/venue-image-placeholder';
+import { formatPartyPrice } from '@/lib/venue-images';
 import type { Venue } from '@/lib/api';
+
+const QUICK_CATEGORIES = [
+  { id: 'softplay', label: 'Soft play', desc: 'Indoor frames & toddler zones' },
+  { id: 'community_hall', label: 'Party halls', desc: 'Bring your own food & cake' },
+  { id: 'leisure_centre', label: 'Activity centres', desc: 'Pool, trampoline & soft play' },
+  { id: 'park', label: 'Parks & outdoor', desc: 'Playgrounds & picnic space' },
+  { id: 'museum', label: 'Museums', desc: 'Hands-on weekend discovery' },
+  { id: 'library', label: 'Libraries', desc: 'Free rhyme time & story play' },
+];
 
 const TYPE_LABEL: Record<string, string> = {
   softplay: 'Soft play',
@@ -53,37 +65,62 @@ function firstImage(venue: Venue): string | undefined {
   return undefined;
 }
 
-function ExperienceCard({ venue, featured = false }: { venue: Venue; featured?: boolean }) {
+function ExperienceCard({ venue }: { venue: Venue }) {
   const imageUrl = firstImage(venue);
   const typeLabel = TYPE_LABEL[venue.type] || 'Venue';
+  const partyPrice = formatPartyPrice(venue);
+  const [imgFailed, setImgFailed] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    setImgFailed(false);
+  }, [imageUrl]);
+
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth === 0) {
+      setImgFailed(true);
+    }
+  }, [imageUrl]);
 
   return (
     <Link
       href={`/venue/${venue.slug}`}
-      className={`group relative block overflow-hidden rounded-[1.75rem] ${
-        featured ? 'min-w-[280px] sm:min-w-[420px]' : 'min-w-[240px] sm:min-w-[300px]'
-      }`}
+      className="group flex w-[270px] shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-border bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand-dark/30 hover:shadow-md sm:w-[300px]"
     >
-      <div className={`relative overflow-hidden ${featured ? 'aspect-[4/5] sm:aspect-[3/4]' : 'aspect-[4/5]'}`}>
-        {imageUrl ? (
+      <div className="relative aspect-[16/10] overflow-hidden bg-brand-cream-dark">
+        {imageUrl && !imgFailed ? (
           <img
+            ref={imgRef}
             src={imageUrl}
-            alt=""
-            className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
+            alt={venue.name}
+            loading="lazy"
+            onError={() => setImgFailed(true)}
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="h-full w-full bg-gradient-to-br from-[#FFE27A] via-[#FFD0A8] to-[#C8E8C4]" />
+          <VenueImagePlaceholder type={venue.type} name={venue.name} />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/45 via-transparent to-white/10" />
-        <span className="absolute left-4 top-4 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-dark">
+        <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-dark shadow-sm">
           {typeLabel}
         </span>
-        <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-          {venue.borough && <p className="text-xs font-medium text-white/70">{venue.borough}</p>}
-          <h3 className={`mt-1 font-display font-semibold leading-tight ${featured ? 'text-3xl' : 'text-2xl'}`}>
+      </div>
+      <div className="flex flex-1 flex-col justify-between p-4">
+        <div>
+          {venue.borough && (
+            <p className="text-xs font-medium text-brand-muted">{venue.borough}</p>
+          )}
+          <h3 className="mt-1 line-clamp-2 font-display text-lg font-semibold leading-snug text-brand-dark">
             {venue.name}
           </h3>
-          <p className="mt-2 text-sm text-white/80">Call for price</p>
+        </div>
+        <div className="mt-3 flex items-center justify-between border-t border-brand-border/70 pt-2.5 text-xs">
+          <span className="font-semibold text-brand-dark">
+            {partyPrice || 'Price on enquiry'}
+          </span>
+          <span className="font-semibold text-brand-dark group-hover:underline">
+            View →
+          </span>
         </div>
       </div>
     </Link>
@@ -107,44 +144,77 @@ export function LandingPage({ previews = [] }: { previews?: Venue[] }) {
 
   return (
     <div className="bg-brand-paper pb-24 text-brand-dark md:pb-0">
-      <section className="relative min-h-[88vh] overflow-hidden text-brand-dark">
+      <section className="relative overflow-hidden text-brand-dark">
         <BrandBackdrop />
 
-        <div className="relative mx-auto flex min-h-[88vh] max-w-7xl flex-col justify-end px-4 pb-12 pt-16 sm:px-8 sm:pb-16 lg:justify-center lg:pb-20">
-          <p className="inline-flex w-fit items-center rounded-full border border-brand-dark/10 bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-muted backdrop-blur">
-            Greater London · under-7s
-          </p>
-          <h1 className="mt-6 max-w-4xl font-display text-5xl font-semibold leading-[0.95] tracking-tight text-brand-dark sm:text-6xl lg:text-8xl">
-            Playtime
-            <br />
-            starts now.
-          </h1>
-          <p className="mt-5 max-w-xl text-base leading-relaxed text-brand-muted sm:text-lg">
-            Find the birthday — or Saturday play — for children under seven.
-            Shortlist what fits, then call. No fake calendars.
-          </p>
-
-          <div className="mt-8 max-w-2xl rounded-3xl border border-brand-border bg-white p-3 text-brand-dark shadow-lg shadow-brand-dark/5 sm:p-4">
-            <HeroSearchForm afterSearchHref="/search" />
-            <p className="mt-2 px-1 text-xs text-brand-muted">
-              Try E15, SW11 or N1. Ask the venue about their age range — we do not invent ratings.
+        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 pb-16 pt-14 sm:px-8 lg:grid-cols-12 lg:items-center lg:gap-12 lg:py-20">
+          <div className="lg:col-span-7">
+            <p className="inline-flex w-fit items-center rounded-full border border-brand-dark/10 bg-white/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-muted backdrop-blur">
+              Greater London · under-7s
             </p>
+            <h1 className="mt-5 font-display text-5xl font-semibold leading-[0.95] tracking-tight text-brand-dark sm:text-6xl lg:text-7xl">
+              Playtime
+              <br />
+              starts now.
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-brand-muted sm:text-lg">
+              Find the birthday — or Saturday play — for children under seven.
+              Shortlist what fits, then call. No fake calendars.
+            </p>
+
+            <div className="mt-7 max-w-2xl rounded-3xl border border-brand-border bg-white p-3 text-brand-dark shadow-lg shadow-brand-dark/5 sm:p-4">
+              <HeroSearchForm afterSearchHref="/search" />
+              <p className="mt-2 px-1 text-xs text-brand-muted">
+                Try E15, SW11 or N1. Ask the venue about their age range — we do not invent ratings.
+              </p>
+            </div>
+
+            <dl className="mt-8 grid max-w-xl grid-cols-3 gap-6 text-brand-dark">
+              <div>
+                <dt className="text-[11px] font-semibold uppercase tracking-wider text-brand-muted">Places</dt>
+                <dd className="mt-1 font-display text-2xl font-semibold sm:text-3xl">2,200+</dd>
+              </div>
+              <div>
+                <dt className="text-[11px] font-semibold uppercase tracking-wider text-brand-muted">Built for</dt>
+                <dd className="mt-1 font-display text-2xl font-semibold sm:text-3xl">Under 7s</dd>
+              </div>
+              <div>
+                <dt className="text-[11px] font-semibold uppercase tracking-wider text-brand-muted">You plan</dt>
+                <dd className="mt-1 font-display text-2xl font-semibold sm:text-3xl">Party + play</dd>
+              </div>
+            </dl>
           </div>
 
-          <dl className="mt-10 grid max-w-xl grid-cols-3 gap-6 text-brand-dark">
-            <div>
-              <dt className="text-[11px] font-semibold uppercase tracking-wider text-brand-muted">Places</dt>
-              <dd className="mt-1 font-display text-3xl font-semibold sm:text-4xl">2,200+</dd>
+          <aside className="lg:col-span-5">
+            <div className="rounded-3xl border border-brand-border bg-white/90 p-5 shadow-lg shadow-brand-dark/5 backdrop-blur sm:p-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-muted">
+                Browse by type
+              </p>
+              <h2 className="mt-1 font-display text-2xl font-semibold text-brand-dark">
+                Where do you want to go?
+              </h2>
+              <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                {QUICK_CATEGORIES.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    href={`/venues-by/${cat.id}`}
+                    className="group rounded-2xl border border-brand-border bg-brand-paper/60 p-3.5 transition hover:border-brand-dark/30 hover:bg-white"
+                  >
+                    <p className="font-display text-base font-semibold text-brand-dark group-hover:underline">
+                      {cat.label}
+                    </p>
+                    <p className="mt-0.5 text-xs text-brand-muted">{cat.desc}</p>
+                  </Link>
+                ))}
+              </div>
+              <div className="mt-4 flex items-center justify-between border-t border-brand-border pt-3 text-xs">
+                <span className="text-brand-muted">Own or run a venue?</span>
+                <Link href="/owner/login" className="font-semibold text-brand-dark hover:underline">
+                  Claim or sponsor →
+                </Link>
+              </div>
             </div>
-            <div>
-              <dt className="text-[11px] font-semibold uppercase tracking-wider text-brand-muted">Built for</dt>
-              <dd className="mt-1 font-display text-3xl font-semibold sm:text-4xl">Under 7s</dd>
-            </div>
-            <div>
-              <dt className="text-[11px] font-semibold uppercase tracking-wider text-brand-muted">You plan</dt>
-              <dd className="mt-1 font-display text-3xl font-semibold sm:text-4xl">Party + play</dd>
-            </div>
-          </dl>
+          </aside>
         </div>
       </section>
 
@@ -169,8 +239,8 @@ export function LandingPage({ previews = [] }: { previews?: Venue[] }) {
         </div>
         <div className="mt-10 flex gap-4 overflow-x-auto px-4 pb-2 sm:px-8 lg:px-[max(2rem,calc((100vw-80rem)/2+2rem))]">
           {strip.length > 0 ? (
-            strip.map((venue, i) => (
-              <ExperienceCard key={venue.id} venue={venue} featured={i === 0} />
+            strip.map((venue) => (
+              <ExperienceCard key={venue.id} venue={venue} />
             ))
           ) : (
             <p className="text-sm text-brand-muted">Search a postcode to see live places.</p>
