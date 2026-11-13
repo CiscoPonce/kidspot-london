@@ -5,6 +5,8 @@ import { LONDON_AREAS, VENUE_TYPES } from '@/lib/constants';
 const BASE_URL = 'https://kidspot.london';
 const CHUNK_SIZE = 5000;
 
+export const dynamic = 'force-dynamic';
+
 export async function generateSitemaps() {
   try {
     const venueSlugs = await fetchAllSlugs();
