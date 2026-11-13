@@ -21,13 +21,16 @@ export function partyScore(venue: Venue, context: SortContext = {}): number {
   if (venue.type === 'softplay') score += 100;
   if (CHAIN_PATTERN.test(name)) score += 80;
   if (venue.party_capable) score += 50;
+  if (venue.party_capable && venue.distance_miles != null && venue.distance_miles <= 1.5) {
+    score += 65;
+  }
   if (venue.party_price_from != null) score += 15;
   if (venue.rating) score += venue.rating * 8;
   if (venue.sponsor_tier) score += 30;
   if (/mcdonald|burger king|wacky warehouse/.test(name)) score -= 80;
   if (venue.type === 'park' && /adventure playground/.test(name)) score -= 60;
   if (venue.type === 'community_hall' && !venue.party_capable) score -= 15;
-  if (venue.distance_miles != null) score -= venue.distance_miles * 2;
+  if (venue.distance_miles != null) score -= venue.distance_miles * 8;
 
   if (ageBand === 'under7') {
     score += UNDER7_TYPE_SCORE[intent][venue.type] ?? 0;

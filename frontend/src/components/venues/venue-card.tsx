@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { VenueImagePlaceholder } from '@/components/venues/venue-image-placeholder';
 import { PartyCateringBadge } from '@/components/venues/party-catering-badge';
 import { usePlausible } from 'next-plausible';
@@ -49,6 +50,7 @@ export function VenueCard({
   const { has, toggle } = useShortlist();
   const isSaved = has(venue.id);
   const imageUrl = firstImage(venue);
+  const [imgFailed, setImgFailed] = useState(false);
   const partyPrice = formatPartyPrice(venue);
   const typeLabel = TYPE_LABEL[venue.type] || 'Venue';
   const phone = displayPhone(venue.phone);
@@ -94,11 +96,12 @@ export function VenueCard({
           featured ? 'aspect-[16/10] sm:col-span-6 sm:aspect-auto sm:min-h-[210px]' : 'aspect-[16/10]'
         }`}
       >
-        {imageUrl ? (
+        {imageUrl && !imgFailed ? (
           <img
             src={imageUrl}
             alt={venue.name}
             loading="lazy"
+            onError={() => setImgFailed(true)}
             className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
         ) : (

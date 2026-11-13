@@ -551,7 +551,7 @@ const baseVenueService = {
          WHERE v.is_active = TRUE
          AND v.venue_scope = ANY($6::text[])
          AND ST_DWithin(ST_MakePoint(v.lon, v.lat)::geography, ST_MakePoint($2, $1)::geography, $3)
-         AND ($4::TEXT IS NULL OR v.type = $4::TEXT)
+         AND ($4::TEXT IS NULL OR v.type = $4::TEXT OR ($4::TEXT = 'softplay' AND 'soft_play' = ANY(COALESCE(v.parent_facets, '{}'))))
          AND ${partyEligibilitySql('v')}
          AND ${searchSuppressSql('v')}
          AND v.name NOT ILIKE 'OSM %'
