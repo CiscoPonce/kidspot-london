@@ -4,7 +4,7 @@ import { QuickFilters } from '@/components/layout/quick-filters';
 import { useSearch } from '@/hooks/use-search';
 import type { SortMode } from '@/lib/venue-sort';
 
-const RADIUS_OPTIONS = [3, 5, 10] as const;
+const RADIUS_OPTIONS = [2, 3, 5, 10] as const;
 
 export type MobileView = 'list' | 'map';
 

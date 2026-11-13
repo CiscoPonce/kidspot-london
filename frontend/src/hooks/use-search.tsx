@@ -35,7 +35,7 @@ interface SearchContextValue extends SearchState {
 
 const SearchContext = createContext<SearchContextValue | undefined>(undefined);
 
-const DEFAULT_RADIUS = 5;
+const DEFAULT_RADIUS = 2;
 
 export function SearchProvider({ children }: { children: ReactNode }) {
   const plausible = usePlausible();

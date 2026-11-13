@@ -303,22 +303,26 @@ export function VenueMap({ venues, onVenueSelect }: VenueMapProps) {
 
     if (venues.length > 0) {
       const bounds = new maplibregl.LngLatBounds();
-      
-      // Optionally include search center
+
+      // Always include the searched postcode / home location
       if (lat !== null && lon !== null) {
         bounds.extend([lon, lat]);
       }
 
-      venues.forEach((venue) => {
-        if (venue.lat !== null && venue.lon !== null) {
-          bounds.extend([venue.lon, venue.lat]);
-        }
+      // Focus the map on the closest 10 venues so distant outliers don't zoom the map out across London
+      const nearestVenues = [...venues]
+        .filter((v) => v.lat !== null && v.lon !== null)
+        .sort((a, b) => (a.distance_miles ?? 999) - (b.distance_miles ?? 999))
+        .slice(0, 10);
+
+      nearestVenues.forEach((venue) => {
+        bounds.extend([venue.lon!, venue.lat!]);
       });
 
       if (!bounds.isEmpty()) {
         mapRef.current.fitBounds(bounds, {
-          padding: { top: 50, bottom: 50, left: 50, right: 50 },
-          maxZoom: 15,
+          padding: { top: 60, bottom: 60, left: 60, right: 60 },
+          maxZoom: 14.5,
           duration: 1000,
         });
       }
