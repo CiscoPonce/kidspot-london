@@ -1,4 +1,14 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+
+function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    return PUBLIC_API_URL;
+  }
+  if (process.env.INTERNAL_API_URL) {
+    return process.env.INTERNAL_API_URL;
+  }
+  return PUBLIC_API_URL.startsWith('http') ? PUBLIC_API_URL : 'http://api:4000/api';
+}
 
 export interface Venue {
   id: number | string;
@@ -155,7 +165,7 @@ async function fetchApi<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  const url = endpoint.startsWith('http') ? endpoint : `${getApiBaseUrl()}${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
