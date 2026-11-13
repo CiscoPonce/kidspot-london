@@ -8,12 +8,12 @@ import { formatPartyPrice } from '@/lib/venue-images';
 import type { Venue } from '@/lib/api';
 
 const QUICK_CATEGORIES = [
-  { id: 'softplay', label: 'Soft play', desc: 'Indoor frames & toddler zones' },
-  { id: 'community_hall', label: 'Party halls', desc: 'Bring your own food & cake' },
-  { id: 'leisure_centre', label: 'Activity centres', desc: 'Pool, trampoline & soft play' },
-  { id: 'park', label: 'Parks & outdoor', desc: 'Playgrounds & picnic space' },
-  { id: 'museum', label: 'Museums', desc: 'Hands-on weekend discovery' },
-  { id: 'library', label: 'Libraries', desc: 'Free rhyme time & story play' },
+  { href: '/venues-by/soft-play', label: 'Soft play', desc: 'Indoor frames & toddler zones' },
+  { href: '/venues-by/community-hall', label: 'Party halls', desc: 'Bring your own food & cake' },
+  { href: '/search', label: 'Activity centres', desc: 'Pool, trampoline & soft play' },
+  { href: '/venues-by/park', label: 'Parks & outdoor', desc: 'Playgrounds & picnic space' },
+  { href: '/venues-by/museum', label: 'Museums', desc: 'Hands-on weekend discovery' },
+  { href: '/venues-by/library', label: 'Libraries', desc: 'Free rhyme time & story play' },
 ];
 
 const TYPE_LABEL: Record<string, string> = {
@@ -196,8 +196,8 @@ export function LandingPage({ previews = [] }: { previews?: Venue[] }) {
               <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 {QUICK_CATEGORIES.map((cat) => (
                   <Link
-                    key={cat.id}
-                    href={`/venues-by/${cat.id}`}
+                    key={cat.label}
+                    href={cat.href}
                     className="group rounded-2xl border border-brand-border bg-brand-paper/60 p-3.5 transition hover:border-brand-dark/30 hover:bg-white"
                   >
                     <p className="font-display text-base font-semibold text-brand-dark group-hover:underline">
