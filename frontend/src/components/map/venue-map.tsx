@@ -33,13 +33,14 @@ export function VenueMap({ venues, onVenueSelect }: VenueMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const popupRef = useRef<Popup | null>(null);
+  const searchMarkerRef = useRef<maplibregl.Marker | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   // Becomes true if WebGL is unavailable or MapLibre throws during init.
   // We render <MapFallback /> in that case so the rest of the page (search
   // results, venue list) keeps working instead of crashing the React tree.
   const [mapUnavailable, setMapUnavailable] = useState(false);
 
-  const { lat, lon } = useSearch();
+  const { lat, lon, postcode } = useSearch();
   const { setMap } = useMapContext();
 
   // Set up markers on the map
@@ -330,6 +331,42 @@ export function VenueMap({ venues, onVenueSelect }: VenueMapProps) {
       });
     }
   }, [lat, lon, mapLoaded, venues]);
+
+  // Show searched postcode / home location marker on the map
+  useEffect(() => {
+    const map = mapRef.current;
+    if (searchMarkerRef.current) {
+      searchMarkerRef.current.remove();
+      searchMarkerRef.current = null;
+    }
+    if (!map || !mapLoaded || lat === null || lon === null) return;
+
+    const el = document.createElement('div');
+    el.className = 'flex flex-col items-center pointer-events-none';
+
+    const label = document.createElement('span');
+    label.className =
+      'mb-1 rounded-full bg-brand-dark px-2.5 py-0.5 text-[11px] font-semibold text-white shadow-md whitespace-nowrap';
+    label.textContent = postcode && postcode !== 'London' ? postcode : 'Search area';
+
+    const dot = document.createElement('div');
+    dot.className =
+      'h-4 w-4 rounded-full border-[3px] border-brand-dark bg-brand-yellow shadow-md';
+
+    el.appendChild(label);
+    el.appendChild(dot);
+
+    searchMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+      .setLngLat([lon, lat])
+      .addTo(map);
+
+    return () => {
+      if (searchMarkerRef.current) {
+        searchMarkerRef.current.remove();
+        searchMarkerRef.current = null;
+      }
+    };
+  }, [mapLoaded, lat, lon, postcode]);
 
   if (mapUnavailable) {
     return (

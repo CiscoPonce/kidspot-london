@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { VenueImagePlaceholder } from '@/components/venues/venue-image-placeholder';
 import { PartyCateringBadge } from '@/components/venues/party-catering-badge';
 import { usePlausible } from 'next-plausible';
@@ -51,6 +51,18 @@ export function VenueCard({
   const isSaved = has(venue.id);
   const imageUrl = firstImage(venue);
   const [imgFailed, setImgFailed] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    setImgFailed(false);
+  }, [imageUrl]);
+
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth === 0) {
+      setImgFailed(true);
+    }
+  }, [imageUrl]);
   const partyPrice = formatPartyPrice(venue);
   const typeLabel = TYPE_LABEL[venue.type] || 'Venue';
   const phone = displayPhone(venue.phone);
@@ -98,6 +110,7 @@ export function VenueCard({
       >
         {imageUrl && !imgFailed ? (
           <img
+            ref={imgRef}
             src={imageUrl}
             alt={venue.name}
             loading="lazy"
