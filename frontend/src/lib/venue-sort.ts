@@ -1,14 +1,22 @@
 import type { Venue } from './api';
+import { UNDER7_TYPE_SCORE, type AgeBand, type ParentIntent } from './parent-focus';
 
 export type SortMode = 'recommended' | 'nearest' | 'price';
+
+export interface SortContext {
+  intent?: ParentIntent;
+  ageBand?: AgeBand;
+}
 
 const CHAIN_PATTERN =
   /flip out|oxygen|gambado|kidspace|gravity|inflata nation|cookie'?s island|jump zone|activate at/i;
 
 /** Higher = better fit for a kids' birthday party search. */
-export function partyScore(venue: Venue): number {
+export function partyScore(venue: Venue, context: SortContext = {}): number {
   let score = 0;
   const name = venue.name.toLowerCase();
+  const intent = context.intent ?? 'party';
+  const ageBand = context.ageBand ?? 'under7';
 
   if (venue.type === 'softplay') score += 100;
   if (CHAIN_PATTERN.test(name)) score += 80;
@@ -21,10 +29,18 @@ export function partyScore(venue: Venue): number {
   if (venue.type === 'community_hall' && !venue.party_capable) score -= 15;
   if (venue.distance_miles != null) score -= venue.distance_miles * 2;
 
+  if (ageBand === 'under7') {
+    score += UNDER7_TYPE_SCORE[intent][venue.type] ?? 0;
+    if (intent === 'activity' && venue.type === 'softplay') score += 10;
+    if (/esports|immersive gamebox/.test(name)) score -= 40;
+  }
+
+  if (intent === 'activity' && venue.type === 'community_hall') score -= 10;
+
   return score;
 }
 
-export function sortVenues(venues: Venue[], mode: SortMode): Venue[] {
+export function sortVenues(venues: Venue[], mode: SortMode, context: SortContext = {}): Venue[] {
   const copy = [...venues];
 
   if (mode === 'nearest') {
@@ -42,5 +58,5 @@ export function sortVenues(venues: Venue[], mode: SortMode): Venue[] {
     });
   }
 
-  return copy.sort((a, b) => partyScore(b) - partyScore(a));
+  return copy.sort((a, b) => partyScore(b, context) - partyScore(a, context));
 }

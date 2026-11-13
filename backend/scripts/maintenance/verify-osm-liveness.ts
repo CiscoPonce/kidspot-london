@@ -8,8 +8,8 @@ import { db } from '../../src/clients/db.js';
 import { fetchOverpassWithRetry } from '../discovery/sources/overpass-utils.js';
 import { partyEligibilitySql } from '../../src/services/searchVisibility.js';
 
-const SUB_BATCH = 40;
-const PAUSE_MS = 2500;
+const SUB_BATCH = 12;
+const PAUSE_MS = 8000;
 
 function parseOsmId(sourceId: string | null): string | null {
   if (!sourceId) return null;
@@ -63,7 +63,7 @@ async function mark(
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
   const limitArg = process.argv.find((a) => a.startsWith('--limit'));
-  const limit = limitArg ? Number(limitArg.split('=')[1] || process.argv[process.argv.indexOf('--limit') + 1]) : 800;
+  const limit = limitArg ? Number(limitArg.split('=')[1] || process.argv[process.argv.indexOf('--limit') + 1]) : 200;
 
   const { rows } = await db.query(
     `SELECT id, name, source_id
@@ -76,7 +76,7 @@ async function main() {
        CASE type WHEN 'softplay' THEN 1 WHEN 'community_hall' THEN 2 ELSE 3 END,
        id
      LIMIT $1`,
-    [Number.isFinite(limit) ? limit : 800]
+    [Number.isFinite(limit) ? limit : 200]
   );
 
   const result = { checked: 0, live: 0, gone: 0, unknown: 0, failed: 0, dryRun };

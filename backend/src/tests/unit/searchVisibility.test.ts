@@ -5,7 +5,7 @@ import {
   normalizeVenueName,
   partyEligibilitySql,
   searchSuppressSql,
-} from '../../services/searchVisibility';
+} from '../../services/searchVisibility.js';
 
 describe('searchVisibility', () => {
   it('suppresses fast-food chains and chain_party_food', () => {
@@ -29,7 +29,7 @@ describe('searchVisibility', () => {
       ],
       10
     );
-    expect(rows.map((r) => r.id)).toEqual([1, 2]);
+    expect(rows.map((r: { id: number }) => r.id)).toEqual([1, 2]);
   });
 
   it('normalizes branding noise in names', () => {

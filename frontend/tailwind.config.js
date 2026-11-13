@@ -89,7 +89,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ['var(--font-jakarta)', 'system-ui', 'sans-serif'],
-        display: ['var(--font-jakarta)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'var(--font-jakarta)', 'Georgia', 'serif'],
         "headline-md": ["var(--font-jakarta)"],
         "label-caps": ["var(--font-jakarta)"],
         "display-lg": ["var(--font-jakarta)"],

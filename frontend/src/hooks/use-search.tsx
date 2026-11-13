@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { usePlausible } from 'next-plausible';
 import type { CateringFilter } from '@/lib/parent-filters';
+import type { AgeBand, ParentIntent } from '@/lib/parent-focus';
 
 export interface SearchState {
   lat: number | null;
@@ -13,6 +14,8 @@ export interface SearchState {
   facets: string[];
   kidsCount: number | null;
   catering: CateringFilter;
+  intent: ParentIntent;
+  ageBand: AgeBand;
 }
 
 interface SearchContextValue extends SearchState {
@@ -25,6 +28,8 @@ interface SearchContextValue extends SearchState {
   clearFacets: () => void;
   setKidsCount: (count: number | null) => void;
   setCatering: (value: CateringFilter) => void;
+  setIntent: (intent: ParentIntent) => void;
+  setAgeBand: (ageBand: AgeBand) => void;
   clearSearch: () => void;
 }
 
@@ -42,6 +47,8 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   const [facets, setFacetsState] = useState<string[]>([]);
   const [kidsCount, setKidsCountState] = useState<number | null>(null);
   const [catering, setCateringState] = useState<CateringFilter>('any');
+  const [intent, setIntentState] = useState<ParentIntent>('party');
+  const [ageBand, setAgeBandState] = useState<AgeBand>('under7');
 
   const setSearchLocation = useCallback((newLat: number, newLon: number) => {
     setLat(newLat);
@@ -90,6 +97,14 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     setCateringState(value);
   }, []);
 
+  const setIntent = useCallback((value: ParentIntent) => {
+    setIntentState(value);
+  }, []);
+
+  const setAgeBand = useCallback((value: AgeBand) => {
+    setAgeBandState(value);
+  }, []);
+
   const clearSearch = useCallback(() => {
     setLat(null);
     setLon(null);
@@ -99,6 +114,8 @@ export function SearchProvider({ children }: { children: ReactNode }) {
     setFacetsState([]);
     setKidsCountState(null);
     setCateringState('any');
+    setIntentState('party');
+    setAgeBandState('under7');
   }, []);
 
   return (
@@ -112,6 +129,8 @@ export function SearchProvider({ children }: { children: ReactNode }) {
         facets,
         kidsCount,
         catering,
+        intent,
+        ageBand,
         setSearchLocation,
         setPostcode,
         setRadius,
@@ -121,6 +140,8 @@ export function SearchProvider({ children }: { children: ReactNode }) {
         clearFacets,
         setKidsCount,
         setCatering,
+        setIntent,
+        setAgeBand,
         clearSearch,
       }}
     >

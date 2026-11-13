@@ -1,16 +1,36 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSearch } from '@/hooks/use-search';
 import { geocodeLocation, useCurrentPosition } from '@/hooks/use-location';
 
 interface HeroSearchFormProps {
   variant?: 'mobile' | 'desktop' | 'compact';
   onSearchComplete?: () => void;
+  afterSearchHref?: string;
 }
 
-export function HeroSearchForm({ onSearchComplete }: HeroSearchFormProps) {
-  const { postcode, setPostcode, setSearchLocation, kidsCount, setKidsCount } = useSearch();
+const pillClass = (active: boolean) =>
+  `rounded-full border px-3 py-1 text-xs font-semibold transition ${
+    active
+      ? 'border-brand-dark bg-brand-dark text-white'
+      : 'border-brand-border bg-white text-brand-muted hover:border-brand-dark/40 hover:text-brand-dark'
+  }`;
+
+export function HeroSearchForm({ onSearchComplete, afterSearchHref }: HeroSearchFormProps) {
+  const router = useRouter();
+  const {
+    postcode,
+    setPostcode,
+    setSearchLocation,
+    kidsCount,
+    setKidsCount,
+    intent,
+    setIntent,
+    ageBand,
+    setAgeBand,
+  } = useSearch();
   const [locationQuery, setLocationQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,8 +47,9 @@ export function HeroSearchForm({ onSearchComplete }: HeroSearchFormProps) {
       setSearchLocation(lat, lon);
       setPostcode(label);
       onSearchComplete?.();
+      if (afterSearchHref) router.push(afterSearchHref);
     },
-    [setSearchLocation, setPostcode, onSearchComplete]
+    [setSearchLocation, setPostcode, onSearchComplete, afterSearchHref, router]
   );
 
   useEffect(() => {
@@ -60,6 +81,21 @@ export function HeroSearchForm({ onSearchComplete }: HeroSearchFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
+      <div className="mb-2 flex flex-wrap items-center gap-1.5">
+        <button type="button" className={pillClass(intent === 'party')} onClick={() => setIntent('party')}>
+          Birthday party
+        </button>
+        <button type="button" className={pillClass(intent === 'activity')} onClick={() => setIntent('activity')}>
+          Activity
+        </button>
+        <span className="mx-1 hidden h-4 w-px bg-brand-border sm:inline" />
+        <button type="button" className={pillClass(ageBand === 'under7')} onClick={() => setAgeBand('under7')}>
+          Under 7s
+        </button>
+        <button type="button" className={pillClass(ageBand === 'any')} onClick={() => setAgeBand('any')}>
+          Any age
+        </button>
+      </div>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-brand-border bg-white p-1.5">
           <span className="material-symbols-outlined pl-2 text-[20px] text-brand-muted">
@@ -101,7 +137,7 @@ export function HeroSearchForm({ onSearchComplete }: HeroSearchFormProps) {
             min={1}
             max={200}
             inputMode="numeric"
-            placeholder="12"
+            placeholder="8"
             value={kidsCount ?? ''}
             onChange={(e) => {
               const next = e.target.value ? Number(e.target.value) : null;

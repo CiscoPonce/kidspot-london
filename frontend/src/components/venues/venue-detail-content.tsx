@@ -77,7 +77,7 @@ export function VenueDetailContent({ venue, details, compact }: VenueDetailConte
     <div className="min-h-screen bg-brand-paper pb-24 text-brand-dark md:pb-16">
       <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-8">
         <nav className="flex items-center gap-2 text-xs font-semibold text-brand-muted">
-          <Link href="/" className="hover:text-brand-dark">
+          <Link href="/search" className="hover:text-brand-dark">
             Venues
           </Link>
           <span>›</span>
@@ -369,7 +369,7 @@ export function VenueDetailContent({ venue, details, compact }: VenueDetailConte
                     className="hero-date-input w-full bg-transparent text-sm font-bold outline-none"
                   />
                   <p className="mt-2 text-[10px] font-medium text-[#7B785F]">
-                    We&apos;ll pass this to the venue when you enquire. Availability is confirmed directly with them.
+                    Note the date you want — you confirm it when you call or enquire. We do not book the slot.
                   </p>
                 </div>
               </div>

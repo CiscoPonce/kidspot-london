@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useShortlist } from '@/hooks/use-shortlist';
 
 const NAV_ITEMS = [
-  { label: 'Search', icon: 'search', href: '/' },
+  { label: 'Home', icon: 'home', href: '/' },
+  { label: 'Search', icon: 'search', href: '/search' },
   { label: 'Saved', icon: 'bookmark', activeIcon: 'bookmark', href: '/saved' },
   { label: 'Compare', icon: 'compare_arrows', href: '/compare' },
 ];
@@ -19,8 +20,9 @@ export function BottomNav() {
       <ul className="flex items-center justify-around px-2 py-1.5">
         {NAV_ITEMS.map((item) => {
           const isActive =
-            (item.href === '/' && pathname === '/') ||
-            (item.href !== '/' && pathname.startsWith(item.href));
+            item.href === '/'
+              ? pathname === '/'
+              : pathname.startsWith(item.href);
           return (
             <li key={item.label} className="relative">
               <Link

@@ -13,7 +13,7 @@ export default function ComparePage() {
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8">
         <h1 className="text-2xl font-semibold tracking-tight">Compare</h1>
         <p className="mt-1 text-sm text-brand-muted">
-          Capacity, cake, food and who to call — pick two or three, then enquire.
+          Capacity and who to call for an under-7 party or activity — pick two or three, then enquire.
         </p>
 
         {items.length === 0 ? (
@@ -23,7 +23,7 @@ export default function ComparePage() {
               Add two or three options from search, then come back here to pick who to call.
             </p>
             <Link
-              href="/"
+              href="/search"
               className="mt-5 inline-block rounded-lg bg-brand-yellow px-5 py-2.5 text-sm font-semibold text-brand-dark"
             >
               Search nearby
@@ -35,7 +35,7 @@ export default function ComparePage() {
               One venue saved. Add another to compare, or enquire now.
             </p>
             <CompareTable venues={items} onRemove={remove} />
-            <Link href="/" className="inline-block text-sm font-semibold text-brand-dark underline">
+            <Link href="/search" className="inline-block text-sm font-semibold text-brand-dark underline">
               Add another venue
             </Link>
           </div>

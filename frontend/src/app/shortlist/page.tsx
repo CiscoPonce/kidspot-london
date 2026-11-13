@@ -52,7 +52,7 @@ function SharedShortlist() {
     <div className="min-h-screen bg-brand-paper text-brand-dark pb-24">
       <header className="sticky top-0 z-40 w-full bg-brand-paper/90 backdrop-blur-md border-b border-brand-border">
         <div className="mx-auto max-w-6xl flex items-center gap-4 px-4 sm:px-6 py-3">
-          <Link href="/" className="p-2 rounded-full hover:bg-[#F3EEDA] transition-colors" aria-label="Go home">
+          <Link href="/saved" className="p-2 rounded-full hover:bg-[#F3EEDA] transition-colors" aria-label="Back to saved">
             <ArrowLeft size={24} />
           </Link>
           <h1 className="font-display text-xl font-bold flex-1">Shared party shortlist</h1>
@@ -76,7 +76,7 @@ function SharedShortlist() {
           <div className="py-12 text-center space-y-4">
             <p className="text-[#5E5E5E] text-sm font-medium">This shortlist link is empty or no longer available.</p>
             <Link
-              href="/"
+              href="/search"
               className="inline-block bg-brand-yellow text-brand-dark font-bold text-sm px-8 py-3.5 rounded-full hover:bg-brand-yellow-hover active:scale-95 transition-all shadow-md"
             >
               Find party venues

@@ -7,6 +7,7 @@ import { useShortlist } from '@/hooks/use-shortlist';
 export function Header() {
   const pathname = usePathname();
   const { count } = useShortlist();
+  const isHome = pathname === '/';
 
   const linkClass = (active: boolean) =>
     `text-sm transition-colors hover:text-brand-dark ${
@@ -14,7 +15,13 @@ export function Header() {
     }`;
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-brand-border bg-brand-paper/95 backdrop-blur-md">
+    <header
+      className={
+        isHome
+          ? 'absolute top-0 z-40 w-full bg-gradient-to-b from-[#FFF8E8]/90 to-transparent'
+          : 'sticky top-0 z-40 w-full border-b border-brand-border bg-brand-paper/95 backdrop-blur-md'
+      }
+    >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-8">
         <Link
           href="/"
@@ -30,7 +37,7 @@ export function Header() {
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">
-          <Link href="/" className={linkClass(pathname === '/')}>
+          <Link href="/search" className={linkClass(pathname === '/search')}>
             Search
           </Link>
           <Link href="/saved" className={linkClass(pathname === '/saved')}>
@@ -39,7 +46,23 @@ export function Header() {
           <Link href="/compare" className={linkClass(pathname === '/compare')}>
             Compare
           </Link>
+          <Link href="/how-it-works" className={linkClass(pathname === '/how-it-works')}>
+            How it works
+          </Link>
+          <Link
+            href="/search"
+            className="rounded-full bg-brand-yellow px-4 py-2 text-sm font-semibold text-brand-dark hover:bg-brand-yellow-hover"
+          >
+            Find a place
+          </Link>
         </nav>
+
+        <Link
+          href="/search"
+          className="rounded-full bg-brand-yellow px-4 py-2 text-sm font-semibold text-brand-dark hover:bg-brand-yellow-hover md:hidden"
+        >
+          Find a place
+        </Link>
       </div>
     </header>
   );

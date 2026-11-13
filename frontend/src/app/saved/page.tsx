@@ -46,7 +46,7 @@ export default function SavedPage() {
             <h1 className="text-2xl font-semibold tracking-tight">Saved venues</h1>
             <p className="mt-1 text-sm text-brand-muted">
               {items.length === 0
-                ? 'Tap the heart on a card to build your Saturday shortlist.'
+                ? 'Tap the heart on a card to build a shortlist for the party or the playdate.'
                 : `${items.length} saved · compare them, then call.`}
             </p>
           </div>
@@ -76,13 +76,13 @@ export default function SavedPage() {
             <Heart className="mx-auto text-brand-muted" size={28} />
             <h2 className="mt-4 text-lg font-semibold">Nothing saved yet</h2>
             <p className="mx-auto mt-2 max-w-sm text-sm text-brand-muted">
-              Search your postcode, save two or three options, then compare cake, food and capacity.
+              Search your postcode, save two or three options for under-7s, then compare who to call.
             </p>
             <Link
-              href="/"
+              href="/search"
               className="mt-5 inline-block rounded-lg bg-brand-yellow px-5 py-2.5 text-sm font-semibold text-brand-dark"
             >
-              Find venues
+              Find a place
             </Link>
           </div>
         ) : (

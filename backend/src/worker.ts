@@ -80,11 +80,15 @@ async function setupRepeatingJobs() {
       ...jobOpts,
     });
 
-    await discoveryQueue.add('enrich-google-places', { batchSize: 25 }, {
-      repeat: { pattern: '0 */12 * * *' },
-      jobId: 'repeat:enrich-google-places',
-      ...jobOpts,
-    });
+    if (process.env.GOOGLE_PLACES_API_KEY) {
+      await discoveryQueue.add('enrich-google-places', { batchSize: 25 }, {
+        repeat: { pattern: '0 */12 * * *' },
+        jobId: 'repeat:enrich-google-places',
+        ...jobOpts,
+      });
+    } else {
+      logger.info('Skipping enrich-google-places schedule (GOOGLE_PLACES_API_KEY not set)');
+    }
 
     await discoveryQueue.add('enrich-apify', { batchSize: 20 }, {
       repeat: { pattern: '0 3 * * *' },
@@ -247,6 +251,10 @@ case 'enrich-foursquare': {
         }
 
 case 'enrich-google-places': {
+  if (!process.env.GOOGLE_PLACES_API_KEY) {
+    logger.info('Skipping enrich-google-places job (GOOGLE_PLACES_API_KEY not set)');
+    return { status: 'skipped', reason: 'GOOGLE_PLACES_API_KEY not configured' };
+  }
   await crawlDelay(500);
   const { enrichViaGooglePlaces } = await import('../scripts/discovery/sources/google-places-enrichment.js');
   const batchSize = (job.data as EnrichmentJobData)?.batchSize || 25;

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans } from 'next/font/google';
+import { Fraunces, Plus_Jakarta_Sans } from 'next/font/google';
 import { AppProviders } from '@/providers';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
@@ -13,10 +13,22 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   variable: '--font-jakarta',
 });
 
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-display',
+});
+
 export const metadata: Metadata = {
-  title: 'KidSpot — Birthday party venues in London',
+  title: 'KidSpot — Parties and activities for under-7s in London',
   description:
-    'Find soft play, halls and activity centres near your London postcode. Shortlist and compare — then enquire directly with the venue.',
+    'Help London parents of under-7s organise a birthday party or a weekend activity. Search by postcode, shortlist, then call the venue.',
+  openGraph: {
+    title: 'KidSpot — Parties and play for under-7s',
+    description:
+      'Find soft play, halls, parks and play centres near your London postcode. Built for parents of children under seven.',
+    type: 'website',
+  },
 };
 
 export const viewport: Viewport = {
@@ -48,7 +60,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${plusJakartaSans.variable} bg-brand-paper text-brand-dark font-sans antialiased flex flex-col min-h-screen`}
+        className={`${plusJakartaSans.variable} ${fraunces.variable} bg-brand-paper text-brand-dark font-sans antialiased flex flex-col min-h-screen`}
       >
         <AppProviders>
           <Header />

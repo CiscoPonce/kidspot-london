@@ -17,7 +17,7 @@ const DEFAULT_ITEMS: ChecklistItem[] = [
   {
     id: 'cake_ordered',
     label: 'Order birthday cake & candles',
-    tip: 'Venues do not supply the cake — remember candles, cake knife & napkins!',
+    tip: 'Ask the venue if cake is allowed or provided, and whether under-7s have an age or height limit.',
   },
   {
     id: 'food_drinks',

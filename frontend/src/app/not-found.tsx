@@ -6,28 +6,28 @@ import Link from 'next/link';
 
 export default function NotFound() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background text-on-background p-6 text-center">
-      <span
-        className="material-symbols-outlined text-[72px] text-on-primary-container bg-primary-container rounded-3xl px-5 py-3 mb-6"
-        aria-hidden="true"
-      >
-        explore_off
-      </span>
-      <h1 className="font-display text-5xl font-bold tracking-tight">404</h1>
-      <h2 className="font-display text-xl font-semibold mt-2">
-        We couldn&apos;t find that page
-      </h2>
-      <p className="text-on-surface-variant max-w-md mt-3 leading-relaxed">
-        The venue or page you&apos;re looking for might have moved, been
-        removed, or never existed. Head back to the homepage to keep exploring.
+    <div className="flex min-h-[70vh] flex-col items-center justify-center bg-brand-paper px-6 py-16 text-center text-brand-dark">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-muted">404</p>
+      <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight">
+        We couldn’t find that page
+      </h1>
+      <p className="mt-3 max-w-md text-sm leading-relaxed text-brand-muted">
+        The venue or page might have moved. Head back to search and try a postcode.
       </p>
-      <Link
-        href="/"
-        className="mt-8 inline-flex items-center gap-2 px-6 py-3 bg-primary-container text-on-primary-container rounded-full font-semibold hover:brightness-95 active:scale-95 transition shadow-lg shadow-primary-container/40"
-      >
-        <span className="material-symbols-outlined text-[20px]">home</span>
-        Return home
-      </Link>
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <Link
+          href="/search"
+          className="inline-flex rounded-xl bg-brand-yellow px-5 py-2.5 text-sm font-semibold text-brand-dark hover:bg-brand-yellow-hover"
+        >
+          Find venues
+        </Link>
+        <Link
+          href="/"
+          className="inline-flex rounded-xl border border-brand-border bg-white px-5 py-2.5 text-sm font-semibold text-brand-dark"
+        >
+          Home
+        </Link>
+      </div>
     </div>
   );
 }

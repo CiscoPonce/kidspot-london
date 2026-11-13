@@ -64,13 +64,13 @@ export function VenueList({
   mobileView,
   onMobileViewChange,
 }: VenueListProps) {
-  const { lat, lon, radius, venueType, facets, postcode, kidsCount, catering } = useSearch();
+  const { lat, lon, radius, venueType, facets, postcode, kidsCount, catering, intent, ageBand } = useSearch();
   const [sort, setSort] = useState<SortMode>('recommended');
   const [visible, setVisible] = useState(12);
 
   useEffect(() => {
     setVisible(12);
-  }, [lat, lon, radius, venueType, facets, postcode, kidsCount, catering, sort]);
+  }, [lat, lon, radius, venueType, facets, postcode, kidsCount, catering, intent, ageBand, sort]);
 
   const { data: venuesResponse, isLoading, error, refetch } = useQuery({
     queryKey: ['venues', lat, lon, radius, venueType, facets, postcode],
@@ -85,7 +85,7 @@ export function VenueList({
       <StateCard
         icon="search"
         title="Enter a postcode"
-        message="Search by London postcode or area to see party venues nearby."
+        message="Search by London postcode to see parties and activities for under-7s."
       />
     );
   }
@@ -127,7 +127,7 @@ export function VenueList({
   const filteredVenues = venues.filter((venue) =>
     matchesParentFilters(venue, kidsCount, catering)
   );
-  const sortedVenues = sortVenues(filteredVenues, sort);
+  const sortedVenues = sortVenues(filteredVenues, sort, { intent, ageBand });
 
   if (sortedVenues.length === 0) {
     return (

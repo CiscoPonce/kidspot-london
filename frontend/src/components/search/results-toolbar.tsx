@@ -23,7 +23,7 @@ export function ResultsToolbar({
   mobileView,
   onMobileViewChange,
 }: ResultsToolbarProps) {
-  const { radius, setRadius, venueType, catering, setCatering, kidsCount } = useSearch();
+  const { radius, setRadius, venueType, catering, setCatering, kidsCount, intent, ageBand } = useSearch();
 
   const typeLabel =
     venueType === 'softplay'
@@ -116,15 +116,24 @@ export function ResultsToolbar({
       </div>
 
       {resultCount != null && (
-        <p className="text-sm text-brand-muted">
-          <span className="font-semibold text-brand-dark">{resultCount}</span>{' '}
-          {resultCount === 1 ? 'venue' : 'venues'}
-          {typeLabel ? ` · ${typeLabel}` : ''}
-          {kidsCount ? ` · fits ${kidsCount} kids` : ''}
-          {catering === 'byo' ? ' · BYO food' : catering === 'included' ? ' · food included' : ''}
-          {' · '}
-          within {radius} miles
-        </p>
+        <div>
+          <p className="text-sm text-brand-muted">
+            <span className="font-semibold text-brand-dark">{resultCount}</span>{' '}
+            {resultCount === 1 ? 'place' : 'places'}
+            {intent === 'activity' ? ' · activities' : ' · parties'}
+            {ageBand === 'under7' ? ' · under 7s first' : ''}
+            {typeLabel ? ` · ${typeLabel}` : ''}
+            {kidsCount ? ` · fits ${kidsCount} kids` : ''}
+            {catering === 'byo' ? ' · BYO food' : catering === 'included' ? ' · food included' : ''}
+            {' · '}
+            within {radius} miles
+          </p>
+          {ageBand === 'under7' && (
+            <p className="mt-1 text-xs text-brand-muted">
+              We sort for younger children. Ask the venue about their age range — we do not have official ratings.
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

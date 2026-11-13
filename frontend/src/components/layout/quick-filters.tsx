@@ -12,10 +12,10 @@ const FILTERS: readonly Filter[] = [
   { label: 'All', value: null },
   { label: 'Soft play', value: 'softplay' },
   { label: 'Halls', value: 'community_hall' },
-  { label: 'Activity', value: 'leisure_centre' },
   { label: 'Parks', value: 'park' },
-  { label: 'Museums', value: 'museum' },
   { label: 'Libraries', value: 'library' },
+  { label: 'Activity', value: 'leisure_centre' },
+  { label: 'Museums', value: 'museum' },
 ];
 
 export function QuickFilters() {

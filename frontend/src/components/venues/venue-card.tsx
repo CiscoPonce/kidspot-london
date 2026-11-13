@@ -81,17 +81,13 @@ export function VenueCard({
       role="button"
       tabIndex={0}
       aria-pressed={isSelected}
-      className={`group overflow-hidden rounded-2xl border bg-white text-left transition ${
-        featured ? 'sm:flex' : ''
-      } ${
-        isSelected
-          ? 'border-brand-dark shadow-sm'
-          : 'border-brand-border hover:-translate-y-0.5 hover:border-brand-dark/30 hover:shadow-md'
+      className={`group relative overflow-hidden rounded-3xl text-left shadow-sm transition duration-300 ${
+        isSelected ? 'ring-2 ring-brand-dark' : 'hover:-translate-y-1 hover:shadow-xl'
       }`}
     >
       <div
-        className={`relative shrink-0 overflow-hidden bg-brand-cream-dark ${
-          featured ? 'aspect-[16/10] sm:aspect-auto sm:h-auto sm:w-[46%]' : 'aspect-[16/10]'
+        className={`relative overflow-hidden bg-brand-cream-dark ${
+          featured ? 'aspect-[16/10] sm:aspect-[21/9]' : 'aspect-[4/5] sm:aspect-[4/3]'
         }`}
       >
         {imageUrl ? (
@@ -99,12 +95,14 @@ export function VenueCard({
             src={imageUrl}
             alt=""
             loading="lazy"
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+            className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
           />
         ) : (
           <VenueImagePlaceholder type={venue.type} name={venue.name} />
         )}
-        <span className="absolute left-2.5 top-2.5 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-dark">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/5" />
+
+        <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-dark">
           {typeLabel}
         </span>
         <button
@@ -112,7 +110,7 @@ export function VenueCard({
           onClick={handleSaveToggle}
           aria-pressed={isSaved}
           aria-label={isSaved ? `Remove ${venue.name} from shortlist` : `Add ${venue.name} to shortlist`}
-          className="absolute right-2.5 top-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 shadow-sm"
+          className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-sm"
         >
           <Heart
             size={16}
@@ -120,43 +118,40 @@ export function VenueCard({
             className={isSaved ? 'fill-rose-500 text-rose-500' : 'text-brand-muted'}
           />
         </button>
-      </div>
 
-      <div className={`flex min-w-0 flex-1 flex-col justify-between p-3.5 ${featured ? 'sm:p-5' : ''}`}>
-        <div>
+        <div className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
           {placeLine && (
-            <p className="text-xs font-medium text-brand-muted">{placeLine}</p>
+            <p className="text-xs font-medium text-white/75">{placeLine}</p>
           )}
           <h3
-            className={`mt-0.5 font-semibold leading-snug text-brand-dark ${
-              featured ? 'text-xl sm:text-2xl' : 'line-clamp-2 text-base'
+            className={`mt-0.5 font-display font-semibold leading-tight ${
+              featured ? 'text-2xl sm:text-4xl' : 'line-clamp-2 text-xl'
             }`}
           >
             {venue.name}
           </h3>
-          <p className="mt-1.5 text-sm text-brand-dark">
+          <p className="mt-1.5 text-sm text-white/90">
             <span className="font-semibold">{partyPrice || 'Call for price'}</span>
             {venue.party_max_capacity != null && (
-              <span className="text-brand-muted"> · up to {venue.party_max_capacity} kids</span>
+              <span className="text-white/70"> · up to {venue.party_max_capacity} kids</span>
             )}
           </p>
-          <PartyCateringBadge venue={venue} compact />
-        </div>
-
-        <div className="mt-3 flex items-center gap-2">
-          {phone ? (
-            <a
-              href={`tel:${phone.replace(/\s/g, '')}`}
-              onClick={(e) => e.stopPropagation()}
-              className="rounded-lg bg-brand-yellow px-3 py-1.5 text-xs font-semibold text-brand-dark hover:bg-brand-yellow-hover"
-            >
-              Call {phone}
-            </a>
-          ) : (
-            <span className="rounded-lg bg-brand-dark px-3 py-1.5 text-xs font-semibold text-white">
-              View details
-            </span>
-          )}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {phone ? (
+              <a
+                href={`tel:${phone.replace(/\s/g, '')}`}
+                onClick={(e) => e.stopPropagation()}
+                className="rounded-full bg-brand-yellow px-3.5 py-1.5 text-xs font-semibold text-brand-dark hover:bg-brand-yellow-hover"
+              >
+                Call {phone}
+              </a>
+            ) : (
+              <span className="rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-dark">
+                View details
+              </span>
+            )}
+            <PartyCateringBadge venue={venue} compact />
+          </div>
         </div>
       </div>
     </article>
