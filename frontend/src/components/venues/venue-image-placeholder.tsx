@@ -31,8 +31,10 @@ export function VenueImagePlaceholder({
       className={`flex h-full w-full flex-col items-center justify-center bg-gradient-to-br ${gradient} ${className}`}
       aria-hidden="true"
     >
-      <span className="font-display text-4xl font-semibold text-brand-dark/70">{initial}</span>
-      <span className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-brand-dark/50">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/80 shadow-sm ring-1 ring-black/5">
+        <span className="font-display text-2xl font-semibold text-brand-dark">{initial}</span>
+      </div>
+      <span className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-brand-dark/60">
         {TYPE_LABEL[type || ''] || 'Venue'}
       </span>
     </div>

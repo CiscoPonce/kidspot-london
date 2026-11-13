@@ -64,11 +64,11 @@ function MapPanel({
   }
 
   return (
-    <div className="relative h-full min-h-[360px] overflow-hidden rounded-xl border border-brand-border bg-white">
+    <div className="relative h-full min-h-[360px] overflow-hidden rounded-2xl border border-brand-border bg-white shadow-sm">
       <VenueMap venues={venues} onVenueSelect={onVenueSelect} />
       {venues.length > 0 && (
         <div className="pointer-events-none absolute left-3 top-3 z-10">
-          <span className="inline-flex items-center rounded-md bg-white/95 px-2.5 py-1 text-xs font-medium text-brand-dark">
+          <span className="inline-flex items-center rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-brand-dark shadow-sm">
             {venues.length} on map
           </span>
         </div>
@@ -94,7 +94,7 @@ export default function SearchPage() {
   return (
     <div className="min-h-screen bg-brand-paper pb-24 text-brand-dark md:pb-12">
       <section className="border-b border-brand-border bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-8">
+        <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-lg">
               <h1 className="font-display text-3xl font-semibold tracking-tight text-brand-dark sm:text-4xl">
@@ -115,7 +115,7 @@ export default function SearchPage() {
         </div>
       </section>
 
-      <section id="results" className="mx-auto max-w-7xl px-4 py-5 sm:px-8">
+      <section id="results" className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-12">
           <div className={`lg:col-span-7 ${mobileView === 'map' ? 'hidden lg:block' : ''}`}>
             <VenueList
