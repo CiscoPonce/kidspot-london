@@ -23,6 +23,7 @@ const execFileAsync = promisify(execFile);
 
 const GROK_BIN = process.env.GROK_BIN || '/home/ubuntu/.grok/bin/grok';
 const AGY_BIN = process.env.AGY_BIN || '/home/ubuntu/.local/bin/agy';
+const AGY_MODEL = process.env.AGY_MODEL || 'gemini-4-hydrogen-low';
 const GROK_TIMEOUT_MS = 120_000;
 const MAX_TEXT_CHARS = 12_000;
 const SYSTEM_INSTRUCTION =
@@ -312,6 +313,8 @@ async function callAgyExtractor(
 ): Promise<{ data: GrokExtraction; costUsd: number }> {
   const fullPrompt = `${SYSTEM_INSTRUCTION}\n\n${prompt}`;
   const args = [
+    '--model',
+    AGY_MODEL,
     '--output-format',
     'json',
     '--json-schema',
