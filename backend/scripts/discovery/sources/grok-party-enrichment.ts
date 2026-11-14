@@ -22,8 +22,11 @@ import { fetchPage, normalizeUrl, isCrawlable } from './direct-crawl-enrichment.
 const execFileAsync = promisify(execFile);
 
 const GROK_BIN = process.env.GROK_BIN || '/home/ubuntu/.grok/bin/grok';
+const AGY_BIN = process.env.AGY_BIN || '/home/ubuntu/.local/bin/agy';
 const GROK_TIMEOUT_MS = 60_000;
 const MAX_TEXT_CHARS = 12_000;
+const SYSTEM_INSTRUCTION =
+  'You are a strict factual data extractor for a London kids birthday party directory. Return ONLY verified facts present in the provided text or official venue page. Never guess or invent prices, capacities, or policies; use null if not explicitly stated.';
 
 const PARTY_PATHS = [
   '',
@@ -42,6 +45,45 @@ const EXTRACTION_SCHEMA = JSON.stringify({
     party_capable: { type: ['boolean', 'null'] },
     party_price_from: { type: ['number', 'null'] },
     party_price_unit: { type: ['string', 'null'], enum: ['per_child', 'per_hour', 'flat', null] },
+    party_max_capacity: { type: ['integer', 'null'] },
+    party_packages: { type: 'array', items: { type: 'string' } },
+    party_enquiry_url: { type: ['string', 'null'] },
+    byo_food_allowed: { type: ['boolean', 'null'] },
+    food_provided: { type: ['boolean', 'null'] },
+    kitchen_facilities: { type: ['boolean', 'null'] },
+    catering_notes: { type: ['string', 'null'] },
+    description: { type: ['string', 'null'] },
+    opening_hours: { type: ['string', 'null'] },
+    phone: { type: ['string', 'null'] },
+    email: { type: ['string', 'null'] },
+    source_url: { type: ['string', 'null'] },
+  },
+  required: [
+    'party_capable',
+    'party_price_from',
+    'party_price_unit',
+    'party_max_capacity',
+    'party_packages',
+    'party_enquiry_url',
+    'byo_food_allowed',
+    'food_provided',
+    'kitchen_facilities',
+    'catering_notes',
+    'description',
+    'opening_hours',
+    'phone',
+    'email',
+    'source_url',
+  ],
+  additionalProperties: false,
+});
+
+const AGY_EXTRACTION_SCHEMA = JSON.stringify({
+  type: 'object',
+  properties: {
+    party_capable: { type: ['boolean', 'null'] },
+    party_price_from: { type: ['number', 'null'] },
+    party_price_unit: { type: ['string', 'null'], enum: ['per_child', 'per_hour', 'flat'] },
     party_max_capacity: { type: ['integer', 'null'] },
     party_packages: { type: 'array', items: { type: 'string' } },
     party_enquiry_url: { type: ['string', 'null'] },
@@ -244,7 +286,7 @@ async function callGrokExtractor(
     '--disallowed-tools',
     'bash,edit,write,read',
     '--system-prompt-override',
-    'You are a strict factual data extractor for a London kids birthday party directory. Return ONLY verified facts present in the provided text or official venue page. Never guess or invent prices, capacities, or policies; use null if not explicitly stated.',
+    SYSTEM_INSTRUCTION,
   ];
 
   if (!allowWebSearch) {
@@ -263,6 +305,40 @@ async function callGrokExtractor(
   const costUsd = typeof envelope.total_cost_usd === 'number' ? envelope.total_cost_usd : 0;
   const parsed = parseJsonObject<Partial<GrokExtraction>>(envelope.text || '{}');
   return { data: validateExtraction(parsed), costUsd };
+}
+
+async function callAgyExtractor(
+  prompt: string,
+): Promise<{ data: GrokExtraction; costUsd: number }> {
+  const fullPrompt = `${SYSTEM_INSTRUCTION}\n\n${prompt}`;
+  const args = [
+    '--output-format',
+    'json',
+    '--json-schema',
+    AGY_EXTRACTION_SCHEMA,
+    '--disable-slash-commands',
+    `--print-timeout=60s`,
+    `-p=${fullPrompt}`,
+  ];
+
+  const { stdout } = await execFileAsync(AGY_BIN, args, {
+    timeout: GROK_TIMEOUT_MS + 10_000,
+    maxBuffer: 2 * 1024 * 1024,
+  });
+
+  const envelope = parseJsonObject<{
+    status?: string;
+    response?: string;
+    structured_output?: Partial<GrokExtraction>;
+  }>(stdout);
+  if (envelope.status && envelope.status !== 'SUCCESS') {
+    throw new Error(`agy exited with status ${envelope.status}`);
+  }
+  const parsed =
+    envelope.structured_output && typeof envelope.structured_output === 'object'
+      ? envelope.structured_output
+      : parseJsonObject<Partial<GrokExtraction>>(envelope.response || '{}');
+  return { data: validateExtraction(parsed), costUsd: 0 };
 }
 
 async function crawlVenueText(website: string): Promise<{ text: string; matchedUrl: string }> {
@@ -304,9 +380,9 @@ async function logProvenance(
 
 export async function enrichWithGrok(
   batchSize = 10,
-  options: { allowWebSearch?: boolean; dryRun?: boolean } = {},
+  options: { allowWebSearch?: boolean; dryRun?: boolean; cli?: 'grok' | 'agy' } = {},
 ): Promise<GrokEnrichResult> {
-  const { allowWebSearch = false, dryRun = false } = options;
+  const { allowWebSearch = false, dryRun = false, cli = 'grok' } = options;
   const result: GrokEnrichResult = {
     enriched: 0,
     skipped: 0,
@@ -398,7 +474,10 @@ export async function enrichWithGrok(
         continue;
       }
 
-      const { data, costUsd } = await callGrokExtractor(prompt, useWebSearch);
+      const { data, costUsd } =
+        cli === 'agy'
+          ? await callAgyExtractor(prompt)
+          : await callGrokExtractor(prompt, useWebSearch);
       result.totalCostUsd += costUsd;
 
       if (useWebSearch && !data.source_url) {
@@ -500,8 +579,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const batchSize = batchArg ? Number.parseInt(batchArg, 10) : 5;
   const allowWebSearch = args.includes('--web-search');
   const dryRun = args.includes('--dry-run');
+  const cli: 'grok' | 'agy' =
+    args.includes('--agy') || args.includes('--cli=agy') || process.env.ENRICH_CLI === 'agy'
+      ? 'agy'
+      : 'grok';
 
-  enrichWithGrok(batchSize, { allowWebSearch, dryRun })
+  enrichWithGrok(batchSize, { allowWebSearch, dryRun, cli })
     .then(() => process.exit(0))
     .catch((err) => {
       console.error(err);
