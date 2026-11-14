@@ -23,7 +23,7 @@ const execFileAsync = promisify(execFile);
 
 const GROK_BIN = process.env.GROK_BIN || '/home/ubuntu/.grok/bin/grok';
 const AGY_BIN = process.env.AGY_BIN || '/home/ubuntu/.local/bin/agy';
-const GROK_TIMEOUT_MS = 60_000;
+const GROK_TIMEOUT_MS = 120_000;
 const MAX_TEXT_CHARS = 12_000;
 const SYSTEM_INSTRUCTION =
   'You are a strict factual data extractor for a London kids birthday party directory. Return ONLY verified facts present in the provided text or official venue page. Never guess or invent prices, capacities, or policies; use null if not explicitly stated.';
@@ -317,7 +317,7 @@ async function callAgyExtractor(
     '--json-schema',
     AGY_EXTRACTION_SCHEMA,
     '--disable-slash-commands',
-    `--print-timeout=60s`,
+    `--print-timeout=120s`,
     `-p=${fullPrompt}`,
   ];
 
