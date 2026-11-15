@@ -381,6 +381,15 @@ async function logProvenance(
   );
 }
 
+/** Stamps party_extracted_at so skipped venues move to the back of the queue. */
+async function markAttempted(venueId: number, dryRun: boolean): Promise<void> {
+  if (dryRun) return;
+  await db.query(
+    `UPDATE venues SET party_extracted_at = NOW(), updated_at = NOW() WHERE id = $1 AND editor_locked = FALSE`,
+    [venueId],
+  );
+}
+
 export async function enrichWithGrok(
   batchSize = 10,
   options: { allowWebSearch?: boolean; dryRun?: boolean; cli?: 'grok' | 'agy' } = {},
@@ -419,6 +428,7 @@ export async function enrichWithGrok(
          )
        )
      ORDER BY
+       party_extracted_at NULLS FIRST,
        CASE WHEN party_capable = TRUE THEN 0 ELSE 1 END,
        CASE WHEN party_capable IS NULL THEN 0 ELSE 1 END,
        CASE type
@@ -445,6 +455,7 @@ export async function enrichWithGrok(
     result.totalProcessed++;
 
     if (!isCrawlable(venue.website)) {
+      await markAttempted(venue.id, dryRun);
       result.skipped++;
       continue;
     }
@@ -473,6 +484,7 @@ export async function enrichWithGrok(
         ].join('\n');
       } else {
         logger.info({ venueId: venue.id, name: venue.name }, 'Skipped (insufficient crawled text and --web-search disabled)');
+        await markAttempted(venue.id, dryRun);
         result.skipped++;
         continue;
       }
@@ -485,6 +497,7 @@ export async function enrichWithGrok(
 
       if (useWebSearch && !data.source_url) {
         logger.warn({ venueId: venue.id, name: venue.name }, 'Discarded web-search extraction without source_url');
+        await markAttempted(venue.id, dryRun);
         result.skipped++;
         continue;
       }
