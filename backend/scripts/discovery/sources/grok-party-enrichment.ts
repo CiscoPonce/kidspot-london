@@ -392,9 +392,14 @@ async function markAttempted(venueId: number, dryRun: boolean): Promise<void> {
 
 export async function enrichWithGrok(
   batchSize = 10,
-  options: { allowWebSearch?: boolean; dryRun?: boolean; cli?: 'grok' | 'agy' } = {},
+  options: { allowWebSearch?: boolean; dryRun?: boolean; cli?: 'grok' | 'agy'; concurrency?: number } = {},
 ): Promise<GrokEnrichResult> {
-  const { allowWebSearch = false, dryRun = false, cli = 'grok' } = options;
+  const {
+    allowWebSearch = false,
+    dryRun = false,
+    cli = 'grok',
+    concurrency = Math.max(1, Number.parseInt(process.env.ENRICH_CONCURRENCY || '4', 10) || 4),
+  } = options;
   const result: GrokEnrichResult = {
     enriched: 0,
     skipped: 0,
@@ -449,15 +454,18 @@ export async function enrichWithGrok(
     return result;
   }
 
-  logger.info({ count: venues.length, allowWebSearch, dryRun }, 'Starting Grok party enrichment batch');
+  logger.info({ count: venues.length, allowWebSearch, dryRun, concurrency }, 'Starting Grok party enrichment batch');
 
-  for (const venue of venues) {
+  let nextIdx = 0;
+  let stopEarly = false;
+
+  const processOne = async (venue: VenueRow): Promise<void> => {
     result.totalProcessed++;
 
     if (!isCrawlable(venue.website)) {
       await markAttempted(venue.id, dryRun);
       result.skipped++;
-      continue;
+      return;
     }
 
     try {
@@ -486,7 +494,7 @@ export async function enrichWithGrok(
         logger.info({ venueId: venue.id, name: venue.name }, 'Skipped (insufficient crawled text and --web-search disabled)');
         await markAttempted(venue.id, dryRun);
         result.skipped++;
-        continue;
+        return;
       }
 
       const { data, costUsd } =
@@ -499,7 +507,7 @@ export async function enrichWithGrok(
         logger.warn({ venueId: venue.id, name: venue.name }, 'Discarded web-search extraction without source_url');
         await markAttempted(venue.id, dryRun);
         result.skipped++;
-        continue;
+        return;
       }
 
       logger.info(
@@ -574,10 +582,21 @@ export async function enrichWithGrok(
       result.failed++;
       if (/usage limit|rate limit|429/i.test(msg)) {
         logger.warn('Grok usage/rate limit reached — stopping batch early.');
-        break;
+        stopEarly = true;
       }
     }
-  }
+  };
+
+  const workerCount = Math.min(concurrency, venues.length);
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (!stopEarly) {
+        const idx = nextIdx++;
+        if (idx >= venues.length) break;
+        await processOne(venues[idx]);
+      }
+    }),
+  );
 
   logger.info(
     {
