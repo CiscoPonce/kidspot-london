@@ -23,7 +23,11 @@ export async function enrichViaBraveImages(limit: number = 20): Promise<BraveIma
        FROM venues 
        WHERE is_active = TRUE 
        AND (images IS NULL OR array_length(images, 1) IS NULL OR array_length(images, 1) = 0)
-       ORDER BY (CASE WHEN party_capable = TRUE THEN 0 WHEN venue_scope = 'core' THEN 1 ELSE 2 END), kid_score DESC NULLS LAST, id ASC
+       AND (brave_images_attempted_at IS NULL OR brave_images_attempted_at < NOW() - INTERVAL '30 days')
+       ORDER BY brave_images_attempted_at ASC NULLS FIRST,
+                (CASE WHEN party_capable = TRUE THEN 0 WHEN venue_scope = 'core' THEN 1 ELSE 2 END),
+                kid_score DESC NULLS LAST,
+                id ASC
        LIMIT $1`,
       [limit]
     );
@@ -37,20 +41,36 @@ export async function enrichViaBraveImages(limit: number = 20): Promise<BraveIma
 
     for (const venue of venues) {
       result.totalProcessed++;
-      
+
       const searchQuery = `${venue.name} ${venue.borough || ''} ${venue.postcode || ''} London UK`;
       logger.info({ venueId: venue.id, name: venue.name, query: searchQuery }, 'Searching Brave for images...');
 
-      const images = await braveService.searchImages(searchQuery, 3);
+      let images: string[];
+      try {
+        images = await braveService.searchImages(searchQuery, 3);
+      } catch (err: any) {
+        const msg = err?.message || String(err);
+        if (/429|rate limit/i.test(msg)) {
+          logger.warn({ venueId: venue.id, err: msg }, 'Brave Search rate limit reached — stopping batch early');
+          result.failed++;
+          break;
+        }
+        result.failed++;
+        continue;
+      }
 
       if (images.length > 0) {
         await db.query(
-          `UPDATE venues SET images = $1, enriched_at = NOW() WHERE id = $2`,
+          `UPDATE venues SET images = $1, brave_images_attempted_at = NOW(), enriched_at = NOW(), updated_at = NOW() WHERE id = $2`,
           [images, venue.id]
         );
         logger.info(`  ✓ Found ${images.length} images for "${venue.name}"`);
         result.enriched++;
       } else {
+        await db.query(
+          `UPDATE venues SET brave_images_attempted_at = NOW(), updated_at = NOW() WHERE id = $1`,
+          [venue.id]
+        );
         logger.info(`  ✗ No images found for "${venue.name}"`);
         result.skipped++;
       }
@@ -69,7 +89,9 @@ export async function enrichViaBraveImages(limit: number = 20): Promise<BraveIma
 
 import { fileURLToPath } from 'url';
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  enrichViaBraveImages(10)
+  const argLimit = process.argv[2] ? Number.parseInt(process.argv[2], 10) : NaN;
+  const limit = Number.isFinite(argLimit) && argLimit > 0 ? argLimit : 20;
+  enrichViaBraveImages(limit)
     .then(res => {
       logger.info(res, 'Brave image enrichment complete');
       process.exit(0);

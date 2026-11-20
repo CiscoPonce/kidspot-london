@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio';
 import { db } from '../../../src/clients/db.js';
 import { logger } from '../../../src/config/logger.js';
 import { browserHeaders } from '../../../src/utils/httpHeaders.js';
+import { cleanAndRankImages, isRejectedImageUrl } from '../../../src/utils/imageFilter.js';
 
 export interface WebsiteImageResult {
   enriched: number;
@@ -10,45 +11,13 @@ export interface WebsiteImageResult {
   totalProcessed: number;
 }
 
-const REJECT_IMAGE_PATTERNS = [
-  /\.svg(?:\?.*)?$/i,
-  /\.ico(?:\?.*)?$/i,
-  /base64,/i,
-  /(?:^|\/|_|-)(?:logo|icon|avatar|favicon|badge|tracking|pixel|spinner|placeholder|transparent|blank|spacer)(?:s)?(?:-|_|\.|$)/i,
-  /(?:1x1|16x16|32x32|48x48)\.(?:png|jpg|gif|webp)/i,
-  /facebook\.com/i,
-  /twitter\.com/i,
-  /instagram\.com/i,
-  /linkedin\.com/i,
-  /youtube\.com/i,
-  /tripadvisor\.com/i,
-  /google-map/i,
-  /wikimedia\.org/i,
-  /geograph\.org/i,
-  /staticmap/i,
-  /property-images-uk/i,
-  /rightmove\.co\.uk/i,
-];
-
 export function normalizeImageUrl(rawSrc: string, baseUrl: string): string | null {
   if (!rawSrc || typeof rawSrc !== 'string') return null;
   const src = rawSrc.trim();
 
   try {
     const absolute = new URL(src, baseUrl).href;
-    const lower = absolute.toLowerCase();
-
-    if (!lower.startsWith('http://') && !lower.startsWith('https://')) {
-      return null;
-    }
-
-    for (const pattern of REJECT_IMAGE_PATTERNS) {
-      if (pattern.test(lower)) {
-        return null;
-      }
-    }
-
-    return absolute;
+    return isRejectedImageUrl(absolute) ? null : absolute;
   } catch {
     return null;
   }
@@ -199,7 +168,7 @@ export async function extractImagesFromWebsite(websiteUrl: string): Promise<stri
     // Timeout or network error
   }
 
-  return Array.from(new Set(images)).slice(0, 8);
+  return cleanAndRankImages(Array.from(new Set(images))).slice(0, 8);
 }
 
 export async function enrichWebsiteImages(batchSize: number = 250, force: boolean = false): Promise<WebsiteImageResult> {
@@ -218,7 +187,10 @@ export async function enrichWebsiteImages(batchSize: number = 250, force: boolea
            AND website IS NOT NULL AND website != ''
            AND (party_capable = TRUE OR type IN ('softplay', 'community_hall', 'leisure_centre'))
            AND (images IS NULL OR array_length(images, 1) IS NULL OR array_length(images, 1) = 0)
-         ORDER BY (CASE WHEN type = 'softplay' THEN 1 WHEN party_capable = TRUE THEN 2 ELSE 3 END), id ASC
+           AND (website_images_attempted_at IS NULL OR website_images_attempted_at < NOW() - INTERVAL '14 days')
+         ORDER BY website_images_attempted_at ASC NULLS FIRST,
+                  (CASE WHEN type = 'softplay' THEN 1 WHEN party_capable = TRUE THEN 2 ELSE 3 END),
+                  id ASC
          LIMIT $1`;
 
     const { rows: venues } = await db.query(query, [batchSize]);
@@ -241,15 +213,25 @@ export async function enrichWebsiteImages(batchSize: number = 250, force: boolea
             const extracted = await extractImagesFromWebsite(venue.website);
             if (extracted.length > 0) {
               await db.query(
-                `UPDATE venues SET images = $1, enriched_at = NOW() WHERE id = $2`,
+                `UPDATE venues SET images = $1, website_images_attempted_at = NOW(), enriched_at = NOW(), updated_at = NOW() WHERE id = $2`,
                 [extracted, venue.id]
               );
               result.enriched++;
               logger.info(`Extracted ${extracted.length} image(s) for "${venue.name}" (${venue.website})`);
             } else {
+              await db.query(
+                `UPDATE venues SET website_images_attempted_at = NOW(), updated_at = NOW() WHERE id = $1`,
+                [venue.id]
+              );
               result.skipped++;
             }
           } catch (e) {
+            try {
+              await db.query(
+                `UPDATE venues SET website_images_attempted_at = NOW(), updated_at = NOW() WHERE id = $1`,
+                [venue.id]
+              );
+            } catch {}
             result.failed++;
           }
         })

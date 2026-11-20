@@ -108,7 +108,16 @@ async function setupRepeatingJobs() {
       ...jobOpts,
     });
 
-    await discoveryQueue.add('enrich-brave-images', { batchSize: 20 }, {
+    if (typeof discoveryQueue.getRepeatableJobs === 'function') {
+      const existingRepeatables = await discoveryQueue.getRepeatableJobs();
+      for (const r of existingRepeatables) {
+        if (r.name === 'enrich-brave-images') {
+          await discoveryQueue.removeRepeatableByKey(r.key);
+        }
+      }
+    }
+
+    await discoveryQueue.add('enrich-brave-images', { batchSize: 50 }, {
       repeat: { pattern: '0 4 * * *' },
       jobId: 'repeat:enrich-brave-images',
       ...jobOpts,
@@ -275,7 +284,7 @@ case 'enrich-geoapify': {
 case 'enrich-brave-images': {
   await crawlDelay(500);
   const { enrichViaBraveImages } = await import('../scripts/discovery/sources/brave-image-enrichment.js');
-  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 20;
+  const batchSize = (job.data as EnrichmentJobData)?.batchSize || 50;
   const result = await enrichViaBraveImages(batchSize);
           logger.info({ result }, 'Brave image enrichment complete');
           return { status: 'completed', ...result };

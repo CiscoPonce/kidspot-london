@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { logger } from '../config/logger.js';
 import { braveSearchLimiter } from '../middleware/rateLimit.js';
+import { cleanAndRankImages } from '../utils/imageFilter.js';
 
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
 const BRAVE_BASE_URL = 'https://api.search.brave.com/res/v1';
@@ -33,7 +34,7 @@ export const braveService = {
       const response = await axios.get(`${BRAVE_BASE_URL}/images/search`, {
         params: {
           q: query,
-          count: Math.min(count, 20),
+          count: Math.min(Math.max(count * 3, 10), 20),
           safesearch: 'strict'
         },
         headers: {
@@ -49,13 +50,19 @@ export const braveService = {
       }
 
       const results = response.data?.results || [];
-      
-      // Filter out low-quality or irrelevant sources if needed
-      // For now, just return the direct image URLs
-      return results
+      const rawUrls: string[] = results
         .map((r: any) => r.properties?.url || r.url)
-        .filter((url: string) => url && url.startsWith('http'));
+        .filter((url: unknown): url is string => typeof url === 'string' && url.length > 0);
+
+      return cleanAndRankImages(rawUrls).slice(0, count);
     } catch (error: any) {
+      if (
+        error?.response?.status === 429 ||
+        (typeof error?.message === 'string' && error.message.includes('RateLimitError: 429'))
+      ) {
+        logger.warn({ query }, 'Brave Search HTTP 429 rate limit exceeded');
+        throw new Error('RateLimitError: 429 Too Many Requests');
+      }
       logger.error({ err: error.message, query }, 'Brave Image search error');
       return [];
     }
