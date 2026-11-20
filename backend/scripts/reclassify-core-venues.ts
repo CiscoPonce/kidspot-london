@@ -103,10 +103,11 @@ export async function reclassifyCoreVenues(dryRun = false): Promise<ReclassifySu
         await db.query(
           `UPDATE venues
            SET is_active = FALSE,
-               venue_scope = 'non_core',
+               venue_scope = 'excluded',
+               scope_reason = $2,
                updated_at = NOW()
            WHERE id = $1 AND editor_locked = FALSE`,
-          [venue.id],
+          [venue.id, deactivateReason],
         );
         await insertProvenance(venue.id, 'is_active', 'true', 'false', deactivateReason);
       }
